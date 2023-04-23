@@ -18,7 +18,7 @@ const testFunc = async ({
 			)}`;
 			const tName = `${name}.csv`;
 			const url = `xlsReport/${tName}`;
-			fs.createWriteStream(`${__dirname}/../../../private/${url}`);
+			fs.createWriteStream(`${__dirname}/../../private/${url}`);
 			finalURL = `/static/${url}`;
 
 			let headers = [];
@@ -26,7 +26,7 @@ const testFunc = async ({
 				headers.push({ id: tRow.name || tRow, title: tRow.label || tRow });
 			}
 
-			let path = `${__dirname}/../../../private/${url}`;
+			let path = `${__dirname}/../../private/${url}`;
 			const csvWriter = createCsvWriter({
 				path: path,
 				header: headers,

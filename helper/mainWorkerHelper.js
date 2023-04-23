@@ -7,7 +7,7 @@ const mainWorkerThreadCall = async (tData, downloadFormat, url, userInfo) => {
 			console.log("worker_threads is found");
 			if (isMainThread) {
 				const worker = new Worker(
-					url ? url : `./api/helper/workers/${filename || "worker"}.js`,
+					url ? url : `./helper/workers/${filename || "worker"}.js`,
 					{
 						workerData: tData,
 					}

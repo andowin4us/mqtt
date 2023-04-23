@@ -101,7 +101,7 @@ const testFunc = async ({
 
 			const name = `${fileName}-${momenttz().format("YYYY-MM-DD-HH-mm")}`;
 			const url = `xlsReport/${name}.xlsx`;
-			await elsxReport.toFileAsync(`${__dirname}/../../../private/${url}`);
+			await elsxReport.toFileAsync(`${__dirname}/../../private/${url}`);
 			finalURL = `/static/${url}`;
 			const tResponse = {
 				statusCode: 200,
