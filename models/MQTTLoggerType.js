@@ -1,5 +1,5 @@
 const Util = require("../helper/util");
-const deviceMongoCollection = "MQTTDevice";
+const deviceMongoCollection = "MQTTLoggerType";
 const ThirdPartyAPICaller = require("../common/ThirdPartyAPICaller");
 const dotenv = require("dotenv");
 
@@ -38,21 +38,21 @@ const deleteData = async (tData, userInfo = {}) => {
             if (result) {
                 await Util.addAuditLogs(
                     userInfo,
-                    `MQTT device : ${configDetails.name.toLowerCase() || 0
+                    `MQTTLoggerType : ${configDetails.name.toLowerCase() || 0
                     } Deleted successfully`,
                     JSON.stringify(result)
                 );
                 return {
                     statusCode: 200,
                     success: true,
-                    msg: "MQTT device Deleted Successfull",
+                    msg: "MQTTLoggerType device Deleted Successfull",
                     status: result,
                 };
             } else {
                 return {
                     statusCode: 404,
                     success: false,
-                    msg: "MQTT device Deleted Failed",
+                    msg: "MQTTLoggerType device Deleted Failed",
                     status: [],
                 };
             }
@@ -60,7 +60,7 @@ const deleteData = async (tData, userInfo = {}) => {
             return {
                 statusCode: 404,
                 success: false,
-                msg: "MQTT device Deleted Failed",
+                msg: "MQTTLoggerType device Deleted Failed",
                 status: [],
             };
         }
@@ -68,7 +68,7 @@ const deleteData = async (tData, userInfo = {}) => {
         return {
             statusCode: 500,
             success: false,
-            msg: "MQTT device Deleted Error",
+            msg: "MQTTLoggerType device Deleted Error",
             status: [],
             err: error,
         };
@@ -118,21 +118,21 @@ const updateData = async (tData, userInfo = {}) => {
         if (result) {
             await Util.addAuditLogs(
                 userInfo,
-                `MQTT device: ${userInfo.id || 0} Updated successfully`,
+                `MQTTLoggerType ${userInfo.id || 0} Updated successfully`,
                 JSON.stringify(result)
             );
 
             return {
                 statusCode: 200,
                 success: true,
-                msg: "MQTT device Config Success",
+                msg: "MQTTLoggerType Config Success",
                 status: result,
             };
         } else {
             return {
                 statusCode: 404,
                 success: false,
-                msg: "MQTT device Config Error",
+                msg: "MQTTLoggerType Config Error",
                 status: [],
             };
         }
@@ -140,7 +140,7 @@ const updateData = async (tData, userInfo = {}) => {
         return {
             statusCode: 500,
             success: false,
-            msg: "MQTT device Config Error",
+            msg: "MQTTLoggerType Config Error",
             status: [],
             err: error,
         };
@@ -150,8 +150,7 @@ const updateData = async (tData, userInfo = {}) => {
 const createData = async (tData, userInfo = {}) => {
     let tCheck = await Util.checkQueryParams(tData, {
         id: "required|string",
-        name: "required|alphaNumeric",
-        userName: "required|alphaNumeric"
+        name: "required|alphaNumeric"
     });
 
     if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
@@ -187,20 +186,20 @@ const createData = async (tData, userInfo = {}) => {
         if (result) {
             await Util.addAuditLogs(
                 userInfo,
-                `MQTT device : ${userInfo.id || 0} Created successfully`,
+                `MQTTLoggerType: ${userInfo.id || 0} Created successfully`,
                 JSON.stringify(result)
             );
             return {
                 statusCode: 200,
                 success: true,
-                msg: "MQTT device Created Successfull",
+                msg: "MQTTLoggerType Created Successfull",
                 status: result,
             };
         } else {
             return {
                 statusCode: 404,
                 success: false,
-                msg: "MQTT device Create Failed",
+                msg: "MQTTLoggerType Create Failed",
                 status: [],
             };
         }
@@ -208,7 +207,7 @@ const createData = async (tData, userInfo = {}) => {
         return {
             statusCode: 500,
             success: false,
-            msg: "MQTT device Create Error",
+            msg: "MQTTLoggerType Create Error",
             status: [],
             err: error,
         };
@@ -243,7 +242,7 @@ const getData = async (tData, userInfo = {}) => {
             return {
                 statusCode: 200,
                 success: true,
-                msg: "MQTT device get Successfull",
+                msg: "MQTTLoggerType get Successfull",
                 status: snatizedData[0].totalData,
                 totalSize: snatizedData[0].totalSize,
             };
@@ -251,7 +250,7 @@ const getData = async (tData, userInfo = {}) => {
             return {
                 statusCode: 404,
                 success: false,
-                msg: "MQTT device get Failed",
+                msg: "MQTTLoggerType get Failed",
                 status: [],
             };
         }
@@ -259,7 +258,7 @@ const getData = async (tData, userInfo = {}) => {
         return {
             statusCode: 500,
             success: false,
-            msg: "MQTT device get Error",
+            msg: "MQTTLoggerType get Error",
             status: [],
             err: error,
         };

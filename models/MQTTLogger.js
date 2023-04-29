@@ -1,6 +1,6 @@
 const Util = require('../helper/util');
 const workerHelper = require("../helper/mainWorkerHelper");
-let collectionName = "users"
+let collectionName = "MQTTLogger"
 
 const getLogger = async (tData, userInfo = {}) => {
     let tCheck = await Util.checkQueryParams(tData, {

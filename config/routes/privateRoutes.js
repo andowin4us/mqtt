@@ -1,7 +1,7 @@
-const { ActivityLoggerPrivate } = require("./activityLogger.routes");
+// const { ActivityLoggerPrivate } = require("./activityLogger.routes");
 
 const privateRoutes = {
-	...ActivityLoggerPrivate
+	// ...ActivityLoggerPrivate
 };
 
 module.exports = privateRoutes;

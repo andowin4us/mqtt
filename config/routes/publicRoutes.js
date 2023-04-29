@@ -1,11 +1,13 @@
-const { ActivityLoggerPublic } = require("./activityLogger.routes");
 const { MQTTPublic } = require("./mqtt.routes");
 const { MQTTDevicePublic } = require("./mqttdevice.routes");
+const { UserPublic } = require("./user.routes");
+const { MqttLoggerTypePublic } = require("./mqttloggertype.routes");
 
 const publicRoutes = {
-	...ActivityLoggerPublic,
 	...MQTTPublic,
 	...MQTTDevicePublic,
+	...UserPublic,
+	...MqttLoggerTypePublic
 };
 
 module.exports = publicRoutes;
