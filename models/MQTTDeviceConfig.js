@@ -1,5 +1,5 @@
 const Util = require("../helper/util");
-const deviceMongoCollection = "MQTTDevice";
+const deviceMongoCollection = "MQTTDeviceConfig";
 const ThirdPartyAPICaller = require("../common/ThirdPartyAPICaller");
 const dotenv = require("dotenv");
 
@@ -267,67 +267,9 @@ const getData = async (tData, userInfo = {}) => {
     }
 };
 
-const assignMQTTDevice = async (tData, userInfo = {}) => {
-    let tCheck = await Util.checkQueryParams(tData, {
-        userId: "required|string",
-        deviceId: "required|string",
-    });
-
-    if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
-        return {
-            statusCode: 404,
-            success: false,
-            msg: "PARAMETER_ISSUE",
-            err: tCheck,
-        };
-    }
-    try {
-        let createObj = {
-            _id: tData.id,
-            userId: userInfo.userId,
-            deviceId: tData.deviceId,
-        };
-
-        let result = await Util.mongo.insertOne(
-            "MQTTDeviceMapping",
-            createObj
-        );
-        if (result) {
-            await Util.addAuditLogs(
-                moduleName,
-                userInfo,
-                `MQTT device : ${userInfo.id || 0} Assigned successfully`,
-                JSON.stringify(result)
-            );
-            return {
-                statusCode: 200,
-                success: true,
-                msg: "MQTT device Assigned Successfull",
-                status: result,
-            };
-        } else {
-            return {
-                statusCode: 404,
-                success: false,
-                msg: "MQTT device Assigned Failed",
-                status: [],
-            };
-        }
-    } catch (error) {
-        return {
-            statusCode: 500,
-            success: false,
-            msg: "MQTT device Assigned Error",
-            status: [],
-            err: error,
-        };
-    }
-};
-
 module.exports = {
     deleteData,
     updateData,
     createData,
-    getData,
-    assignMQTTDevice
+    getData
 };

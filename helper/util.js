@@ -28,6 +28,19 @@ const snatizeFromMongo = async (result) => {
     return result;
 };
 
+const addAuditLogs = async (moduleName, userInfo, result) => {
+    let insertObj = {
+        moduleName,
+        modified_user_id: userInfo.id || 0,
+        modified_user_name: userInfo.userName || "test",
+        modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+        log: result
+    }
+
+    await Mongo.db.collection("AuditLog").insertOne(insertObj);
+    return insertObj;
+};
+
 const snatizeArrayForId = async (result) => {
     if (result) {
         for (let res of result) {
@@ -165,47 +178,6 @@ const mongoPool = {
     },
     async removeAll(collection, filter) {
         const result = await Mongo.db.collection(collection).remove(filter);
-        return result;
-    },
-    async findAndPaginateSkillMappings(
-        collection,
-        filter = {},
-        sortOn = "importTime",
-        projection = {},
-        skip = 0,
-        limit = 2000000
-    ) {
-        let tmpData = {};
-        tmpData[sortOn] = 1;
-        const dataParams = [
-            { $match: filter },
-            { $skip: skip },
-            { $limit: limit },
-            { $sort: tmpData },
-        ];
-        if (Object.keys(projection).length > 0) {
-            dataParams.push({ $project: projection });
-        }
-
-        console.log("projection got in mongo func", projection);
-
-        let result = [];
-        result = await Mongo.db
-            .collection(collection)
-            .aggregate([
-                {
-                    $facet: {
-                        totalData: dataParams,
-                        totalCount: [
-                            {
-                                $group: { _id: null, count: { $sum: 1 } },
-                            },
-                        ],
-                    },
-                },
-            ])
-            .toArray();
-
         return result;
     },
     async insertBulk(
@@ -413,4 +385,5 @@ module.exports = {
     createHeader,
     getStringArray,
     validator,
+    addAuditLogs,
 };

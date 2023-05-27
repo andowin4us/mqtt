@@ -1,10 +1,6 @@
-/* eslint-disable no-console */
 const MQTTLoggerType = require('../models/MQTTLoggerType');
 
-// eslint-disable-next-line no-unused-vars
-
 const MQTTLoggerTypeController = () => {
-    //Sender SMTP
     const updateMQTTLoggerType = async (req, res) => {
         console.log('updateMQTTLoggerType', req.body, req.user);
         const result = await MQTTLoggerType.updateData(req.body, req.user);

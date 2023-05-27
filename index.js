@@ -55,5 +55,5 @@ server.listen(config.port, () => {
         process.exit(1);
     }
     // eslint-disable-next-line no-console
-    console.log(`auth server is running on ${config.port}`);
+    console.log(`MQTT server is running on ${config.port}`);
 });

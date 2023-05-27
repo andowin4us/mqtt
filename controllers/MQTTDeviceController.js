@@ -1,10 +1,6 @@
-/* eslint-disable no-console */
 const MQTTDevice = require('../models/MQTTDevice');
 
-// eslint-disable-next-line no-unused-vars
-
 const MQTTDeviceController = () => {
-    //Sender SMTP
     const updateMQTTDevice = async (req, res) => {
         console.log('updateMQTTDevice', req.body, req.user);
         const result = await MQTTDevice.updateData(req.body, req.user);
@@ -25,12 +21,18 @@ const MQTTDeviceController = () => {
         const result = await MQTTDevice.deleteData(req.body, req.user);
         return res.status(result.statusCode).json(result);
     }
+    const assignMQTTDevice = async (req, res) => {
+        console.log('assignMQTTDevice', req.body, req.user);
+        const result = await MQTTDevice.assignMQTTDevice(req.body, req.user);
+        return res.status(result.statusCode).json(result);
+    }
 
     return {
         updateMQTTDevice,
         createMQTTDevice,
         getMQTTDevice,
-        deleteMQTTDevice
+        deleteMQTTDevice,
+        assignMQTTDevice
     };
 };
 

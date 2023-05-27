@@ -59,6 +59,12 @@ class MQTTConnector {
     onMessage(topic, message, packet) {
         console.log('Topic=' + topic + ' Message=' + typeof message, 'packet='+ packet);
         // this.client.publish(this.topic, 'Hello mqtt')
+        this.sendMessage(topic, message)
+    }
+
+    sendMessage(topic, message, packet) {
+        console.log('Topic=' + topic + ' Message=' + typeof message, 'packet='+ packet);
+        this.client.publish(this.topic, 'Hello mqtt')
     }
 
 	onClose() {
