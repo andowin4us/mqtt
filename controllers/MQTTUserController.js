@@ -26,13 +26,25 @@ const MQTTUserController = () => {
         const result = await MQTTUser.login(req.body, req.User);
         return res.status(result.statusCode).json(result);
     }
+    const resetPassword = async (req, res) => {
+        console.log('resetPassword', req.body, req.User);
+        const result = await MQTTUser.resetPassword(req.body, req.User);
+        return res.status(result.statusCode).json(result);
+    }
+    const logout = async (req, res) => {
+        console.log('logout', req.body, req.User);
+        const result = await MQTTUser.logout(req.body, req.User);
+        return res.status(result.statusCode).json(result);
+    }
 
     return {
         updateUser,
         createUser,
         getUser,
         deleteUser,
-        login
+        login,
+        resetPassword,
+        logout
     };
 };
 

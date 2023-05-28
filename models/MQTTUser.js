@@ -314,10 +314,92 @@ const login = async (req, res) => {
     return res.status(400).json({ msg: 'Bad Request: Email or password is wrong' });
 };
 
+const resetPassword = async (req, res) => {
+    const { email, password, username } = req.body;
+    console.log("User:req.body, ", email, password, username)
+
+    let query = { email };
+    if (username) {
+        query = { username };
+    }
+
+    if ((email || username) && password) {
+        try {
+            console.log("User:query, ", query)
+            const user = await geUserData(query);
+
+            if (!user) {
+                return res.status(400).json({ msg: 'Bad Request: User not found' });
+            }
+
+            if (md5Service().comparePassword(password, user.password)) {
+                const session = {
+                    id: user.id,
+                    accesslevel: user.accesslevel,
+                    name: `${user.firstname} ${user.lastname}`,
+                    userName: user.username,
+                    email: user.email
+                };
+                const token = authService().issue(session);
+                return res.status(200).json({ token });
+            }
+
+            return res.status(401).json({ msg: 'Unauthorized' });
+        } catch (err) {
+            console.log(err);
+            return res.status(500).json({ msg: 'We are not able to process your request' });
+        }
+    }
+
+    return res.status(400).json({ msg: 'Bad Request: Email or password is wrong' });
+};
+
+const logout = async (req, res) => {
+    const { email, password, username } = req.body;
+    console.log("User:req.body, ", email, password, username)
+
+    let query = { email };
+    if (username) {
+        query = { username };
+    }
+
+    if ((email || username) && password) {
+        try {
+            console.log("User:query, ", query)
+            const user = await geUserData(query);
+
+            if (!user) {
+                return res.status(400).json({ msg: 'Bad Request: User not found' });
+            }
+
+            if (md5Service().comparePassword(password, user.password)) {
+                const session = {
+                    id: user.id,
+                    accesslevel: user.accesslevel,
+                    name: `${user.firstname} ${user.lastname}`,
+                    userName: user.username,
+                    email: user.email
+                };
+                const token = authService().issue(session);
+                return res.status(200).json({ token });
+            }
+
+            return res.status(401).json({ msg: 'Unauthorized' });
+        } catch (err) {
+            console.log(err);
+            return res.status(500).json({ msg: 'We are not able to process your request' });
+        }
+    }
+
+    return res.status(400).json({ msg: 'Bad Request: Email or password is wrong' });
+};
+
 module.exports = {
     deleteData,
     updateData,
     createData,
     getData,
-    login
+    login,
+    resetPassword,
+    logout
 };
