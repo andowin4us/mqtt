@@ -1,9 +1,14 @@
 const MQTT = require('../models/MQTTLogger');
 
 const MQTTController = () => {
-    const getLogger = async (req, res) => {
-        console.log('getLogger logs ', req.body, req.user);
-        const result = await MQTT.getLogger(req.body, req.user);
+    const getDeviceLogger = async (req, res) => {
+        console.log('getDeviceLogger logs ', req.body, req.user);
+        const result = await MQTT.getDeviceLogger(req.body, req.user);
+        return res.status(result.statusCode).json(result);
+    };
+    const getProcessLogger = async (req, res) => {
+        console.log('getProcessLogger logs ', req.body, req.user);
+        const result = await MQTT.getProcessLogger(req.body, req.user);
         return res.status(result.statusCode).json(result);
     };
     const downloadLogger = async (req, res) => {
@@ -17,7 +22,8 @@ const MQTTController = () => {
         return res.status(result.statusCode).json(result);
     };
     return {
-        getLogger,
+        getDeviceLogger,
+        getProcessLogger,
         downloadLogger,
         getAuditLog
     };

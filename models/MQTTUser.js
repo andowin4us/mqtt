@@ -46,21 +46,21 @@ const deleteData = async (tData, userInfo = {}) => {
             if (result) {
                 await Util.addAuditLogs(
                     userInfo,
-                    `MQTT device : ${configDetails.name.toLowerCase() || 0
+                    `MQTT User : ${configDetails.name.toLowerCase() || 0
                     } Deleted successfully`,
                     JSON.stringify(result)
                 );
                 return {
                     statusCode: 200,
                     success: true,
-                    msg: "MQTT device Deleted Successfull",
+                    msg: "MQTT User Deleted Successfull",
                     status: result,
                 };
             } else {
                 return {
                     statusCode: 404,
                     success: false,
-                    msg: "MQTT device Deleted Failed",
+                    msg: "MQTT User Deleted Failed",
                     status: [],
                 };
             }
@@ -68,7 +68,7 @@ const deleteData = async (tData, userInfo = {}) => {
             return {
                 statusCode: 404,
                 success: false,
-                msg: "MQTT device Deleted Failed",
+                msg: "MQTT User Deleted Failed",
                 status: [],
             };
         }
@@ -76,7 +76,7 @@ const deleteData = async (tData, userInfo = {}) => {
         return {
             statusCode: 500,
             success: false,
-            msg: "MQTT device Deleted Error",
+            msg: "MQTT User Deleted Error",
             status: [],
             err: error,
         };
@@ -126,21 +126,21 @@ const updateData = async (tData, userInfo = {}) => {
         if (result) {
             await Util.addAuditLogs(
                 userInfo,
-                `MQTT device: ${userInfo.id || 0} Updated successfully`,
+                `MQTT User: ${userInfo.id || 0} Updated successfully`,
                 JSON.stringify(result)
             );
 
             return {
                 statusCode: 200,
                 success: true,
-                msg: "MQTT device Config Success",
+                msg: "MQTT User Config Success",
                 status: result,
             };
         } else {
             return {
                 statusCode: 404,
                 success: false,
-                msg: "MQTT device Config Error",
+                msg: "MQTT User Config Error",
                 status: [],
             };
         }
@@ -148,7 +148,7 @@ const updateData = async (tData, userInfo = {}) => {
         return {
             statusCode: 500,
             success: false,
-            msg: "MQTT device Config Error",
+            msg: "MQTT User Config Error",
             status: [],
             err: error,
         };
@@ -195,20 +195,20 @@ const createData = async (tData, userInfo = {}) => {
         if (result) {
             await Util.addAuditLogs(
                 userInfo,
-                `MQTT device : ${userInfo.id || 0} Created successfully`,
+                `MQTT User : ${userInfo.id || 0} Created successfully`,
                 JSON.stringify(result)
             );
             return {
                 statusCode: 200,
                 success: true,
-                msg: "MQTT device Created Successfull",
+                msg: "MQTT User Created Successfull",
                 status: result,
             };
         } else {
             return {
                 statusCode: 404,
                 success: false,
-                msg: "MQTT device Create Failed",
+                msg: "MQTT User Create Failed",
                 status: [],
             };
         }
@@ -216,7 +216,7 @@ const createData = async (tData, userInfo = {}) => {
         return {
             statusCode: 500,
             success: false,
-            msg: "MQTT device Create Error",
+            msg: "MQTT User Create Error",
             status: [],
             err: error,
         };
@@ -251,7 +251,7 @@ const getData = async (tData, userInfo = {}) => {
             return {
                 statusCode: 200,
                 success: true,
-                msg: "MQTT device get Successfull",
+                msg: "MQTT User get Successfull",
                 status: snatizedData[0].totalData,
                 totalSize: snatizedData[0].totalSize,
             };
@@ -259,7 +259,7 @@ const getData = async (tData, userInfo = {}) => {
             return {
                 statusCode: 404,
                 success: false,
-                msg: "MQTT device get Failed",
+                msg: "MQTT User get Failed",
                 status: [],
             };
         }
@@ -267,7 +267,7 @@ const getData = async (tData, userInfo = {}) => {
         return {
             statusCode: 500,
             success: false,
-            msg: "MQTT device get Error",
+            msg: "MQTT User get Error",
             status: [],
             err: error,
         };

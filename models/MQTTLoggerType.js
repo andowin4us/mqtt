@@ -3,8 +3,8 @@ const deviceMongoCollection = "MQTTLoggerType";
 const ThirdPartyAPICaller = require("../common/ThirdPartyAPICaller");
 const dotenv = require("dotenv");
 
-const duplicate = async (name, id) => {
-    const query = { name: name.toLowerCase(), _id: { $ne: id } };
+const duplicate = async (logType, id) => {
+    const query = { logType: logType, _id: { $ne: id } };
     const result = await Util.mongo.findOne(deviceMongoCollection, query);
 
     if (result) {
@@ -79,7 +79,8 @@ const updateData = async (tData, userInfo = {}) => {
     // Required and sanity checks
     let tCheck = await Util.checkQueryParams(tData, {
         id: "required|string",
-        name: "required|alphaNumeric"
+        deviceId: "required|string",
+        logType: "required|string"
     });
 
     if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
@@ -94,12 +95,11 @@ const updateData = async (tData, userInfo = {}) => {
     let updateObj = {
         $set: {
             _id: tData.id,
-            name: tData.name.toLowerCase(),
-            userName: tData.userName
+            logType: tData.logType
         },
     };
     try {
-        const isDublicate = await duplicate(tData.name, tData.id);
+        const isDublicate = await duplicate(tData.logType, tData.id);
 
         if (isDublicate) {
             return {
@@ -150,7 +150,8 @@ const updateData = async (tData, userInfo = {}) => {
 const createData = async (tData, userInfo = {}) => {
     let tCheck = await Util.checkQueryParams(tData, {
         id: "required|string",
-        name: "required|alphaNumeric"
+        deviceId: "required|string",
+        logType: "required|string"
     });
 
     if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
@@ -163,7 +164,7 @@ const createData = async (tData, userInfo = {}) => {
     }
 
     try {
-        const isDublicate = await duplicate(tData.name, tData.id);
+        const isDublicate = await duplicate(tData.logType, tData.id);
 
         if (isDublicate) {
             return {
@@ -176,8 +177,8 @@ const createData = async (tData, userInfo = {}) => {
 
         let createObj = {
             _id: tData.id,
-            name: tData.name.toLowerCase(),
-            userName: tData.userName,
+            deviceId: tData.deviceId,
+            logType: tData.logType,
         };
         let result = await Util.mongo.insertOne(
             deviceMongoCollection,

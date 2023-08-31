@@ -3,18 +3,25 @@ const dotenv = require('dotenv');
 dotenv.config({ path: process.env.ENV_PATH || '.env' });
 const mqtt = require('mqtt')
 const reconnectionTimeout = 2 * 1000;
-var options = {
-	clientId: 'MyMQTT',
-	port: 1883,
-	keepalive : 60
-};
+const clientId = `mqtt_${Math.random().toString(16).slice(3)}`;
+const { utilizeMqtt } = require("../common/mqttCommon");
+const Mongo = require('../common/mongo');
+const connection = require('../config/connection');
 
 class MQTTConnector {
-	constructor(url) {
+	constructor(url, userName, password, topic) {
 		this.url = url;
 		this.isConnected = false;
-        this.topic = 'mqttNewn';
-        this.client = mqtt.connect(this.url);
+        this.options = {
+            clientId: clientId,
+            clean: true,
+            connectTimeout: 4000,
+            username: userName || null,
+            password: password || null,
+            reconnectPeriod: 1000,
+        };
+        this.topic = topic;
+        this.client = mqtt.connect(this.url, this.options);
 
 		this.startMQTT();
 	}
@@ -56,10 +63,23 @@ class MQTTConnector {
         }
 	}
 
-    onMessage(topic, message, packet) {
-        console.log('Topic=' + topic + ' Message=' + typeof message, 'packet='+ packet);
+    async onMessage(topic, message, packet) {
+        console.log('Topic=' + topic + ' Message=' + message, 'packet='+ packet);
         // this.client.publish(this.topic, 'Hello mqtt')
-        this.sendMessage(topic, message)
+        // this.sendMessage(topic, message)
+        // setTimeout(async () => {
+            let processMessage = await utilizeMqtt( message );
+    
+            if( processMessage === true ) {
+                console.log("Message Process Success.");
+    
+                return processMessage;
+            } else {
+                console.log("Message Process Failed.");
+    
+                return processMessage;
+            }
+        // }, 10000);
     }
 
     sendMessage(topic, message, packet) {

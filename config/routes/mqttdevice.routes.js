@@ -4,7 +4,7 @@ const mqttDevicePrivate = {
     "POST /getMQTTDevice": "MQTTDeviceController.getMQTTDevice",
     "POST /deleteMQTTDevice": "MQTTDeviceController.deleteMQTTDevice"
 };
-const mqttDevicePublic = mqttDevicePrivate;
+let mqttDevicePublic = mqttDevicePrivate;
 
 module.exports = {
     mqttDevicePublic,

@@ -2,9 +2,11 @@ const Util = require("../helper/util");
 const deviceMongoCollection = "MQTTDevice";
 const ThirdPartyAPICaller = require("../common/ThirdPartyAPICaller");
 const dotenv = require("dotenv");
+const MQTT = require('../helper/mqtt');
+let moduleName = "MQTTDevice";
 
-const duplicate = async (name, id) => {
-    const query = { name: name.toLowerCase(), _id: { $ne: id } };
+const duplicate = async (deviceName, id) => {
+    const query = { deviceName: deviceName, _id: { $ne: id } };
     const result = await Util.mongo.findOne(deviceMongoCollection, query);
 
     if (result) {
@@ -150,8 +152,12 @@ const updateData = async (tData, userInfo = {}) => {
 const createData = async (tData, userInfo = {}) => {
     let tCheck = await Util.checkQueryParams(tData, {
         id: "required|string",
-        name: "required|alphaNumeric",
-        userName: "required|alphaNumeric"
+        deviceId: "required|string",
+        deviceName: "required|string",
+        mqttIP: "required|string",
+        mqttTopic: "required|string",
+        mqttPort: "required|string",
+        mqttMacId: "required|string"
     });
 
     if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
@@ -164,7 +170,7 @@ const createData = async (tData, userInfo = {}) => {
     }
 
     try {
-        const isDublicate = await duplicate(tData.name, tData.id);
+        const isDublicate = await duplicate(tData.deviceName, tData.id);
 
         if (isDublicate) {
             return {
@@ -175,16 +181,26 @@ const createData = async (tData, userInfo = {}) => {
             };
         }
 
+        let MQTT_URL = `mqtt://${tData.mqttIP}:${tData.mqttPort}`;
+
         let createObj = {
             _id: tData.id,
-            name: tData.name.toLowerCase(),
-            userName: tData.userName,
+            deviceId: tData.deviceId,
+            deviceName: tData.deviceName,
+            mqttIP: tData.mqttIP,
+            mqttUserName: tData.mqttUserName,
+            mqttPassword: tData.mqttPassword,
+            mqttTopic: tData.mqttTopic,
+            mqttUrl: MQTT_URL,
+            mqttMacId: tData.mqttMacId
         };
         let result = await Util.mongo.insertOne(
             deviceMongoCollection,
             createObj
         );
         if (result) {
+            console.log("Device created, now Initializing for evenets..");
+            new MQTT(MQTT_URL, tData.mqttUserName, tData.mqttPassword, tData.mqttTopic);
             await Util.addAuditLogs(
                 moduleName,
                 userInfo,
@@ -206,6 +222,7 @@ const createData = async (tData, userInfo = {}) => {
             };
         }
     } catch (error) {
+        console.log("error", error);
         return {
             statusCode: 500,
             success: false,
