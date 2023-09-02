@@ -38,9 +38,8 @@ const deleteData = async (tData, userInfo = {}) => {
             });
             if (result) {
                 await Util.addAuditLogs(
+                    deviceMongoCollection,
                     userInfo,
-                    `MQTT device : ${configDetails.deviceName.toLowerCase() || 0
-                    } Deleted successfully`,
                     JSON.stringify(result)
                 );
                 return {
@@ -124,8 +123,8 @@ const updateData = async (tData, userInfo = {}) => {
         if (result) {
             new MQTT(MQTT_URL, tData.mqttUserName, tData.mqttPassword, tData.mqttTopic);
             await Util.addAuditLogs(
+                deviceMongoCollection,
                 userInfo,
-                `MQTT device: ${userInfo.id || 0} Updated successfully`,
                 JSON.stringify(result)
             );
 
@@ -212,7 +211,6 @@ const createData = async (tData, userInfo = {}) => {
             await Util.addAuditLogs(
                 deviceMongoCollection,
                 userInfo,
-                `MQTT device : ${userInfo.id || 0} Created successfully`,
                 JSON.stringify(result)
             );
             return {
@@ -351,7 +349,6 @@ const assignMQTTDevice = async (tData, userInfo = {}) => {
             await Util.addAuditLogs(
                 deviceMongoCollection,
                 userInfo,
-                `MQTT device : ${userInfo.id || 0} Assigned successfully`,
                 JSON.stringify(result)
             );
             return {
