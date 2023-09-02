@@ -17,9 +17,39 @@ const getDeviceLogger = async (tData, userInfo = {}) => {
         };
     }
     try {
+        let filter = {};
+        
+        if( tData && tData.device_id ) {
+            filter.device_id = tData.device_id;
+        }
+
+        if( tData && tData.device_name ) {
+            filter.device_name = tData.device_name;
+        }
+
+        if( tData && tData.log_type ) {
+            filter.log_type = tData.log_type;
+        }
+
+        if( tData && tData.log_desc ) {
+            filter.log_desc = tData.log_desc;
+        }
+
+        if( tData && tData.device_id ) {
+            filter.log_line_count = tData.log_line_count;
+        }
+
+        if( tData && tData.battery_level ) {
+            filter.battery_level = tData.battery_level;
+        }
+
+        if( tData && tData.mac_id ) {
+            filter.mac_id = tData.mac_id;
+        }
+        
         let result = await Util.mongo.findAndPaginate(
             collectionName,
-            {},
+            filter,
             {},
             tData.skip,
             tData.limit
@@ -108,27 +138,65 @@ const downloadLogger = async (tData, userInfo = {}) => {
     console.log("tDATA-->", tData);
     let finalURL = "";
 
-    let isFailed = true;
-    let coloum = ["username", "password"];
+    let coloum = [ "timestamp", "device_id", "device_name", "log_type", "log_desc", "log_line_count", "battery_level", "mac_id"];
     try {
+        let filter = {};
+        
+        if( tData && tData.device_id ) {
+            filter.device_id = tData.device_id;
+        }
+
+        if( tData && tData.device_name ) {
+            filter.device_name = tData.device_name;
+        }
+
+        if( tData && tData.log_type ) {
+            filter.log_type = tData.log_type;
+        }
+
+        if( tData && tData.log_desc ) {
+            filter.log_desc = tData.log_desc;
+        }
+
+        if( tData && tData.device_id ) {
+            filter.log_line_count = tData.log_line_count;
+        }
+
+        if( tData && tData.battery_level ) {
+            filter.battery_level = tData.battery_level;
+        }
+
+        if( tData && tData.mac_id ) {
+            filter.mac_id = tData.mac_id;
+        }
+
         let finalJson = await Util.mongo.findAll(
             collectionName,
-            {},
+            filter,
             {}
         );
-        console.log("finalJson", finalJson)
-        const workerData = {
-            tData: finalJson,
-            column: coloum,
-            fileName: "ActivityLogReport",
-        };
+        console.log("finalJson", finalJson.length);
 
-        const dataFromWorker = await workerHelper.mainWorkerThreadCall(
-            workerData,
-            tData.type || "csv"
-        );
-        if (dataFromWorker.statusCode === 200) {
-            finalURL = dataFromWorker.status;
+        if( finalJson && finalJson.length > 0 ) {
+            const workerData = {
+                tData: finalJson,
+                column: coloum,
+                fileName: "ActivityLogReport",
+            };
+    
+            const dataFromWorker = await workerHelper.mainWorkerThreadCall(
+                workerData,
+                tData.type || "csv"
+            );
+            if (dataFromWorker.statusCode === 200) {
+                finalURL = dataFromWorker.status;
+            }
+        } else {
+            return {
+                success: false,
+                statusCode: 404,
+                message: "No data found to generate report.",
+            };
         }
     } catch (e) {
         console.log("error", e);

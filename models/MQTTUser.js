@@ -1,8 +1,8 @@
 const Util = require("../helper/util");
 const deviceMongoCollection = "MQTTUser";
 const md5Service = require('../services/md5.service');
-const ThirdPartyAPICaller = require("../common/ThirdPartyAPICaller");
 const dotenv = require("dotenv");
+const moment = require("moment");
 
 const duplicate = async (name, id) => {
     const query = { name: name.toLowerCase(), _id: { $ne: id } };
@@ -103,7 +103,8 @@ const updateData = async (tData, userInfo = {}) => {
         $set: {
             _id: tData.id,
             name: tData.name.toLowerCase(),
-            userName: tData.userName
+            userName: tData.userName,
+            modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         },
     };
     try {
@@ -185,8 +186,10 @@ const createData = async (tData, userInfo = {}) => {
 
         let createObj = {
             _id: tData.id,
-            name: tData.name.toLowerCase(),
+            name: tData.name,
             userName: tData.userName,
+            status: "Active",
+            modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         };
         let result = await Util.mongo.insertOne(
             deviceMongoCollection,

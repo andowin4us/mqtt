@@ -1,10 +1,10 @@
 const Util = require("../helper/util");
 const deviceMongoCollection = "MQTTDeviceConfig";
-const ThirdPartyAPICaller = require("../common/ThirdPartyAPICaller");
 const dotenv = require("dotenv");
+const moment = require("moment");
 
-const duplicate = async (name, id) => {
-    const query = { name: name.toLowerCase(), _id: { $ne: id } };
+const duplicate = async (deviceId, id) => {
+    const query = { deviceId: deviceId, _id: { $ne: id } };
     const result = await Util.mongo.findOne(deviceMongoCollection, query);
 
     if (result) {
@@ -31,28 +31,28 @@ const deleteData = async (tData, userInfo = {}) => {
         let configDetails = await Util.mongo.findOne(deviceMongoCollection, {
             _id: tData.id,
         });
-        if (configDetails && configDetails.name) {
+        if (configDetails && configDetails.deviceId) {
             let result = await Util.mongo.remove(deviceMongoCollection, {
                 _id: tData.id,
             });
             if (result) {
                 await Util.addAuditLogs(
                     userInfo,
-                    `MQTT device : ${configDetails.name.toLowerCase() || 0
-                    } Deleted successfully`,
+                    `MQTT device : ${configDetails.deviceId.toLowerCase() || 0
+                    } Config Deleted successfully`,
                     JSON.stringify(result)
                 );
                 return {
                     statusCode: 200,
                     success: true,
-                    msg: "MQTT device Deleted Successfull",
+                    msg: "MQTT device Config Deleted Successfull",
                     status: result,
                 };
             } else {
                 return {
                     statusCode: 404,
                     success: false,
-                    msg: "MQTT device Deleted Failed",
+                    msg: "MQTT device Config Deleted Failed",
                     status: [],
                 };
             }
@@ -60,7 +60,7 @@ const deleteData = async (tData, userInfo = {}) => {
             return {
                 statusCode: 404,
                 success: false,
-                msg: "MQTT device Deleted Failed",
+                msg: "MQTT device Config Deleted Failed",
                 status: [],
             };
         }
@@ -79,7 +79,7 @@ const updateData = async (tData, userInfo = {}) => {
     // Required and sanity checks
     let tCheck = await Util.checkQueryParams(tData, {
         id: "required|string",
-        name: "required|alphaNumeric"
+        deviceId: "required|alphaNumeric"
     });
 
     if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
@@ -94,12 +94,12 @@ const updateData = async (tData, userInfo = {}) => {
     let updateObj = {
         $set: {
             _id: tData.id,
-            name: tData.name.toLowerCase(),
-            userName: tData.userName
+            deviceId: tData.deviceId,
+            modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         },
     };
     try {
-        const isDublicate = await duplicate(tData.name, tData.id);
+        const isDublicate = await duplicate(tData.deviceId, tData.id);
 
         if (isDublicate) {
             return {
@@ -118,14 +118,14 @@ const updateData = async (tData, userInfo = {}) => {
         if (result) {
             await Util.addAuditLogs(
                 userInfo,
-                `MQTT device: ${userInfo.id || 0} Updated successfully`,
+                `MQTT device: ${userInfo.id || 0} Config Updated successfully`,
                 JSON.stringify(result)
             );
 
             return {
                 statusCode: 200,
                 success: true,
-                msg: "MQTT device Config Success",
+                msg: "MQTT device Config Update Success",
                 status: result,
             };
         } else {
@@ -150,8 +150,7 @@ const updateData = async (tData, userInfo = {}) => {
 const createData = async (tData, userInfo = {}) => {
     let tCheck = await Util.checkQueryParams(tData, {
         id: "required|string",
-        name: "required|alphaNumeric",
-        userName: "required|alphaNumeric"
+        deviceId: "required|alphaNumeric"
     });
 
     if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
@@ -177,8 +176,8 @@ const createData = async (tData, userInfo = {}) => {
 
         let createObj = {
             _id: tData.id,
-            name: tData.name.toLowerCase(),
-            userName: tData.userName,
+            deviceId: tData.deviceId,
+            modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         };
         let result = await Util.mongo.insertOne(
             deviceMongoCollection,
@@ -188,20 +187,20 @@ const createData = async (tData, userInfo = {}) => {
             await Util.addAuditLogs(
                 moduleName,
                 userInfo,
-                `MQTT device : ${userInfo.id || 0} Created successfully`,
+                `MQTT device : ${userInfo.id || 0} Config Created successfully`,
                 JSON.stringify(result)
             );
             return {
                 statusCode: 200,
                 success: true,
-                msg: "MQTT device Created Successfull",
+                msg: "MQTT device Config Created Successfull",
                 status: result,
             };
         } else {
             return {
                 statusCode: 404,
                 success: false,
-                msg: "MQTT device Create Failed",
+                msg: "MQTT device Config Create Failed",
                 status: [],
             };
         }
@@ -209,7 +208,7 @@ const createData = async (tData, userInfo = {}) => {
         return {
             statusCode: 500,
             success: false,
-            msg: "MQTT device Create Error",
+            msg: "MQTT device Config Create Error",
             status: [],
             err: error,
         };
@@ -231,9 +230,13 @@ const getData = async (tData, userInfo = {}) => {
         };
     }
     try {
+        let filter = {};
+
+        filter.deviceId = tData.deviceId;
+
         let result = await Util.mongo.findAndPaginate(
             deviceMongoCollection,
-            {},
+            filter,
             {},
             tData.skip,
             tData.limit
@@ -244,7 +247,7 @@ const getData = async (tData, userInfo = {}) => {
             return {
                 statusCode: 200,
                 success: true,
-                msg: "MQTT device get Successfull",
+                msg: "MQTT device Config get Successfull",
                 status: snatizedData[0].totalData,
                 totalSize: snatizedData[0].totalSize,
             };
@@ -252,7 +255,7 @@ const getData = async (tData, userInfo = {}) => {
             return {
                 statusCode: 404,
                 success: false,
-                msg: "MQTT device get Failed",
+                msg: "MQTT device Config Not Found.",
                 status: [],
             };
         }
@@ -260,7 +263,7 @@ const getData = async (tData, userInfo = {}) => {
         return {
             statusCode: 500,
             success: false,
-            msg: "MQTT device get Error",
+            msg: "MQTT device Config get Error",
             status: [],
             err: error,
         };

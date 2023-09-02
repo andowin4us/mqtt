@@ -1,7 +1,7 @@
 const Util = require("../helper/util");
 const deviceMongoCollection = "MQTTLoggerType";
-const ThirdPartyAPICaller = require("../common/ThirdPartyAPICaller");
 const dotenv = require("dotenv");
+const moment = require("moment");
 
 const duplicate = async (logType, id) => {
     const query = { logType: logType, _id: { $ne: id } };
@@ -31,14 +31,14 @@ const deleteData = async (tData, userInfo = {}) => {
         let configDetails = await Util.mongo.findOne(deviceMongoCollection, {
             _id: tData.id,
         });
-        if (configDetails && configDetails.name) {
+        if (configDetails && configDetails.logType) {
             let result = await Util.mongo.remove(deviceMongoCollection, {
                 _id: tData.id,
             });
             if (result) {
                 await Util.addAuditLogs(
                     userInfo,
-                    `MQTTLoggerType : ${configDetails.name.toLowerCase() || 0
+                    `MQTTLoggerType : ${configDetails.logType.toLowerCase() || 0
                     } Deleted successfully`,
                     JSON.stringify(result)
                 );
@@ -95,7 +95,8 @@ const updateData = async (tData, userInfo = {}) => {
     let updateObj = {
         $set: {
             _id: tData.id,
-            logType: tData.logType
+            logType: tData.logType,
+            modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         },
     };
     try {
@@ -179,6 +180,7 @@ const createData = async (tData, userInfo = {}) => {
             _id: tData.id,
             deviceId: tData.deviceId,
             logType: tData.logType,
+            modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         };
         let result = await Util.mongo.insertOne(
             deviceMongoCollection,
@@ -230,9 +232,19 @@ const getData = async (tData, userInfo = {}) => {
         };
     }
     try {
+        let filter = {};
+
+        if( tData && tData.deviceId ) {
+            filter.deviceId = tData.deviceId;
+        }
+
+        if( tData && tData.logType ) {
+            filter.logType = tData.logType;
+        }
+
         let result = await Util.mongo.findAndPaginate(
             deviceMongoCollection,
-            {},
+            filter,
             {},
             tData.skip,
             tData.limit

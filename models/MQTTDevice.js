@@ -1,9 +1,8 @@
 const Util = require("../helper/util");
 const deviceMongoCollection = "MQTTDevice";
-const ThirdPartyAPICaller = require("../common/ThirdPartyAPICaller");
 const dotenv = require("dotenv");
 const MQTT = require('../helper/mqtt');
-let moduleName = "MQTTDevice";
+const moment = require("moment");
 
 const duplicate = async (deviceName, id) => {
     const query = { deviceName: deviceName, _id: { $ne: id } };
@@ -33,14 +32,14 @@ const deleteData = async (tData, userInfo = {}) => {
         let configDetails = await Util.mongo.findOne(deviceMongoCollection, {
             _id: tData.id,
         });
-        if (configDetails && configDetails.name) {
+        if (configDetails && configDetails.deviceName) {
             let result = await Util.mongo.remove(deviceMongoCollection, {
                 _id: tData.id,
             });
             if (result) {
                 await Util.addAuditLogs(
                     userInfo,
-                    `MQTT device : ${configDetails.name.toLowerCase() || 0
+                    `MQTT device : ${configDetails.deviceName.toLowerCase() || 0
                     } Deleted successfully`,
                     JSON.stringify(result)
                 );
@@ -81,7 +80,13 @@ const updateData = async (tData, userInfo = {}) => {
     // Required and sanity checks
     let tCheck = await Util.checkQueryParams(tData, {
         id: "required|string",
-        name: "required|alphaNumeric"
+        deviceId: "required|string",
+        deviceName: "required|string",
+        mqttIP: "required|string",
+        mqttTopic: "required|string",
+        mqttPort: "required|string",
+        mqttMacId: "required|string",
+        status: "required|string",
     });
 
     if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
@@ -93,31 +98,30 @@ const updateData = async (tData, userInfo = {}) => {
         };
     }
 
+    let MQTT_URL = `mqtt://${tData.mqttIP}:${tData.mqttPort}`;
     let updateObj = {
         $set: {
             _id: tData.id,
-            name: tData.name.toLowerCase(),
-            userName: tData.userName
-        },
+            deviceId: tData.deviceId,
+            deviceName: tData.deviceName,
+            mqttIP: tData.mqttIP,
+            mqttUserName: tData.mqttUserName,
+            mqttPassword: tData.mqttPassword,
+            mqttTopic: tData.mqttTopic,
+            mqttUrl: MQTT_URL,
+            mqttMacId: tData.mqttMacId,
+            status: tData.status,
+            modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
+        }
     };
     try {
-        const isDublicate = await duplicate(tData.name, tData.id);
-
-        if (isDublicate) {
-            return {
-                statusCode: 404,
-                success: false,
-                msg: "DUPLICATE NAME",
-                err: "",
-            };
-        }
-
         let result = await Util.mongo.updateOne(
             deviceMongoCollection,
             { _id: tData.id },
             updateObj
         );
         if (result) {
+            new MQTT(MQTT_URL, tData.mqttUserName, tData.mqttPassword, tData.mqttTopic);
             await Util.addAuditLogs(
                 userInfo,
                 `MQTT device: ${userInfo.id || 0} Updated successfully`,
@@ -192,17 +196,19 @@ const createData = async (tData, userInfo = {}) => {
             mqttPassword: tData.mqttPassword,
             mqttTopic: tData.mqttTopic,
             mqttUrl: MQTT_URL,
-            mqttMacId: tData.mqttMacId
+            mqttMacId: tData.mqttMacId,
+            status: "Active",
+            modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         };
         let result = await Util.mongo.insertOne(
             deviceMongoCollection,
             createObj
         );
         if (result) {
-            console.log("Device created, now Initializing for evenets..");
+            console.log("Device created, now Initializing for events..");
             new MQTT(MQTT_URL, tData.mqttUserName, tData.mqttPassword, tData.mqttTopic);
             await Util.addAuditLogs(
-                moduleName,
+                deviceMongoCollection,
                 userInfo,
                 `MQTT device : ${userInfo.id || 0} Created successfully`,
                 JSON.stringify(result)
@@ -248,9 +254,39 @@ const getData = async (tData, userInfo = {}) => {
         };
     }
     try {
+        let filter = {};
+
+        if( tData && tData.device_id ) {
+            filter.device_id = tData.device_id;
+        }
+
+        if( tData && tData.device_name ) {
+            filter.device_name = tData.device_name;
+        }
+
+        if( tData && tData.log_type ) {
+            filter.log_type = tData.log_type;
+        }
+
+        if( tData && tData.log_desc ) {
+            filter.log_desc = tData.log_desc;
+        }
+
+        if( tData && tData.device_id ) {
+            filter.log_line_count = tData.log_line_count;
+        }
+
+        if( tData && tData.battery_level ) {
+            filter.battery_level = tData.battery_level;
+        }
+
+        if( tData && tData.mac_id ) {
+            filter.mac_id = tData.mac_id;
+        }
+
         let result = await Util.mongo.findAndPaginate(
             deviceMongoCollection,
-            {},
+            filter,
             {},
             tData.skip,
             tData.limit
@@ -311,7 +347,7 @@ const assignMQTTDevice = async (tData, userInfo = {}) => {
         );
         if (result) {
             await Util.addAuditLogs(
-                moduleName,
+                deviceMongoCollection,
                 userInfo,
                 `MQTT device : ${userInfo.id || 0} Assigned successfully`,
                 JSON.stringify(result)
