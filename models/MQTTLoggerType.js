@@ -37,6 +37,7 @@ const deleteData = async (tData, userInfo = {}) => {
             });
             if (result) {
                 await Util.addAuditLogs(
+                    deviceMongoCollection,
                     userInfo,
                     `MQTTLoggerType : ${configDetails.logType.toLowerCase() || 0
                     } Deleted successfully`,
@@ -188,6 +189,7 @@ const createData = async (tData, userInfo = {}) => {
         );
         if (result) {
             await Util.addAuditLogs(
+                deviceMongoCollection,
                 userInfo,
                 `MQTTLoggerType: ${userInfo.id || 0} Created successfully`,
                 JSON.stringify(result)

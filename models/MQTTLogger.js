@@ -224,9 +224,14 @@ const getAuditLog = async (tData, userInfo = {}) => {
         };
     }
     try {
+        let filter = {};
+
+        if ( tData && tData.moduleName ) {
+            filter.moduleName = tData.moduleName
+        }
         let result = await Util.mongo.findAndPaginate(
             collectionName,
-            {},
+            filter,
             {},
             tData.skip,
             tData.limit

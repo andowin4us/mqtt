@@ -37,6 +37,7 @@ const deleteData = async (tData, userInfo = {}) => {
             });
             if (result) {
                 await Util.addAuditLogs(
+                    deviceMongoCollection,
                     userInfo,
                     `MQTT device : ${configDetails.deviceId.toLowerCase() || 0
                     } Config Deleted successfully`,
@@ -117,6 +118,7 @@ const updateData = async (tData, userInfo = {}) => {
         );
         if (result) {
             await Util.addAuditLogs(
+                deviceMongoCollection,
                 userInfo,
                 `MQTT device: ${userInfo.id || 0} Config Updated successfully`,
                 JSON.stringify(result)
@@ -163,7 +165,7 @@ const createData = async (tData, userInfo = {}) => {
     }
 
     try {
-        const isDublicate = await duplicate(tData.name, tData.id);
+        const isDublicate = await duplicate(tData.deviceId, tData.id);
 
         if (isDublicate) {
             return {
@@ -185,7 +187,7 @@ const createData = async (tData, userInfo = {}) => {
         );
         if (result) {
             await Util.addAuditLogs(
-                moduleName,
+                deviceMongoCollection,
                 userInfo,
                 `MQTT device : ${userInfo.id || 0} Config Created successfully`,
                 JSON.stringify(result)

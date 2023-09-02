@@ -111,6 +111,7 @@ const updateData = async (tData, userInfo = {}) => {
             mqttUrl: MQTT_URL,
             mqttMacId: tData.mqttMacId,
             status: tData.status,
+            mqttPort: tData.mqttPort,
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         }
     };
@@ -198,6 +199,7 @@ const createData = async (tData, userInfo = {}) => {
             mqttUrl: MQTT_URL,
             mqttMacId: tData.mqttMacId,
             status: "Active",
+            mqttPort: tData.mqttPort,
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         };
         let result = await Util.mongo.insertOne(

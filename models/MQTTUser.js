@@ -126,6 +126,7 @@ const updateData = async (tData, userInfo = {}) => {
         );
         if (result) {
             await Util.addAuditLogs(
+                deviceMongoCollection,
                 userInfo,
                 `MQTT User: ${userInfo.id || 0} Updated successfully`,
                 JSON.stringify(result)
@@ -197,6 +198,7 @@ const createData = async (tData, userInfo = {}) => {
         );
         if (result) {
             await Util.addAuditLogs(
+                deviceMongoCollection,
                 userInfo,
                 `MQTT User : ${userInfo.id || 0} Created successfully`,
                 JSON.stringify(result)

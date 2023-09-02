@@ -10,10 +10,10 @@ async function invokeInialization() {
         let collection = db.collection("MQTTDevice");
         let res = await collection.find({}).toArray();
         
-        console.log("list of devices", res.length);
+        console.log("list of devices present ", res.length);
         if(res && res.length > 0) {    
             for(let i = 0; i < res.length; i++ ) {
-                console.log("res for input", res[i]);
+                console.log("Device ", i ," is ", res[i]);
 
                 let MQTT_URL = `mqtt://${res[i].mqttIP}:${res[i].mqttPort}`;
                 new MQTT(MQTT_URL, res[i].mqttUserName, res[i].mqttPassword, res[i].mqttTopic);
