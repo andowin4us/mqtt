@@ -13,10 +13,14 @@ async function invokeInialization() {
         console.log("list of devices present ", res.length);
         if(res && res.length > 0) {    
             for(let i = 0; i < res.length; i++ ) {
-                console.log("Device ", i ," is ", res[i]);
+                console.log("Device ", i ," is ", JSON.stringify(res[i]));
 
-                let MQTT_URL = `mqtt://${res[i].mqttIP}:${res[i].mqttPort}`;
-                new MQTT(MQTT_URL, res[i].mqttUserName, res[i].mqttPassword, res[i].mqttTopic);
+                if(res[i].status === "Active") {
+                    let MQTT_URL = `mqtt://${res[i].mqttIP}:${res[i].mqttPort}`;
+                    new MQTT(MQTT_URL, res[i].mqttUserName, res[i].mqttPassword, res[i].mqttTopic, false);
+                } else {
+                    console.log("Device Status InActive Cannot initiate receiving events.");
+                }
             }
         }
     } catch (err) {

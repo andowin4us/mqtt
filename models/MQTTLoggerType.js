@@ -3,8 +3,8 @@ const deviceMongoCollection = "MQTTLoggerType";
 const dotenv = require("dotenv");
 const moment = require("moment");
 
-const duplicate = async (logType, id) => {
-    const query = { logType: logType, _id: { $ne: id } };
+const duplicate = async (logType, deviceId) => {
+    const query = { logType: logType, deviceId: deviceId };
     const result = await Util.mongo.findOne(deviceMongoCollection, query);
 
     if (result) {
@@ -164,7 +164,7 @@ const createData = async (tData, userInfo = {}) => {
     }
 
     try {
-        const isDublicate = await duplicate(tData.logType, tData.id);
+        const isDublicate = await duplicate(tData.logType, tData.deviceId);
 
         if (isDublicate) {
             return {

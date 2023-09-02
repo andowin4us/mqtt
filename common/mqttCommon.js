@@ -6,7 +6,7 @@ const moment = require("moment");
 async function utilizeMqtt(message) {
     try {
         //data type check
-        if(JSON.parse(message)) {
+        if(typeof message === "object" && JSON.parse(message)) {
             let data = JSON.parse(message);
 
             if(data.mqttDataLogs_onPrem && data.mqttDataLogs_onPrem.extra_data) {
@@ -18,14 +18,14 @@ async function utilizeMqtt(message) {
 
                     //incoming event null and validate check
                     if(processData && processData.device_id) {
-                        console.log("Processing your message now for extra onPrem data ", processData, processData.device_id);
+                        console.log("Processing your message now for extra onPrem data ", JSON.stringify(processData), processData.device_id);
                         let result = await mongoInsert( processData, { deviceId: processData.device_id }, "MQTTDevice", "find" );
                         console.log("device detail for multiple club events.", result);
     
                         //device id check
                         if( result && result.deviceId && processData.device_id === result.deviceId ) {
                             //device status check
-                            if( result.status && data.status === "Active" ) {
+                            if( result.status && result.status === "Active" ) {
                                 //device name check
                                 if( processData.device_name && processData.device_name === result.deviceName ) {
                                     //device mac check
@@ -50,51 +50,105 @@ async function utilizeMqtt(message) {
                                                 // return true;
                                             }
                                         } else {
+                                            let resultExisting = await mongoInsert( processData, { device_id: processData.device_id, log_line_count: processData.log_line_count }, "dump_logger_type", "find" );
+        
+                                            if(resultExisting && resultExisting._id) {
+                                                console.log("dump_logger_type is already present.");
+        
+                                                count.push("false");
+                                                // return false;
+                                            } else {
+                                                processData._id = uuidv4();
+                                                processData.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
+                                                await mongoInsert( processData, {}, "dump_logger_type", "create" );
+            
+                                                count.push("false");
+                                                // return false;
+                                            }
+                                        }
+                                    } else {
+                                        let resultExisting = await mongoInsert( processData, { device_id: processData.device_id, log_line_count: processData.log_line_count }, "dump_device_mac", "find" );
+        
+                                        if(resultExisting && resultExisting._id) {
+                                            console.log("dump_device_mac is already present.");
+    
+                                            count.push("false");
+                                            // return false;
+                                        } else {
                                             processData._id = uuidv4();
                                             processData.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
-                                            await mongoInsert( processData, {}, "dump_logger_type", "create" );
-        
+                                            await mongoInsert( processData, {}, "dump_device_mac", "create" );
+            
                                             count.push("false");
                                             // return false;
                                         }
+                                    }
+                                } else {
+                                    let resultExisting = await mongoInsert( processData, { device_id: processData.device_id, log_line_count: processData.log_line_count }, "dump_device_name", "find" );
+
+                                    if(resultExisting && resultExisting._id) {
+                                        console.log("dump_device_mac is already present.");
+
+                                        count.push("false");
+                                        // return false;
                                     } else {
                                         processData._id = uuidv4();
                                         processData.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
-                                        await mongoInsert( processData, {}, "dump_device_mac", "create" );
-        
+                                        await mongoInsert( processData, {}, "dump_device_name", "create" );
+            
                                         count.push("false");
                                         // return false;
                                     }
-                                } else {
-                                    processData._id = uuidv4();
-                                    processData.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
-                                    await mongoInsert( processData, {}, "dump_device_name", "create" );
-        
-                                    count.push("false");
-                                    // return false;
                                 }
                             } else {
-                                data._id = uuidv4();
-                                processData.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
-                                await mongoInsert( data, {}, "dump_device_status", "create" );
-        
-                                count.push("false");
+                                let resultExisting = await mongoInsert( processData, { device_id: processData.device_id, log_line_count: processData.log_line_count }, "dump_device_status", "find" );
+
+                                if(resultExisting && resultExisting._id) {
+                                    console.log("dump_device_status is already present.");
+
+                                    count.push("false");
+                                    // return false;
+                                } else {
+                                    data._id = uuidv4();
+                                    processData.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
+                                    await mongoInsert( data, {}, "dump_device_status", "create" );
+            
+                                    count.push("false");
+                                }
                             }
                         } else {
+                            let resultExisting = await mongoInsert( processData, { device_id: processData.device_id, log_line_count: processData.log_line_count }, "dump_device_id", "find" );
+
+                            if(resultExisting && resultExisting._id) {
+                                console.log("dump_device_id is already present.");
+
+                                count.push("false");
+                                // return false;
+                            } else {
+                                processData._id = uuidv4();
+                                processData.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
+                                await mongoInsert( processData, {}, "dump_device_id", "create" );
+        
+                                count.push("false");
+                                // return false;
+                            }
+                        }
+                    } else {
+                        let resultExisting = await mongoInsert( processData, { device_id: processData.device_id ? processData.deviceId : "", log_line_count: processData.log_line_count ? processData.log_line_count : "" }, "dump_device_id", "find" );
+
+                        if(resultExisting && resultExisting._id) {
+                            console.log("dump_device_id is already present.");
+
+                            count.push("false");
+                            // return false;
+                        } else {
+                            // console.log("Data Improper.");
                             processData._id = uuidv4();
                             processData.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
                             await mongoInsert( processData, {}, "dump_device_id", "create" );
-    
-                            count.push("false");
-                            // return false;
-                        }
-                    } else {
-                        // console.log("Data Improper.");
-                        processData._id = uuidv4();
-                        processData.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
-                        await mongoInsert( processData, {}, "dump_device_id", "create" );
 
-                        count.push("false");
+                            count.push("false");
+                        }
                     }
                 }
 
@@ -110,7 +164,7 @@ async function utilizeMqtt(message) {
             } else {
                 console.log("Processing your message now for ", data.device_id);
                 let result = await mongoInsert( data, { deviceId: data.device_id }, "MQTTDevice", "find" );
-                console.log("device detail for single event is", result);
+                console.log("device detail for single event is", JSON.stringify(result));
 
                 //device id check
                 if( result && result.deviceId && data.device_id === result.deviceId ) {
@@ -138,47 +192,95 @@ async function utilizeMqtt(message) {
                                         return true;
                                     }
                                 } else {
+                                    let resultExisting = await mongoInsert( data, { device_id: data.device_id, log_line_count: data.log_line_count }, "dump_logger_type", "find" );
+
+                                    if(resultExisting && resultExisting._id) {
+                                        console.log("dump_logger_type is already present.");
+
+                                        return false;
+                                    } else {
+                                        data._id = uuidv4();
+                                        data.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
+                                        await mongoInsert( data, {}, "dump_logger_type", "create" );
+
+                                        return false;
+                                    }
+                                }
+                            } else {
+                                let resultExisting = await mongoInsert( data, { device_id: data.device_id, log_line_count: data.log_line_count }, "dump_device_mac", "find" );
+
+                                if(resultExisting && resultExisting._id) {
+                                    console.log("dump_device_mac is already present.");
+
+                                    return false;
+                                } else {
                                     data._id = uuidv4();
                                     data.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
-                                    await mongoInsert( data, {}, "dump_logger_type", "create" );
+                                    await mongoInsert( data, {}, "dump_device_mac", "create" );
 
                                     return false;
                                 }
+                            }
+                        } else {
+                            let resultExisting = await mongoInsert( data, { device_id: data.device_id, log_line_count: data.log_line_count }, "dump_device_name", "find" );
+
+                            if(resultExisting && resultExisting._id) {
+                                console.log("dump_device_name is already present.");
+
+                                return false;
                             } else {
                                 data._id = uuidv4();
                                 data.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
-                                await mongoInsert( data, {}, "dump_device_mac", "create" );
+                                await mongoInsert( data, {}, "dump_device_name", "create" );
 
                                 return false;
                             }
+                        }
+                    } else {
+                        let resultExisting = await mongoInsert( data, { device_id: data.device_id, log_line_count: data.log_line_count }, "dump_device_status", "find" );
+
+                        if(resultExisting && resultExisting._id) {
+                            console.log("dump_device_status is already present.");
+
+                            return false;
                         } else {
                             data._id = uuidv4();
                             data.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
-                            await mongoInsert( data, {}, "dump_device_name", "create" );
+                            await mongoInsert( data, {}, "dump_device_status", "create" );
 
                             return false;
                         }
+                    }
+                } else {
+                    let resultExisting = await mongoInsert( data, { device_id: data.device_id, log_line_count: data.log_line_count }, "dump_device_id", "find" );
+
+                    if(resultExisting && resultExisting._id) {
+                        console.log("dump_device_id is already present.");
+
+                        return false;
                     } else {
                         data._id = uuidv4();
                         data.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
-                        await mongoInsert( data, {}, "dump_device_status", "create" );
+                        await mongoInsert( data, {}, "dump_device_id", "create" );
 
                         return false;
                     }
-                } else {
-                    data._id = uuidv4();
-                    data.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
-                    await mongoInsert( data, {}, "dump_device_id", "create" );
-
-                    return false;
                 }
             }
         } else {
-            data._id = uuidv4();
-            data.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
-            await mongoInsert( data, {}, "dump_device_id", "create" );
+            let resultExisting = await mongoInsert( data, { device_id: data.device_id ? data.device_id : "", log_line_count: data.log_line_count ? data.log_line_count : "" }, "dump_device_id", "find" );
 
-            return false;
+            if(resultExisting && resultExisting._id) {
+                console.log("dump_device_id is already present.");
+
+                return false;
+            } else {
+                data._id = uuidv4();
+                data.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
+                await mongoInsert( data, {}, "dump_device_id", "create" );
+
+                return false;
+            }
         }
     } catch (err) {
         console.log("error occurred.", err);

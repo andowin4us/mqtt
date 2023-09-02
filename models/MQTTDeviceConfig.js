@@ -2,9 +2,11 @@ const Util = require("../helper/util");
 const deviceMongoCollection = "MQTTDeviceConfig";
 const dotenv = require("dotenv");
 const moment = require("moment");
+const MQTT = require('../helper/mqtt');
+let MAX_LOG_COUNT = "N40";
 
-const duplicate = async (deviceId, id) => {
-    const query = { deviceId: deviceId, _id: { $ne: id } };
+const duplicate = async (logCount, deviceId) => {
+    const query = { logCount: logCount, deviceId: deviceId };
     const result = await Util.mongo.findOne(deviceMongoCollection, query);
 
     if (result) {
@@ -78,7 +80,12 @@ const updateData = async (tData, userInfo = {}) => {
     // Required and sanity checks
     let tCheck = await Util.checkQueryParams(tData, {
         id: "required|string",
-        deviceId: "required|alphaNumeric"
+        timeInput: "required|string",
+        temperature: "required|string",
+        humidity: "required|string",
+        logCount: "required|string",
+        sendingTopic: "required|string",
+        deviceId: "required|string"
     });
 
     if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
@@ -94,11 +101,16 @@ const updateData = async (tData, userInfo = {}) => {
         $set: {
             _id: tData.id,
             deviceId: tData.deviceId,
+            timeInput: tData.timeInput,
+            temperature: tData.temperature,
+            humidity: tData.humidity,
+            logCount: tData.logCount,
+            sendingTopic: tData.sendingTopic,
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         },
     };
     try {
-        const isDublicate = await duplicate(tData.deviceId, tData.id);
+        const isDublicate = await duplicate(tData.logCount, tData.deviceId);
 
         if (isDublicate) {
             return {
@@ -109,29 +121,54 @@ const updateData = async (tData, userInfo = {}) => {
             };
         }
 
-        let result = await Util.mongo.updateOne(
-            deviceMongoCollection,
-            { _id: tData.id },
-            updateObj
-        );
-        if (result) {
-            await Util.addAuditLogs(
-                deviceMongoCollection,
-                userInfo,
-                JSON.stringify(result)
-            );
+        const resultDevice = await Util.mongo.findOne("MQTTDevice", {deviceId: tData.deviceId});
 
-            return {
-                statusCode: 200,
-                success: true,
-                msg: "MQTT device Config Update Success",
-                status: result,
-            };
+        console.log("resultDevice", resultDevice);
+        if(resultDevice && resultDevice._id) {
+            let result = await Util.mongo.updateOne(
+                deviceMongoCollection,
+                { _id: tData.id },
+                updateObj
+            );
+            if (result) {
+                let MQTT_URL = `mqtt://${resultDevice.mqttIP}:${resultDevice.mqttPort}`;
+                let createObj = {
+                    _id: tData.id,
+                    deviceId: tData.deviceId,
+                    timeInput: tData.timeInput,
+                    temperature: tData.temperature,
+                    humidity: tData.humidity,
+                    logCount: tData.logCount,
+                    sendingTopic: tData.sendingTopic,
+                    modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
+                };
+                new MQTT(MQTT_URL, resultDevice.mqttUserName, resultDevice.mqttPassword, resultDevice.mqttTopic, false, resultDevice, createObj);
+                
+                await Util.addAuditLogs(
+                    deviceMongoCollection,
+                    userInfo,
+                    JSON.stringify(result)
+                );
+
+                return {
+                    statusCode: 200,
+                    success: true,
+                    msg: "MQTT device Config Update Success",
+                    status: result,
+                };
+            } else {
+                return {
+                    statusCode: 404,
+                    success: false,
+                    msg: "MQTT device Config Error",
+                    status: [],
+                };
+            }
         } else {
             return {
                 statusCode: 404,
                 success: false,
-                msg: "MQTT device Config Error",
+                msg: "MQTT device Config Create Failed",
                 status: [],
             };
         }
@@ -149,7 +186,12 @@ const updateData = async (tData, userInfo = {}) => {
 const createData = async (tData, userInfo = {}) => {
     let tCheck = await Util.checkQueryParams(tData, {
         id: "required|string",
-        deviceId: "required|alphaNumeric"
+        timeInput: "required|string",
+        temperature: "required|string",
+        humidity: "required|string",
+        logCount: "required|string",
+        sendingTopic: "required|string",
+        deviceId: "required|string"
     });
 
     if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
@@ -161,39 +203,56 @@ const createData = async (tData, userInfo = {}) => {
         };
     }
 
-    try {
-        const isDublicate = await duplicate(tData.deviceId, tData.id);
-
-        if (isDublicate) {
-            return {
-                statusCode: 404,
-                success: false,
-                msg: "DUPLICATE NAME",
-                err: "",
-            };
-        }
-
-        let createObj = {
-            _id: tData.id,
-            deviceId: tData.deviceId,
-            modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
+    if(tData.logCount > MAX_LOG_COUNT) {
+        return {
+            statusCode: 404,
+            success: false,
+            msg: "PARAMETER_ISSUE",
+            err: "N Log Count exceeded which is 40.",
         };
-        let result = await Util.mongo.insertOne(
-            deviceMongoCollection,
-            createObj
-        );
-        if (result) {
-            await Util.addAuditLogs(
-                deviceMongoCollection,
-                userInfo,
-                JSON.stringify(result)
-            );
-            return {
-                statusCode: 200,
-                success: true,
-                msg: "MQTT device Config Created Successfull",
-                status: result,
+    }
+    try {
+        const resultDevice = await Util.mongo.findOne("MQTTDevice", {deviceId: tData.deviceId});
+
+        console.log("resultDevice", resultDevice);
+        if(resultDevice && resultDevice._id) {
+            let createObj = {
+                _id: tData.id,
+                deviceId: tData.deviceId,
+                timeInput: tData.timeInput,
+                temperature: tData.temperature,
+                humidity: tData.humidity,
+                logCount: tData.logCount,
+                sendingTopic: tData.sendingTopic,
+                modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
             };
+            let result = await Util.mongo.insertOne(
+                deviceMongoCollection,
+                createObj
+            );
+            if (result) {
+                let MQTT_URL = `mqtt://${resultDevice.mqttIP}:${resultDevice.mqttPort}`;
+
+                new MQTT(MQTT_URL, resultDevice.mqttUserName, resultDevice.mqttPassword, resultDevice.mqttTopic, false, resultDevice, createObj);
+                await Util.addAuditLogs(
+                    deviceMongoCollection,
+                    userInfo,
+                    JSON.stringify(result)
+                );
+                return {
+                    statusCode: 200,
+                    success: true,
+                    msg: "MQTT device Config Created Successfull",
+                    status: result,
+                };
+            } else {
+                return {
+                    statusCode: 404,
+                    success: false,
+                    msg: "MQTT device Config Create Failed",
+                    status: [],
+                };
+            }
         } else {
             return {
                 statusCode: 404,

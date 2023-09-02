@@ -37,6 +37,9 @@ const deleteData = async (tData, userInfo = {}) => {
                 _id: tData.id,
             });
             if (result) {
+                let MQTT_URL = `mqtt://${configDetails.mqttIP}:${configDetails.mqttPort}`;
+                new MQTT(MQTT_URL, configDetails.mqttUserName, configDetails.mqttPassword, configDetails.mqttTopic, true);
+
                 await Util.addAuditLogs(
                     deviceMongoCollection,
                     userInfo,
@@ -121,7 +124,13 @@ const updateData = async (tData, userInfo = {}) => {
             updateObj
         );
         if (result) {
-            new MQTT(MQTT_URL, tData.mqttUserName, tData.mqttPassword, tData.mqttTopic);
+            
+            if(tData.status === "Active") {
+                new MQTT(MQTT_URL, tData.mqttUserName, tData.mqttPassword, tData.mqttTopic, false);
+            }
+            else {
+                new MQTT(MQTT_URL, tData.mqttUserName, tData.mqttPassword, tData.mqttTopic, true);
+            }
             await Util.addAuditLogs(
                 deviceMongoCollection,
                 userInfo,
@@ -207,7 +216,7 @@ const createData = async (tData, userInfo = {}) => {
         );
         if (result) {
             console.log("Device created, now Initializing for events..");
-            new MQTT(MQTT_URL, tData.mqttUserName, tData.mqttPassword, tData.mqttTopic);
+            new MQTT(MQTT_URL, tData.mqttUserName, tData.mqttPassword, tData.mqttTopic, false);
             await Util.addAuditLogs(
                 deviceMongoCollection,
                 userInfo,
@@ -322,6 +331,7 @@ const getData = async (tData, userInfo = {}) => {
 
 const assignMQTTDevice = async (tData, userInfo = {}) => {
     let tCheck = await Util.checkQueryParams(tData, {
+        id: "required|string",
         userId: "required|string",
         deviceId: "required|string",
     });
@@ -337,8 +347,9 @@ const assignMQTTDevice = async (tData, userInfo = {}) => {
     try {
         let createObj = {
             _id: tData.id,
-            userId: userInfo.userId,
+            userId: tData.userId,
             deviceId: tData.deviceId,
+            modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         };
 
         let result = await Util.mongo.insertOne(
