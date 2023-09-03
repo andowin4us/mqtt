@@ -3,7 +3,7 @@ const deviceMongoCollection = "MQTTDeviceConfig";
 const dotenv = require("dotenv");
 const moment = require("moment");
 const MQTT = require('../helper/mqtt');
-let MAX_LOG_COUNT = "N40";
+let MAX_LOG_COUNT = 40;
 
 const duplicate = async (logCount, deviceId) => {
     const query = { logCount: logCount, deviceId: deviceId };
@@ -203,7 +203,7 @@ const createData = async (tData, userInfo = {}) => {
         };
     }
 
-    if(tData.logCount > MAX_LOG_COUNT) {
+    if(parseInt(tData.logCount) > parseInt(MAX_LOG_COUNT)) {
         return {
             statusCode: 404,
             success: false,

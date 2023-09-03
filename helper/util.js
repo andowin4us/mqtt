@@ -122,11 +122,60 @@ const mongoPool = {
 
         return result;
     },
+    async findPaginateAndSort(
+        collection,
+        filter = {},
+        projection = {},
+        skip = 0,
+        limit = 200000,
+        sort
+    ) {
+        const dataParams = [{ $match: filter }, { $skip: skip }, { $limit: limit }];
+        if (Object.keys(projection).length > 0) {
+            dataParams.push({ $project: projection });
+        }
+
+        console.log("projection got in mongo func", projection);
+
+        let result = [];
+        result = await Mongo.db
+            .collection(collection)
+            .aggregate([
+                { 
+                    $sort: sort
+                },
+                {
+                    $facet: {
+                        totalData: dataParams,
+                        totalCount: [
+                            {
+                                $match: filter,
+                            },
+                            {
+                                $group: { _id: null, count: { $sum: 1 } },
+                            },
+                        ],
+                    },
+                },
+            ])
+            .toArray();
+
+        return result;
+    },
     async findAll(collection, filter, projection = {}) {
         console.log("(util.js):projection findAll, ", projection);
         const result = await Mongo.db
             .collection(collection)
             .find(filter, projection)
+            .toArray();
+        return result;
+    },
+    async findAllSort(collection, filter, projection = {}, sort) {
+        console.log("(util.js):projection findAll, ", projection);
+        const result = await Mongo.db
+            .collection(collection)
+            .find(filter, projection)
+            .sort(sort)
             .toArray();
         return result;
     },

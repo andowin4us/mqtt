@@ -19,8 +19,15 @@ const getDeviceLogger = async (tData, userInfo = {}) => {
     try {
         let filter = {};
         
-        if( tData && tData.device_id ) {
-            filter.device_id = tData.device_id;
+        if( userInfo && userInfo.accesslevel && userInfo.accesslevel === 3 ) {
+            filter.user_id = userInfo.id;
+            if( tData && tData.device_id ) {
+                filter.device_id = tData.device_id;
+            }
+        } else {
+            if( tData && tData.device_id ) {
+                filter.device_id = tData.device_id;
+            }
         }
 
         if( tData && tData.device_name ) {
@@ -35,7 +42,7 @@ const getDeviceLogger = async (tData, userInfo = {}) => {
             filter.log_desc = tData.log_desc;
         }
 
-        if( tData && tData.device_id ) {
+        if( tData && tData.log_line_count ) {
             filter.log_line_count = tData.log_line_count;
         }
 
@@ -47,12 +54,17 @@ const getDeviceLogger = async (tData, userInfo = {}) => {
             filter.mac_id = tData.mac_id;
         }
         
-        let result = await Util.mongo.findAndPaginate(
+        let sort = {
+            log_line_count: 1,
+            modified_time: 1,
+        }
+        let result = await Util.mongo.findPaginateAndSort(
             collectionName,
             filter,
             {},
             tData.skip,
-            tData.limit
+            tData.limit,
+            sort
         );
         let snatizedData = await Util.snatizeFromMongo(result);
         console.log("snatizedData", snatizedData);
@@ -142,8 +154,15 @@ const downloadLogger = async (tData, userInfo = {}) => {
     try {
         let filter = {};
         
-        if( tData && tData.device_id ) {
-            filter.device_id = tData.device_id;
+        if( userInfo && userInfo.accesslevel && userInfo.accesslevel === 3 ) {
+            filter.user_id = userInfo.id;
+            if( tData && tData.device_id ) {
+                filter.device_id = tData.device_id;
+            }
+        } else {
+            if( tData && tData.device_id ) {
+                filter.device_id = tData.device_id;
+            }
         }
 
         if( tData && tData.device_name ) {
@@ -158,7 +177,7 @@ const downloadLogger = async (tData, userInfo = {}) => {
             filter.log_desc = tData.log_desc;
         }
 
-        if( tData && tData.device_id ) {
+        if( tData && tData.log_line_count ) {
             filter.log_line_count = tData.log_line_count;
         }
 
@@ -170,10 +189,16 @@ const downloadLogger = async (tData, userInfo = {}) => {
             filter.mac_id = tData.mac_id;
         }
 
-        let finalJson = await Util.mongo.findAll(
+        let sort = {
+            log_line_count: 1,
+            modified_time: 1,
+        }
+
+        let finalJson = await Util.mongo.findAllSort(
             collectionName,
             filter,
-            {}
+            {},
+            sort
         );
         console.log("finalJson", finalJson.length);
 

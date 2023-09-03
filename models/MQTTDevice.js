@@ -265,32 +265,22 @@ const getData = async (tData, userInfo = {}) => {
     try {
         let filter = {};
 
-        if( tData && tData.device_id ) {
-            filter.device_id = tData.device_id;
+        if( userInfo && userInfo.accesslevel && userInfo.accesslevel === 3 ) {
+            filter.userId = userInfo.userId;
+            if( tData && tData.deviceId ) {
+                filter.deviceId = tData.deviceId;
+            }
+        } else {
+            if( tData && tData.deviceId ) {
+                filter.deviceId = tData.deviceId;
+            }
+        }
+        if( tData && tData.deviceName ) {
+            filter.deviceName = tData.deviceName;
         }
 
-        if( tData && tData.device_name ) {
-            filter.device_name = tData.device_name;
-        }
-
-        if( tData && tData.log_type ) {
-            filter.log_type = tData.log_type;
-        }
-
-        if( tData && tData.log_desc ) {
-            filter.log_desc = tData.log_desc;
-        }
-
-        if( tData && tData.device_id ) {
-            filter.log_line_count = tData.log_line_count;
-        }
-
-        if( tData && tData.battery_level ) {
-            filter.battery_level = tData.battery_level;
-        }
-
-        if( tData && tData.mac_id ) {
-            filter.mac_id = tData.mac_id;
+        if( tData && tData.status ) {
+            filter.status = tData.status;
         }
 
         let result = await Util.mongo.findAndPaginate(
@@ -345,16 +335,17 @@ const assignMQTTDevice = async (tData, userInfo = {}) => {
         };
     }
     try {
-        let createObj = {
-            _id: tData.id,
-            userId: tData.userId,
-            deviceId: tData.deviceId,
-            modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
+        let updateObj = {
+            $set: {
+                userId: tData.userId,
+                modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
+            }
         };
 
-        let result = await Util.mongo.insertOne(
-            "MQTTDeviceMapping",
-            createObj
+        let result = await Util.mongo.updateOne(
+            deviceMongoCollection,
+            { deviceId: tData.deviceId },
+            updateObj
         );
         if (result) {
             await Util.addAuditLogs(
