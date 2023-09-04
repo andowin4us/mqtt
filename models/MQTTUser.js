@@ -1,6 +1,7 @@
 const Util = require("../helper/util");
 const deviceMongoCollection = "MQTTUser";
 const md5Service = require('../services/md5.service');
+const authService = require('../services/auth.service');
 const dotenv = require("dotenv");
 const moment = require("moment");
 
@@ -14,8 +15,8 @@ const duplicate = async (name, id) => {
     return false;
 };
 
-const geUserData = async (username) => {
-    const query = { username: username.toLowerCase() };
+const geUserData = async (query) => {
+    // const query = { userName: userName };
     const result = await Util.mongo.findOne(deviceMongoCollection, query);
 
     return result;
@@ -86,7 +87,12 @@ const updateData = async (tData, userInfo = {}) => {
     // Required and sanity checks
     let tCheck = await Util.checkQueryParams(tData, {
         id: "required|string",
-        name: "required|alphaNumeric"
+        name: "required|string",
+        userName: "required|string",
+        status: "required|string",
+        password: "required|string",
+        accesslevel: "required|numeric",
+        email: "required|string"
     });
 
     if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
@@ -103,6 +109,9 @@ const updateData = async (tData, userInfo = {}) => {
             _id: tData.id,
             name: tData.name.toLowerCase(),
             userName: tData.userName,
+            status: "Active",
+            accesslevel: tData.accesslevel,
+            email: tData.email,
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         },
     };
@@ -158,8 +167,12 @@ const updateData = async (tData, userInfo = {}) => {
 const createData = async (tData, userInfo = {}) => {
     let tCheck = await Util.checkQueryParams(tData, {
         id: "required|string",
-        name: "required|alphaNumeric",
-        userName: "required|alphaNumeric"
+        name: "required|string",
+        userName: "required|string",
+        status: "required|string",
+        password: "required|string",
+        accesslevel: "required|numeric",
+        email: "required|string"
     });
 
     if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
@@ -188,6 +201,9 @@ const createData = async (tData, userInfo = {}) => {
             name: tData.name,
             userName: tData.userName,
             status: "Active",
+            accesslevel: tData.accesslevel,
+            email: tData.email,
+            password: tData.password,
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         };
         let result = await Util.mongo.insertOne(
@@ -240,9 +256,19 @@ const getData = async (tData, userInfo = {}) => {
         };
     }
     try {
+        let filter = {};
+
+        if( tData && tData.userName ) {
+            filter.userName = tData.userName
+        }
+
+        if( tData && tData.name ) {
+            filter.name = tData.name
+        }
+
         let result = await Util.mongo.findAndPaginate(
             deviceMongoCollection,
-            {},
+            filter,
             {},
             tData.skip,
             tData.limit
@@ -277,15 +303,15 @@ const getData = async (tData, userInfo = {}) => {
 };
 
 const login = async (req, res) => {
-    const { email, password, username } = req.body;
-    console.log("User:req.body, ", email, password, username)
+    const { email, password, userName } = req.body;
+    console.log("User:req.body, ", email, password, userName)
 
     let query = { email };
-    if (username) {
-        query = { username };
+    if (userName) {
+        query = { userName };
     }
 
-    if ((email || username) && password) {
+    if ((email || userName) && password) {
         try {
             console.log("User:query, ", query)
             const user = await geUserData(query);
@@ -298,8 +324,8 @@ const login = async (req, res) => {
                 const session = {
                     id: user.id,
                     accesslevel: user.accesslevel,
-                    name: `${user.firstname} ${user.lastname}`,
-                    userName: user.username,
+                    name: `${user.name}`,
+                    userName: user.userName,
                     email: user.email
                 };
                 const token = authService().issue(session);
@@ -317,15 +343,15 @@ const login = async (req, res) => {
 };
 
 const resetPassword = async (req, res) => {
-    const { email, password, username } = req.body;
-    console.log("User:req.body, ", email, password, username)
+    const { email, password, userName } = req.body;
+    console.log("User:req.body, ", email, password, userName)
 
     let query = { email };
-    if (username) {
-        query = { username };
+    if (userName) {
+        query = { userName };
     }
 
-    if ((email || username) && password) {
+    if ((email || userName) && password) {
         try {
             console.log("User:query, ", query)
             const user = await geUserData(query);
@@ -338,8 +364,8 @@ const resetPassword = async (req, res) => {
                 const session = {
                     id: user.id,
                     accesslevel: user.accesslevel,
-                    name: `${user.firstname} ${user.lastname}`,
-                    userName: user.username,
+                    name: `${user.firstname}`,
+                    userName: user.userName,
                     email: user.email
                 };
                 const token = authService().issue(session);
@@ -357,15 +383,15 @@ const resetPassword = async (req, res) => {
 };
 
 const logout = async (req, res) => {
-    const { email, password, username } = req.body;
-    console.log("User:req.body, ", email, password, username)
+    const { email, password, userName } = req.body;
+    console.log("User:req.body, ", email, password, userName)
 
     let query = { email };
-    if (username) {
-        query = { username };
+    if (userName) {
+        query = { userName };
     }
 
-    if ((email || username) && password) {
+    if ((email || userName) && password) {
         try {
             console.log("User:query, ", query)
             const user = await geUserData(query);
@@ -378,11 +404,11 @@ const logout = async (req, res) => {
                 const session = {
                     id: user.id,
                     accesslevel: user.accesslevel,
-                    name: `${user.firstname} ${user.lastname}`,
-                    userName: user.username,
+                    name: `${user.firstname}`,
+                    userName: user.userName,
                     email: user.email
                 };
-                const token = authService().issue(session);
+                const token = authService().issueLogout(session);
                 return res.status(200).json({ token });
             }
 

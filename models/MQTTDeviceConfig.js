@@ -110,17 +110,6 @@ const updateData = async (tData, userInfo = {}) => {
         },
     };
     try {
-        const isDublicate = await duplicate(tData.logCount, tData.deviceId);
-
-        if (isDublicate) {
-            return {
-                statusCode: 404,
-                success: false,
-                msg: "DUPLICATE NAME",
-                err: "",
-            };
-        }
-
         const resultDevice = await Util.mongo.findOne("MQTTDevice", {deviceId: tData.deviceId});
 
         console.log("resultDevice", resultDevice);

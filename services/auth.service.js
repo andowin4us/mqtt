@@ -5,11 +5,13 @@ const expiresIn = process.env.JWT_EXPIRES_IN || '10h';
 
 const authService = () => {
 	const issue = (payload) => jwt.sign(payload, secret, { expiresIn });
+	const issueLogout = (payload) => jwt.sign(payload, secret, { expiresIn: 1 });
 	const verify = (token, cb) => jwt.verify(token, secret, {}, cb);
 
 	return {
 		issue,
 		verify,
+		issueLogout
 	};
 };
 
