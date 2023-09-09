@@ -25,9 +25,9 @@ class MongoConnector {
 		// eslint-disable-next-line no-underscore-dangle
 		const _this = this;
 		MongoClient.connect(this.url, {
-			reconnectInterval: 10 * 1000,
-			reconnectTries: Number.MAX_VALUE,
-			autoReconnect: true,
+			// reconnectInterval: 10 * 1000,
+			// reconnectTries: Number.MAX_VALUE,
+			// autoReconnect: true,
 			useNewUrlParser: true,
 			useUnifiedTopology: true,
 		}, (err, client) => {

@@ -88,11 +88,7 @@ const updateData = async (tData, userInfo = {}) => {
     let tCheck = await Util.checkQueryParams(tData, {
         id: "required|string",
         name: "required|string",
-        userName: "required|string",
         status: "required|string",
-        password: "required|string",
-        accesslevel: "required|numeric",
-        email: "required|string"
     });
 
     if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
@@ -109,7 +105,7 @@ const updateData = async (tData, userInfo = {}) => {
             _id: tData.id,
             name: tData.name.toLowerCase(),
             userName: tData.userName,
-            status: "Active",
+            status: tData.status,
             accesslevel: tData.accesslevel,
             email: tData.email,
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
@@ -169,10 +165,9 @@ const createData = async (tData, userInfo = {}) => {
         id: "required|string",
         name: "required|string",
         userName: "required|string",
-        status: "required|string",
         password: "required|string",
         accesslevel: "required|numeric",
-        email: "required|string"
+        email: "required|string",
     });
 
     if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
@@ -203,7 +198,7 @@ const createData = async (tData, userInfo = {}) => {
             status: "Active",
             accesslevel: tData.accesslevel,
             email: tData.email,
-            password: tData.password,
+            password: md5Service().password(tData),
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         };
         let result = await Util.mongo.insertOne(
@@ -302,17 +297,14 @@ const getData = async (tData, userInfo = {}) => {
     }
 };
 
-const login = async (req, res) => {
-    const { email, password, userName } = req.body;
-    console.log("User:req.body, ", email, password, userName)
+const login = async (tData, res) => {
+    const { userName, password } = tData;
+    console.log("User:req.body, ", password, userName)
 
-    let query = { email };
-    if (userName) {
-        query = { userName };
-    }
-
-    if ((email || userName) && password) {
+    let query = { };
+    if (userName && password) {
         try {
+            query = { userName };
             console.log("User:query, ", query)
             const user = await geUserData(query);
 
@@ -320,7 +312,7 @@ const login = async (req, res) => {
                 return res.status(400).json({ msg: 'Bad Request: User not found' });
             }
 
-            if (md5Service().comparePassword(password, user.password)) {
+            if (md5Service().comparePassword(password, user.password) && user.status === "Active") {
                 const session = {
                     id: user.id,
                     accesslevel: user.accesslevel,
@@ -342,17 +334,14 @@ const login = async (req, res) => {
     return res.status(400).json({ msg: 'Bad Request: Email or password is wrong' });
 };
 
-const resetPassword = async (req, res) => {
-    const { email, password, userName } = req.body;
-    console.log("User:req.body, ", email, password, userName)
+const resetPassword = async (tData, res) => {
+    const { password, userName } = tData;
+    console.log("User:req.body, ", password, userName)
+    let query = { };
 
-    let query = { email };
-    if (userName) {
-        query = { userName };
-    }
-
-    if ((email || userName) && password) {
+    if (userName && password) {
         try {
+            query = { userName };
             console.log("User:query, ", query)
             const user = await geUserData(query);
 
@@ -382,8 +371,8 @@ const resetPassword = async (req, res) => {
     return res.status(400).json({ msg: 'Bad Request: Email or password is wrong' });
 };
 
-const logout = async (req, res) => {
-    const { email, password, userName } = req.body;
+const logout = async (tData, res) => {
+    const { email, password, userName } = tData;
     console.log("User:req.body, ", email, password, userName)
 
     let query = { email };
