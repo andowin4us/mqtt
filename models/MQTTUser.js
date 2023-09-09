@@ -104,10 +104,7 @@ const updateData = async (tData, userInfo = {}) => {
         $set: {
             _id: tData.id,
             name: tData.name.toLowerCase(),
-            userName: tData.userName,
             status: tData.status,
-            accesslevel: tData.accesslevel,
-            email: tData.email,
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         },
     };
@@ -236,7 +233,7 @@ const createData = async (tData, userInfo = {}) => {
     }
 };
 
-const getData = async (tData, userInfo = {}) => {
+const getData = async (tData, userInfo) => {
     let tCheck = await Util.checkQueryParams(tData, {
         skip: "numeric",
         limit: "numeric",
@@ -252,6 +249,10 @@ const getData = async (tData, userInfo = {}) => {
     }
     try {
         let filter = {};
+
+        if(userInfo && userInfo.accesslevel >= 2) {
+            filter.accesslevel = { $gte: userInfo.accesslevel }
+        } 
 
         if( tData && tData.userName ) {
             filter.userName = tData.userName
@@ -335,40 +336,74 @@ const login = async (tData, res) => {
 };
 
 const resetPassword = async (tData, res) => {
-    const { password, userName } = tData;
-    console.log("User:req.body, ", password, userName)
-    let query = { };
+    let tCheck = await Util.checkQueryParams(tData, {
+        userName: "required|string",
+        password: "required|string",
+        newPassword: "required|string",
+    });
 
-    if (userName && password) {
-        try {
-            query = { userName };
-            console.log("User:query, ", query)
-            const user = await geUserData(query);
-
-            if (!user) {
-                return res.status(400).json({ msg: 'Bad Request: User not found' });
-            }
-
-            if (md5Service().comparePassword(password, user.password)) {
-                const session = {
-                    id: user.id,
-                    accesslevel: user.accesslevel,
-                    name: `${user.firstname}`,
-                    userName: user.userName,
-                    email: user.email
-                };
-                const token = authService().issue(session);
-                return res.status(200).json({ token });
-            }
-
-            return res.status(401).json({ msg: 'Unauthorized' });
-        } catch (err) {
-            console.log(err);
-            return res.status(500).json({ msg: 'We are not able to process your request' });
-        }
+    if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
+        return {
+            statusCode: 404,
+            success: false,
+            msg: "PARAMETER_ISSUE",
+            err: tCheck,
+        };
     }
 
-    return res.status(400).json({ msg: 'Bad Request: Email or password is wrong' });
+    if( !password.equals(newPassword) ) {
+        return {
+            statusCode: 404,
+            success: false,
+            msg: "PASSWORD_MISMATCH",
+            err: tCheck,
+        };
+    }
+
+    try {
+        let updateObj = {
+            $set: {
+                _id: tData.id,
+                password: tData.newPassword,
+                modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
+            },
+        };
+
+        let result = await Util.mongo.updateOne(
+            deviceMongoCollection,
+            { _id: tData.id },
+            updateObj
+        );
+        if (result) {
+            await Util.addAuditLogs(
+                deviceMongoCollection,
+                userInfo,
+                JSON.stringify(result)
+            );
+
+            return {
+                statusCode: 200,
+                success: true,
+                msg: "MQTT User Config Password update Success",
+                status: result,
+            };
+        } else {
+            return {
+                statusCode: 404,
+                success: false,
+                msg: "MQTT User Config Password update Error",
+                status: [],
+            };
+        }
+    } catch (error) {
+        return {
+            statusCode: 500,
+            success: false,
+            msg: "MQTT User Config Error",
+            status: [],
+            err: error,
+        };
+    }
 };
 
 const logout = async (tData, res) => {
