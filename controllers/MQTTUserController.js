@@ -28,8 +28,8 @@ const MQTTUserController = () => {
     }
     const resetPassword = async (req, res) => {
         console.log('resetPassword', req.body, req.User);
-        return await MQTTUser.resetPassword(req.body, res);
-        // return res.status(result.statusCode).json(result);
+        const result = await MQTTUser.resetPassword(req.body, req.User);
+        return res.status(result.statusCode).json(result);
     }
     const logout = async (req, res) => {
         console.log('logout', req.body, req.User);

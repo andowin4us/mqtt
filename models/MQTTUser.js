@@ -15,6 +15,16 @@ const duplicate = async (name, id) => {
     return false;
 };
 
+const duplicateName = async (name) => {
+    const query = { userName: name };
+    const result = await Util.mongo.findOne(deviceMongoCollection, query);
+
+    if (result) {
+        return result;
+    }
+    return false;
+};
+
 const geUserData = async (query) => {
     // const query = { userName: userName };
     const result = await Util.mongo.findOne(deviceMongoCollection, query);
@@ -115,7 +125,7 @@ const updateData = async (tData, userInfo = {}) => {
             return {
                 statusCode: 404,
                 success: false,
-                msg: "DUPLICATE NAME",
+                msg: "USER NOT PRSENT",
                 err: "",
             };
         }
@@ -335,7 +345,7 @@ const login = async (tData, res) => {
     return res.status(400).json({ msg: 'Bad Request: Email or password is wrong' });
 };
 
-const resetPassword = async (tData, res) => {
+const resetPassword = async (tData, userInfo = {}) => {
     let tCheck = await Util.checkQueryParams(tData, {
         userName: "required|string",
         password: "required|string",
@@ -351,27 +361,36 @@ const resetPassword = async (tData, res) => {
         };
     }
 
-    if( !password.equals(newPassword) ) {
-        return {
-            statusCode: 404,
-            success: false,
-            msg: "PASSWORD_MISMATCH",
-            err: tCheck,
-        };
-    }
-
     try {
+        const isDublicate = await duplicateName(tData.userName);
+        if ( !isDublicate ) {
+            return {
+                statusCode: 404,
+                success: false,
+                msg: "USER NOT FOUND.",
+                err: tCheck,
+            };
+        }
+
+        if( md5Service().comparePassword(tData.password, isDublicate.password) === false ) {
+            return {
+                statusCode: 404,
+                success: false,
+                msg: "PASSWORD_MISMATCH",
+                err: tCheck,
+            };
+        }
+    
         let updateObj = {
             $set: {
-                _id: tData.id,
-                password: tData.newPassword,
+                password: md5Service().password({password: tData.newPassword}),
                 modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
             },
         };
 
         let result = await Util.mongo.updateOne(
             deviceMongoCollection,
-            { _id: tData.id },
+            { _id: isDublicate._id },
             updateObj
         );
         if (result) {
