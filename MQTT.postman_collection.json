@@ -1,0 +1,717 @@
+{
+	"info": {
+		"_postman_id": "5c427f55-8ed2-4b1d-a1a8-d0a920894c5c",
+		"name": "MQTT",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "16993054"
+	},
+	"item": [
+		{
+			"name": "MQTTDevice",
+			"item": [
+				{
+					"name": "createMQTTDevice",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": \"17262b1j2b12ug12gb1b2n1jk2njjbn\",\r\n    \"deviceId\": \"device_id\",\r\n    \"deviceName\": \"device_name\",\r\n    \"mqttIP\": \"192.168.31.244\",\r\n    \"mqttUserName\": \"admin\",\r\n    \"mqttPassword\": \"public\",\r\n    \"mqttTopic\": \"test\",\r\n    \"mqttPort\": \"1883\",\r\n    \"mqttMacId\": \"40:91:51:B2:EB:68\",\r\n    \"status\": \"Active\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/createMQTTDevice",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"createMQTTDevice"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "updateMQTTDevice",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": \"17262b1j2b12ug12gb1b2n1jk2njjbn\",\r\n    \"deviceId\": \"device_id\",\r\n    \"deviceName\": \"device_name\",\r\n    \"mqttIP\": \"192.168.31.244\",\r\n    \"mqttUserName\": \"admin\",\r\n    \"mqttPassword\": \"public\",\r\n    \"mqttTopic\": \"test\",\r\n    \"mqttPort\": \"1883\",\r\n    \"mqttMacId\": \"40:91:51:B2:EB:68\",\r\n    \"status\": \"Active\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/updateMQTTDevice",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"updateMQTTDevice"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getMQTTDevice",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/getMQTTDevice",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"getMQTTDevice"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "deleteMQTTDevice",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": \"17262b1j2b12ug12gb1b2n1jk2njjbn\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/deleteMQTTDevice",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"deleteMQTTDevice"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "assignMQTTDevice",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"userId\": \"9021\",\r\n    \"deviceId\": \"17262b1j2b12ug12gb1b2n1jk2njjbn\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/assignMQTTDevice",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"assignMQTTDevice"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "MQTTLoggerType",
+			"item": [
+				{
+					"name": "createMQTTLoggerType",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": \"cffdtg1231kj1kb10j1oij1\",\r\n    \"deviceId\": \"device_id\",\r\n    \"logType\": \"DOOR\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/createMQTTLoggerType",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"createMQTTLoggerType"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getMQTTLoggerType",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/getMQTTLoggerType",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"getMQTTLoggerType"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "updateMQTTLoggerType",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": \"hh2h3231j91kj1kb10j1oij1\",\r\n    \"deviceId\": \"device_id\",\r\n    \"logType\": \"WIFI\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/updateMQTTLoggerType",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"updateMQTTLoggerType"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "deleteMQTTLoggerType",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": \"hh2h3231j91kj1kb10j1oij1\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/deleteMQTTLoggerType",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"deleteMQTTLoggerType"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "MQTTLogger",
+			"item": [
+				{
+					"name": "downloadLogger",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/downloadLogger",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"downloadLogger"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getDeviceLogger",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"skip\": 0,\r\n    \"limit\": 20\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/getDeviceLogger",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"getDeviceLogger"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getProcessLogger",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/getProcessLogger",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"getProcessLogger"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "MQTTUser",
+			"item": [
+				{
+					"name": "updateUser",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": \"882hj12j2hg12t3g3h\",\r\n    \"name\": \"Test\",\r\n    \"status\": \"Active\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/updateUser",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"updateUser"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "createUser",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": \"882hj12j2hg12t3g3h\",\r\n    \"name\": \"Test\",\r\n    \"userName\": \"test\",\r\n    \"status\": \"Active\",\r\n    \"password\": \"test123\",\r\n    \"accesslevel\": 1,\r\n    \"email\": \"andowin4us@gmail.com\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/createUser",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"createUser"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getUser",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/getUser",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"getUser"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "deleteUser",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": \"882hj12j2hg12t3g3h\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/deleteUser",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"deleteUser"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"userName\": \"test\",\r\n    \"password\": \"test1234\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/login",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "resetPassword",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"userName\": \"test\",\r\n    \"password\": \"test1234\",\r\n    \"newPassword\": \"test12345\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/resetPassword",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"resetPassword"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "logout",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/logout",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "MQTTDeviceConfig",
+			"item": [
+				{
+					"name": "updateMQTTDeviceConfig",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/updateMQTTDeviceConfig",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"updateMQTTDeviceConfig"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "createMQTTDeviceConfig",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": \"7878781bb1bv12hg12g+-\",\r\n    \"deviceId\": \"device_id\",\r\n    \"timeInput\": \"7:8:01\",\r\n    \"temperature\": \"20\",\r\n    \"humidity\": \"871\",\r\n    \"logCount\": \"1\",\r\n    \"sendingTopic\": \"deviceConfiguration\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/createMQTTDeviceConfig",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"createMQTTDeviceConfig"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getMQTTDeviceConfig",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/getMQTTDeviceConfig",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"getMQTTDeviceConfig"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "deleteMQTTDeviceConfig",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/deleteMQTTDeviceConfig",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"deleteMQTTDeviceConfig"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
