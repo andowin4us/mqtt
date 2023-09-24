@@ -95,6 +95,7 @@ const updateData = async (tData, userInfo = {}) => {
         $set: {
             _id: tData.id,
             logType: tData.logType,
+            deviceId: tData.deviceId,
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         },
     };
