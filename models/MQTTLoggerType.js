@@ -78,7 +78,6 @@ const updateData = async (tData, userInfo = {}) => {
     // Required and sanity checks
     let tCheck = await Util.checkQueryParams(tData, {
         id: "required|string",
-        deviceId: "required|string",
         logType: "required|string"
     });
 
@@ -95,7 +94,6 @@ const updateData = async (tData, userInfo = {}) => {
         $set: {
             _id: tData.id,
             logType: tData.logType,
-            deviceId: tData.deviceId,
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         },
     };
