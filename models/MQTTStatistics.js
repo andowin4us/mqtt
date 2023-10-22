@@ -1,5 +1,4 @@
 const Util = require('../helper/util');
-const workerHelper = require("../helper/mainWorkerHelper");
 let collectionName = "MQTTLogger"
 
 const getDeviceLogCount = async (tData, userInfo = {}) => {
@@ -67,9 +66,9 @@ const getDeviceLogCount = async (tData, userInfo = {}) => {
             return {
                 statusCode: 200,
                 success: true,
-                msg: "MQTT getDeviceLogCount " + +" get Successfull",
-                status: snatizedData[0].totalData,
-                totalSize: snatizedData[0].totalSize,
+                msg: "MQTT getDeviceLogCount " +snatizedData.length +" get Successfull",
+                status: snatizedData,
+                totalSize: snatizedData.length > 0 ? snatizedData.length : 0,
             };
         } else {
             return {
@@ -91,30 +90,55 @@ const getDeviceLogCount = async (tData, userInfo = {}) => {
 };
 
 const getDeviceData = async (tData, userInfo = {}) => {
-    let tCheck = await Util.checkQueryParams(tData, {
-        logType: "required|array",
-    });
-
-    if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
-        return {
-            statusCode: 404,
-            success: false,
-            msg: "PARAMETER_ISSUE",
-            err: tCheck,
-        };
-    }
     try {
-        let filter = {
-            $and: [{
-                'log_type': {
-                    $in: logType
+        let filter = [
+            {
+               "$group" : { 
+                   "_id": { 'logType': "$log_type", 'date': {$substr: ["$modified_time", 0, 10] }},
+                   "count" : {
+                       "$sum" : 1
+                   } 
+               }
+            },
+            {
+                "$project" : {
+                    "_id" : 0,
+                    "date" : "$_id",
+                    "count" : "$count" 
                 }
-            }]
-        }
-        let result = await Util.mongo.findAll(
+            },
+            {
+                $group: {
+                    _id: null,
+                    total: { $sum: "$count" },
+                    docs: { $push: "$$ROOT" }
+                }
+            },
+            {
+                $project: {
+                    docs: {
+                        $map: {
+                            input: "$docs",
+                            in: {
+                                date: "$$this.date.date",
+                                logType: "$$this.date.logType",
+                                count: "$$this.count",
+                                percentage: { $concat: [ { $toString: { $round: { $multiply: [  { $divide: [ "$$this.count", "$total" ] }, 100 ] } } }, '%' ] }
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                $unwind: "$docs"
+            },
+            {
+                $replaceRoot: { newRoot: "$docs" }
+            }
+        ];
+        let result = await Util.mongo.aggregateData(
             collectionName,
             filter,
-            {}
         );
         let snatizedData = await Util.snatizeFromMongo(result);
         console.log("snatizedData", snatizedData);
@@ -122,9 +146,9 @@ const getDeviceData = async (tData, userInfo = {}) => {
             return {
                 statusCode: 200,
                 success: true,
-                msg: "MQTT getProcessLogger " + +" get Successfull",
-                status: snatizedData[0].totalData,
-                totalSize: snatizedData[0].totalSize,
+                msg: "MQTT getDeviceLogCount " +snatizedData.length +" get Successfull",
+                status: snatizedData,
+                totalSize: snatizedData.length > 0 ? snatizedData.length : 0,
             };
         } else {
             return {
