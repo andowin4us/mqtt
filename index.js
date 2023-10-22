@@ -46,6 +46,11 @@ function defaultUserInfo(req, res, next) {
     return next();
 }
 
+app.get('/', (req, res) => {
+    console.log("MQTT Home called.");
+    res.status(200).json({success: true, statusCode: 200, msg: "MQTT Home Called."});
+});
+
 server.listen(config.port, () => {
     if (environment !== 'production' &&
         environment !== 'development' &&
