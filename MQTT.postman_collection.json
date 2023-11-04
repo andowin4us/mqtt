@@ -88,7 +88,7 @@
 							}
 						},
 						"url": {
-							"raw": "http://127.0.0.1:4330/api/getMQTTDevice",
+							"raw": "http://127.0.0.1:4330/api/getMQTTDeviceConfig",
 							"protocol": "http",
 							"host": [
 								"127",
@@ -99,7 +99,7 @@
 							"port": "4330",
 							"path": [
 								"api",
-								"getMQTTDevice"
+								"getMQTTDeviceConfig"
 							]
 						}
 					},
@@ -372,12 +372,21 @@
 					"response": []
 				},
 				{
-					"name": "getProcessLogger",
+					"name": "getDeviceLogCount",
 					"request": {
 						"method": "POST",
 						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
 						"url": {
-							"raw": "http://127.0.0.1:4330/api/getProcessLogger",
+							"raw": "http://127.0.0.1:4330/api/getDeviceLogCount",
 							"protocol": "http",
 							"host": [
 								"127",
@@ -388,7 +397,30 @@
 							"port": "4330",
 							"path": [
 								"api",
-								"getProcessLogger"
+								"getDeviceLogCount"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getDeviceData",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/getDeviceData",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"getDeviceData"
 							]
 						}
 					},
