@@ -101,18 +101,20 @@ class MQTTConnector {
                if (dataKeys[i] !== 'deviceId') {
                     if (dataKeys[i] !== 'sendingTopic') {
                         if (dataKeys[i] !== 'logCount') {
-                            if (messageBe !== undefined) {
-                                messageBe = `${messageBe},` + `${message[Object.keys(message)[i]]}`;
-                            } else {
-                                messageBe = `${message[Object.keys(message)[i]]}`;
+                            if (dataKeys[i] !== 'receipeId') {
+                                if (messageBe !== undefined) {
+                                    messageBe = `${messageBe},` + `${message[Object.keys(message)[i]]}`;
+                                } else {
+                                    messageBe = `${message[Object.keys(message)[i]]}`;
+                                }
                             }
                         }
                     }
                 }
             }
         }
-        
-        let sendingMessage = `mac_id:${device.mqttMacId},N:${message.logCount},Data:${messageBe}`;
+
+        let sendingMessage = `mac_id:${device.mqttMacId},receipe_id:${message.receipeId},N:${message.logCount},Data:${messageBe}`;
         console.log('Topic=' + topic + ' Message=' + typeof message, 'packet='+ packet, 'sendingMessage='+sendingMessage);
 
         this.client.publish(topic, sendingMessage);

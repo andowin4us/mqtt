@@ -114,6 +114,7 @@ const updateData = async (tData, userInfo = {}) => {
             mqttMacId: tData.mqttMacId,
             status: tData.status,
             mqttPort: tData.mqttPort,
+            mqttExtraReceipe: tData.mqttExtraReceipe ? { ...tData.mqttExtraReceipe }: {},
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         }
     };

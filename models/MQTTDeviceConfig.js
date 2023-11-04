@@ -5,9 +5,9 @@ const moment = require("moment");
 const MQTT = require('../helper/mqtt');
 let MAX_LOG_COUNT = 40;
 
-const duplicate = async (logCount, deviceId) => {
-    const query = { logCount: logCount, deviceId: deviceId };
-    const result = await Util.mongo.findOne(deviceMongoCollection, query);
+const duplicate = async (receipeName, deviceId) => {
+    const query = { receipeName: receipeName, deviceId: deviceId };
+    const result = await Util.mongo.findOne("MQTTDeviceReceipe", query);
 
     if (result) {
         return true;
@@ -80,7 +80,7 @@ const updateData = async (tData, userInfo = {}) => {
     // Required and sanity checks
     let tCheck = await Util.checkQueryParams(tData, {
         id: "required|string",
-        // timeInput: "required|string",
+        receipeId: "required|string",
         // temperature: "required|string",
         // humidity: "required|string",
         logCount: "required|string",
@@ -101,7 +101,7 @@ const updateData = async (tData, userInfo = {}) => {
         $set: {
             _id: tData.id,
             deviceId: tData.deviceId,
-            // timeInput: tData.timeInput,
+            receipeId: tData.receipeId,
             // temperature: tData.temperature,
             // humidity: tData.humidity,
             logCount: tData.logCount,
@@ -124,7 +124,7 @@ const updateData = async (tData, userInfo = {}) => {
                 let createObj = {
                     _id: tData.id,
                     deviceId: tData.deviceId,
-                    // timeInput: tData.timeInput,
+                    receipeId: tData.receipeId,
                     // temperature: tData.temperature,
                     // humidity: tData.humidity,
                     logCount: tData.logCount,
@@ -139,7 +139,9 @@ const updateData = async (tData, userInfo = {}) => {
                         if (dataKeys[i] !== 'deviceId') {
                             if (dataKeys[i] !== 'sendingTopic') {
                                 if (dataKeys[i] !== 'logCount') {
-                                    createObj[dataKeys[i]] = tData[Object.keys(tData)[i]];
+                                    if (dataKeys[i] !== 'receipeId') {
+                                        createObj[dataKeys[i]] = tData[Object.keys(tData)[i]];
+                                    }
                                 }
                             }
                         }
@@ -190,7 +192,7 @@ const updateData = async (tData, userInfo = {}) => {
 const createData = async (tData, userInfo = {}) => {
     let tCheck = await Util.checkQueryParams(tData, {
         id: "required|string",
-        // timeInput: "required|string",
+        receipeId: "required|string",
         // temperature: "required|string",
         // humidity: "required|string",
         logCount: "required|string",
@@ -215,6 +217,7 @@ const createData = async (tData, userInfo = {}) => {
             err: "N Log Count exceeded which is 40.",
         };
     }
+
     try {
         const resultDevice = await Util.mongo.findOne("MQTTDevice", {deviceId: tData.deviceId});
 
@@ -223,7 +226,7 @@ const createData = async (tData, userInfo = {}) => {
             let createObj = {
                 _id: tData.id,
                 deviceId: tData.deviceId,
-                // timeInput: tData.timeInput,
+                receipeId: tData.receipeId,
                 // temperature: tData.temperature,
                 // humidity: tData.humidity,
                 logCount: tData.logCount,
@@ -238,7 +241,9 @@ const createData = async (tData, userInfo = {}) => {
                     if (dataKeys[i] !== 'deviceId') {
                         if (dataKeys[i] !== 'sendingTopic') {
                             if (dataKeys[i] !== 'logCount') {
-                                createObj[dataKeys[i]] = tData[Object.keys(tData)[i]];
+                                if (dataKeys[i] !== 'receipeId') {
+                                    createObj[dataKeys[i]] = tData[Object.keys(tData)[i]];
+                                }
                             }
                         }
                     }
@@ -347,9 +352,225 @@ const getData = async (tData, userInfo = {}) => {
     }
 };
 
+const createReceipeData = async (tData, userInfo = {}) => {
+    let tCheck = await Util.checkQueryParams(tData, {
+        id: "required|string",
+        receipeName: "required|string",
+        deviceId: "required|string"
+    });
+
+    if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
+        return {
+            statusCode: 404,
+            success: false,
+            msg: "PARAMETER_ISSUE",
+            err: tCheck,
+        };
+    }
+
+    try {
+        const isDublicate = await duplicate(tData.receipeName, tData.deviceId);
+
+        if (isDublicate) {
+            return {
+                statusCode: 404,
+                success: false,
+                msg: "DUPLICATE NAME",
+                err: "",
+            };
+        }
+
+        let createObj = {
+            _id: tData.id,
+            deviceId: tData.deviceId,
+            receipeName: tData.receipeName,
+            created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+            modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
+        };
+        let result = await Util.mongo.insertOne(
+            "MQTTDeviceReceipe",
+            createObj
+        );
+        if (result) {
+            await Util.addAuditLogs(
+                deviceMongoCollection,
+                userInfo,
+                JSON.stringify(result)
+            );
+            return {
+                statusCode: 200,
+                success: true,
+                msg: "MQTT Device Receipe Created Successfull",
+                status: result,
+            };
+        } else {
+            return {
+                statusCode: 404,
+                success: false,
+                msg: "MQTT Device Receipe Create Failed",
+                status: [],
+            };
+        }
+    } catch (error) {
+        return {
+            statusCode: 500,
+            success: false,
+            msg: "MQTT Device Receipe Create Error",
+            status: [],
+            err: error,
+        };
+    }
+};
+
+const updateReceipeData = async (tData, userInfo = {}) => {
+    let tCheck = await Util.checkQueryParams(tData, {
+        id: "required|string",
+        receipeName: "required|string",
+        deviceId: "required|string"
+    });
+
+    if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
+        return {
+            statusCode: 404,
+            success: false,
+            msg: "PARAMETER_ISSUE",
+            err: tCheck,
+        };
+    }
+
+    try {
+        const isDublicate = await duplicate(tData.receipeName, tData.deviceId);
+
+        if (isDublicate) {
+            return {
+                statusCode: 404,
+                success: false,
+                msg: "DUPLICATE NAME",
+                err: "",
+            };
+        }
+
+        let updateObj = {
+            $set: {
+                receipeName: tData.receipeName,
+                modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
+            }
+        };
+        let result = await Util.mongo.updateOne(
+            "MQTTDeviceReceipe",
+            { _id: tData.id },
+            updateObj
+        );
+        if (result) {
+            await Util.addAuditLogs(
+                deviceMongoCollection,
+                userInfo,
+                JSON.stringify(result)
+            );
+            return {
+                statusCode: 200,
+                success: true,
+                msg: "MQTT Device Receipe Update Successfull",
+                status: result,
+            };
+        } else {
+            return {
+                statusCode: 404,
+                success: false,
+                msg: "MQTT Device Receipe Update Failed",
+                status: [],
+            };
+        }
+    } catch (error) {
+        return {
+            statusCode: 500,
+            success: false,
+            msg: "MQTT Device Receipe Update Error",
+            status: [],
+            err: error,
+        };
+    }
+};
+
+const getReceipeData = async (tData, userInfo = {}) => {
+    let tCheck = await Util.checkQueryParams(tData, {
+        skip: "numeric",
+        limit: "numeric",
+    });
+
+    if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
+        return {
+            statusCode: 404,
+            success: false,
+            msg: "PARAMETER_ISSUE",
+            err: tCheck,
+        };
+    }
+    try {
+        let filter = {};
+        if( tData && tData.deviceId ) {
+            filter.deviceId = tData.deviceId;
+        }
+
+        let result = await Util.mongo.findAndPaginate(
+            "MQTTDeviceReceipe",
+            filter,
+            {},
+            tData.skip,
+            tData.limit
+        );
+        let snatizedData = await Util.snatizeFromMongo(result);
+        console.log("snatizedData", snatizedData);
+
+        let totalConfigData = [];
+        for(let i = 0; i < snatizedData[0].totalSize; i++) {
+            let receipeObj = {}
+            filter.receipeId = snatizedData[0].totalData[i].id;
+            let resultConfigData = await Util.mongo.findAll(
+                deviceMongoCollection,
+                filter
+            );
+
+            resultConfigData = resultConfigData && resultConfigData.length > 0 ? resultConfigData : [];
+            receipeObj.id = filter.receipeId;
+            receipeObj.receipeName = snatizedData[0].totalData[i].receipeName;
+            receipeObj.receipeConfig = resultConfigData;
+            
+            totalConfigData.push(receipeObj);
+        }
+        if (snatizedData) {
+            return {
+                statusCode: 200,
+                success: true,
+                msg: "MQTT device Receipe get Successfull",
+                status: totalConfigData,
+                totalSize: snatizedData[0].totalSize,
+            };
+        } else {
+            return {
+                statusCode: 404,
+                success: false,
+                msg: "MQTT device Receipe Not Found.",
+                status: [],
+            };
+        }
+    } catch (error) {
+        return {
+            statusCode: 500,
+            success: false,
+            msg: "MQTT device Receipe get Error",
+            status: [],
+            err: error,
+        };
+    }
+};
+
 module.exports = {
     deleteData,
     updateData,
     createData,
-    getData
+    getData,
+    createReceipeData,
+    updateReceipeData,
+    getReceipeData
 };

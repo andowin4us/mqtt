@@ -666,13 +666,109 @@
 					"response": []
 				},
 				{
+					"name": "createReceipeData",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": \"7878781bb1y71271nbhjuuid\",\r\n    \"deviceId\": \"device_id\",\r\n    \"receipeName\": \"Paneer Masala\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/createReceipeData",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"createReceipeData"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "updateReceipeData",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": \"7878781bb1bv12hg12ggg1t2-\",\r\n    \"deviceId\": \"device_id\",\r\n    \"receipeName\": \"Biryanii\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/updateReceipeData",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"updateReceipeData"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getReceipeData",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": \"7878781bb1bv12hg12ggg1t2-\",\r\n    \"deviceId\": \"device_id\",\r\n    \"receipeName\": \"Biryanii\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/getReceipeData",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"getReceipeData"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "createMQTTDeviceConfig",
 					"request": {
 						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"id\": \"7878781bb1bv12hg12g+-\",\r\n    \"deviceId\": \"device_id\",\r\n    \"timeInput\": \"7:8:01\",\r\n    \"temperature\": \"20\",\r\n    \"humidity\": \"871\",\r\n    \"logCount\": \"1\",\r\n    \"sendingTopic\": \"deviceConfiguration\"\r\n}",
+							"raw": "{\r\n    \"id\": \"7878781bb1bv12hg12ggg1t2-\",\r\n    \"receipeId\": \"7878781bb1bv12hg12ggg1t2-\",\r\n    \"deviceId\": \"device_id\",\r\n    \"timeInput\": \"7:8:01\",\r\n    \"temperature\": \"20\",\r\n    \"humidity\": \"871\",\r\n    \"logCount\": \"1\",\r\n    \"sendingTopic\": \"deviceConfiguration\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
