@@ -90,58 +90,154 @@ const getDeviceLogCount = async (tData, userInfo = {}) => {
 };
 
 const getDeviceData = async (tData, userInfo = {}) => {
+    let filter = [];
     try {
-        let filter = [
-            {
-               "$group" : { 
-                   "_id": { 'logType': "$log_type", 'date': {$substr: ["$modified_time", 0, 10] }},
-                   "count" : {
-                       "$sum" : 1
-                   } 
-               }
-            },
-            {
-                "$project" : {
-                    "_id" : 0,
-                    "date" : "$_id",
-                    "count" : "$count" 
-                }
-            },
-            {
-                $group: {
-                    _id: null,
-                    total: { $sum: "$count" },
-                    docs: { $push: "$$ROOT" }
-                }
-            },
-            {
-                $project: {
-                    docs: {
-                        $map: {
-                            input: "$docs",
-                            in: {
-                                date: "$$this.date.date",
-                                logType: "$$this.date.logType",
-                                count: "$$this.count",
-                                percentage: { $concat: [ { $toString: { $round: { $multiply: [  { $divide: [ "$$this.count", "$total" ] }, 100 ] } } }, '%' ] }
+        if(tData && tData.groupBy && tData.groupBy === "date") {
+            filter = [
+                {
+                   "$group" : { 
+                       "_id": { 'logType': "$log_type", 'date': {$substr: ["$modified_time", 0, 10] }},
+                       "count" : {
+                           "$sum" : 1
+                       } 
+                   }
+                },
+                {
+                    "$project" : {
+                        "_id" : 0,
+                        "date" : "$_id",
+                        "count" : "$count" 
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: "$count" },
+                        docs: { $push: "$$ROOT" }
+                    }
+                },
+                {
+                    $project: {
+                        docs: {
+                            $map: {
+                                input: "$docs",
+                                in: {
+                                    date: "$$this.date.date",
+                                    logType: "$$this.date.logType",
+                                    count: "$$this.count",
+                                    percentage: { $concat: [ { $toString: { $round: { $multiply: [  { $divide: [ "$$this.count", "$total" ] }, 100 ] } } }, '%' ] }
+                                }
                             }
                         }
                     }
+                },
+                {
+                    $unwind: "$docs"
+                },
+                {
+                    $replaceRoot: { newRoot: "$docs" }
                 }
-            },
-            {
-                $unwind: "$docs"
-            },
-            {
-                $replaceRoot: { newRoot: "$docs" }
-            }
-        ];
+            ];
+        }
+        else if(tData && tData.groupBy && tData.groupBy === "month") {
+            filter = [
+                {
+                   "$group" : { 
+                       "_id": { 'logType': "$log_type", 'date': {$substr: ["$modified_time", 0, 10] }},
+                       "count" : {
+                           "$sum" : 1
+                       } 
+                   }
+                },
+                {
+                    "$project" : {
+                        "_id" : 0,
+                        "date" : "$_id",
+                        "count" : "$count" 
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: "$count" },
+                        docs: { $push: "$$ROOT" }
+                    }
+                },
+                {
+                    $project: {
+                        docs: {
+                            $map: {
+                                input: "$docs",
+                                in: {
+                                    date: "$$this.date.date",
+                                    logType: "$$this.date.logType",
+                                    count: "$$this.count",
+                                    percentage: { $concat: [ { $toString: { $round: { $multiply: [  { $divide: [ "$$this.count", "$total" ] }, 100 ] } } }, '%' ] }
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    $unwind: "$docs"
+                },
+                {
+                    $replaceRoot: { newRoot: "$docs" }
+                }
+            ];   
+        } else {
+            filter = [
+                {
+                   "$group" : { 
+                       "_id": { 'logType': "$log_type", 'date': {$substr: ["$modified_time", 0, 4] } },
+                       "count" : {
+                           "$sum" : 1
+                       } 
+                   }
+                },
+                {
+                    "$project" : {
+                        "_id" : 0,
+                        "date" : "$_id",
+                        "count" : "$count" 
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: "$count" },
+                        docs: { $push: "$$ROOT" }
+                    }
+                },
+                {
+                    $project: {
+                        docs: {
+                            $map: {
+                                input: "$docs",
+                                in: {
+                                    date: "$$this.date.date",
+                                    logType: "$$this.date.logType",
+                                    count: "$$this.count",
+                                    percentage: { $concat: [ { $toString: { $round: { $multiply: [  { $divide: [ "$$this.count", "$total" ] }, 100 ] } } }, '%' ] }
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    $unwind: "$docs"
+                },
+                {
+                    $replaceRoot: { newRoot: "$docs" }
+                }
+            ]
+        }
         let result = await Util.mongo.aggregateData(
             collectionName,
             filter,
         );
         let snatizedData = await Util.snatizeFromMongo(result);
-        console.log("snatizedData", snatizedData);
+        console.log("snatizedData", snatizedData.length);
         if (snatizedData) {
             return {
                 statusCode: 200,
