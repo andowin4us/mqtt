@@ -206,6 +206,7 @@ const createData = async (tData, userInfo = {}) => {
             accesslevel: tData.accesslevel,
             email: tData.email,
             password: md5Service().password(tData),
+            created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         };
         let result = await Util.mongo.insertOne(

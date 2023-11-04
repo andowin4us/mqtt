@@ -76,7 +76,7 @@ class MQTTConnector {
         // this.client.publish(this.topic, 'Hello mqtt')
         // this.sendMessage(topic, message)
         // setTimeout(async () => {
-            if(this.resultDevice && this.createObj && this.createObj.timeInput) {
+            if(this.resultDevice && this.createObj && this.createObj.logCount) {
                 await this.sendMessage(this.createObj.sendingTopic, this.resultDevice, this.createObj, packet);
             }
             let processMessage = await utilizeMqtt( message );
@@ -94,7 +94,25 @@ class MQTTConnector {
     }
 
     async sendMessage(topic, device, message, packet) {
-        let sendingMessage = `mac_id:${device.mqttMacId},N:${message.logCount},Data:${message.timeInput},${message.temperature},${message.humidity}`;
+        let messageBe;
+        let dataKeys = Object.keys(message);
+        for (let i = 0; i < dataKeys.length; i++) {
+            if (dataKeys[i] !== 'id') {
+               if (dataKeys[i] !== 'deviceId') {
+                    if (dataKeys[i] !== 'sendingTopic') {
+                        if (dataKeys[i] !== 'logCount') {
+                            if (messageBe !== undefined) {
+                                messageBe = `${messageBe},` + `${message[Object.keys(message)[i]]}`;
+                            } else {
+                                messageBe = `${message[Object.keys(message)[i]]}`;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        let sendingMessage = `mac_id:${device.mqttMacId},N:${message.logCount},Data:${messageBe}`;
         console.log('Topic=' + topic + ' Message=' + typeof message, 'packet='+ packet, 'sendingMessage='+sendingMessage);
 
         this.client.publish(topic, sendingMessage);

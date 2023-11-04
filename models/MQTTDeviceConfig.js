@@ -80,9 +80,9 @@ const updateData = async (tData, userInfo = {}) => {
     // Required and sanity checks
     let tCheck = await Util.checkQueryParams(tData, {
         id: "required|string",
-        timeInput: "required|string",
-        temperature: "required|string",
-        humidity: "required|string",
+        // timeInput: "required|string",
+        // temperature: "required|string",
+        // humidity: "required|string",
         logCount: "required|string",
         sendingTopic: "required|string",
         deviceId: "required|string"
@@ -101,9 +101,9 @@ const updateData = async (tData, userInfo = {}) => {
         $set: {
             _id: tData.id,
             deviceId: tData.deviceId,
-            timeInput: tData.timeInput,
-            temperature: tData.temperature,
-            humidity: tData.humidity,
+            // timeInput: tData.timeInput,
+            // temperature: tData.temperature,
+            // humidity: tData.humidity,
             logCount: tData.logCount,
             sendingTopic: tData.sendingTopic,
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
@@ -124,13 +124,28 @@ const updateData = async (tData, userInfo = {}) => {
                 let createObj = {
                     _id: tData.id,
                     deviceId: tData.deviceId,
-                    timeInput: tData.timeInput,
-                    temperature: tData.temperature,
-                    humidity: tData.humidity,
+                    // timeInput: tData.timeInput,
+                    // temperature: tData.temperature,
+                    // humidity: tData.humidity,
                     logCount: tData.logCount,
                     sendingTopic: tData.sendingTopic,
+                    created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
                     modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
                 };
+
+                let dataKeys = Object.keys(tData);
+                for (let i = 0; i < dataKeys.length; i++) {
+                    if (dataKeys[i] !== 'id') {
+                        if (dataKeys[i] !== 'deviceId') {
+                            if (dataKeys[i] !== 'sendingTopic') {
+                                if (dataKeys[i] !== 'logCount') {
+                                    createObj[dataKeys[i]] = tData[Object.keys(tData)[i]];
+                                }
+                            }
+                        }
+                    }
+                }
+
                 new MQTT(MQTT_URL, resultDevice.mqttUserName, resultDevice.mqttPassword, resultDevice.mqttTopic, false, resultDevice, createObj);
                 
                 await Util.addAuditLogs(
@@ -175,9 +190,9 @@ const updateData = async (tData, userInfo = {}) => {
 const createData = async (tData, userInfo = {}) => {
     let tCheck = await Util.checkQueryParams(tData, {
         id: "required|string",
-        timeInput: "required|string",
-        temperature: "required|string",
-        humidity: "required|string",
+        // timeInput: "required|string",
+        // temperature: "required|string",
+        // humidity: "required|string",
         logCount: "required|string",
         sendingTopic: "required|string",
         deviceId: "required|string"
@@ -208,13 +223,29 @@ const createData = async (tData, userInfo = {}) => {
             let createObj = {
                 _id: tData.id,
                 deviceId: tData.deviceId,
-                timeInput: tData.timeInput,
-                temperature: tData.temperature,
-                humidity: tData.humidity,
+                // timeInput: tData.timeInput,
+                // temperature: tData.temperature,
+                // humidity: tData.humidity,
                 logCount: tData.logCount,
                 sendingTopic: tData.sendingTopic,
+                created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
                 modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
             };
+
+            let dataKeys = Object.keys(tData);
+            for (let i = 0; i < dataKeys.length; i++) {
+                if (dataKeys[i] !== 'id') {
+                    if (dataKeys[i] !== 'deviceId') {
+                        if (dataKeys[i] !== 'sendingTopic') {
+                            if (dataKeys[i] !== 'logCount') {
+                                createObj[dataKeys[i]] = tData[Object.keys(tData)[i]];
+                            }
+                        }
+                    }
+                }
+            }
+
+            console.log("createObj", createObj);
             let result = await Util.mongo.insertOne(
                 deviceMongoCollection,
                 createObj

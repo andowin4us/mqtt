@@ -178,6 +178,7 @@ const createData = async (tData, userInfo = {}) => {
             _id: tData.id,
             deviceId: tData.deviceId,
             logType: tData.logType,
+            created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         };
         let result = await Util.mongo.insertOne(
