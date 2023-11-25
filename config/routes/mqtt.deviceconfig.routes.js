@@ -6,6 +6,7 @@ const MqttDeviceConfigPrivate = {
     "POST /createReceipeData"   : "MQTTDeviceConfig.createReceipeData",
     "POST /updateReceipeData": "MQTTDeviceConfig.updateReceipeData",
     "POST /getReceipeData": "MQTTDeviceConfig.getReceipeData",
+    "POST /getReceipeCommand": "MQTTDeviceConfig.getReceipeCommand",
 };
 const MqttDeviceConfigPublic = MqttDeviceConfigPrivate;
 

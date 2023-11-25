@@ -250,7 +250,7 @@ const createData = async (tData, userInfo = {}) => {
                 }
             }
 
-            console.log("createObj", createObj);
+            // console.log("createObj", createObj);
             let result = await Util.mongo.insertOne(
                 deviceMongoCollection,
                 createObj
@@ -356,6 +356,7 @@ const createReceipeData = async (tData, userInfo = {}) => {
     let tCheck = await Util.checkQueryParams(tData, {
         id: "required|string",
         receipeName: "required|string",
+        receipeStatus: "required|string",
         deviceId: "required|string"
     });
 
@@ -384,6 +385,7 @@ const createReceipeData = async (tData, userInfo = {}) => {
             _id: tData.id,
             deviceId: tData.deviceId,
             receipeName: tData.receipeName,
+            receipeStatus: tData.receipeStatus,
             created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         };
@@ -426,6 +428,7 @@ const updateReceipeData = async (tData, userInfo = {}) => {
     let tCheck = await Util.checkQueryParams(tData, {
         id: "required|string",
         receipeName: "required|string",
+        receipeStatus: "required|string",
         deviceId: "required|string"
     });
 
@@ -453,6 +456,7 @@ const updateReceipeData = async (tData, userInfo = {}) => {
         let updateObj = {
             $set: {
                 receipeName: tData.receipeName,
+                receipeStatus: tData.receipeStatus,
                 modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
             }
         };
@@ -565,6 +569,58 @@ const getReceipeData = async (tData, userInfo = {}) => {
     }
 };
 
+const getReceipeCommand = async (tData, userInfo = {}) => {
+    let tCheck = await Util.checkQueryParams(tData, {
+        deviceId: "required|string",
+        receipeId: "required|string",
+    });
+
+    if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
+        return {
+            statusCode: 404,
+            success: false,
+            msg: "PARAMETER_ISSUE",
+            err: tCheck,
+        };
+    }
+    try {
+        let filter = {};
+        filter.deviceId = tData.deviceId;
+        filter.receipeId = tData.receipeId;
+
+        let result = await Util.mongo.findAll(
+            deviceMongoCollection,
+            filter,
+            {}
+        );
+        let snatizedData = await Util.snatizeFromMongo(result);
+        // console.log("snatizedData", snatizedData);
+        if (snatizedData) {
+            return {
+                statusCode: 200,
+                success: true,
+                msg: "MQTT device receipe get Successfull",
+                status: snatizedData,
+            };
+        } else {
+            return {
+                statusCode: 404,
+                success: false,
+                msg: "MQTT device receipe Not Found.",
+                status: [],
+            };
+        }
+    } catch (error) {
+        return {
+            statusCode: 500,
+            success: false,
+            msg: "MQTT device Config get Error",
+            status: [],
+            err: error,
+        };
+    }
+};
+
 module.exports = {
     deleteData,
     updateData,
@@ -572,5 +628,6 @@ module.exports = {
     getData,
     createReceipeData,
     updateReceipeData,
-    getReceipeData
+    getReceipeData,
+    getReceipeCommand
 };

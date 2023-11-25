@@ -36,6 +36,12 @@ const MQTTDeviceConfigs = () => {
         const result = await MQTTDeviceConfig.getReceipeData(req.body, req.user);
         return res.status(result.statusCode).json(result);
     }
+    const getReceipeCommand = async (req, res) => {
+        console.log('getReceipeCommand', req.body, req.user);
+        const result = await MQTTDeviceConfig.getReceipeCommand(req.body, req.user);
+        return res.status(result.statusCode).json(result);
+    }
+    
     return {
         updateMQTTDeviceConfig,
         createMQTTDeviceConfig,
@@ -43,7 +49,8 @@ const MQTTDeviceConfigs = () => {
         deleteMQTTDeviceConfig,
         createReceipeData,
         updateReceipeData,
-        getReceipeData
+        getReceipeData,
+        getReceipeCommand
     };
 };
 
