@@ -8,7 +8,7 @@ var cookieParser = require("cookie-parser");
 const cors = require('cors');
 const config = require('./config/config');
 const auth = require('./policies/auth.policy');
-const { invokeInialization } = require('./config/mqtt');
+const { invokeInialization, invokeDeviceStatusHandler } = require('./config/mqtt');
 const environment = process.env.NODE_ENV;
 const app = express();
 const server = http.Server(app);
@@ -62,5 +62,6 @@ server.listen(config.port, () => {
     }
     // eslint-disable-next-line no-console
     invokeInialization();
+    invokeDeviceStatusHandler();
     console.log(`MQTT server is running on ${config.port}`);
 });
