@@ -762,6 +762,38 @@
 					"response": []
 				},
 				{
+					"name": "getReceipeCommand",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"deviceId\": \"device_id\",\r\n    \"receipeId\": \"7878781bb1bv12hg12ggg1t2-\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/getReceipeCommand",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"getReceipeCommand"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "createMQTTDeviceConfig",
 					"request": {
 						"method": "POST",
