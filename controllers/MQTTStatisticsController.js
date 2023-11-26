@@ -11,9 +11,15 @@ const MQTTStatisticsController = () => {
         const result = await MQTT.getDeviceData(req.body, req.user);
         return res.status(result.statusCode).json(result);
     };
+    const getDeviceReceipeCount = async (req, res) => {
+        console.log('getDeviceReceipeCount logs ', req.body, req.user);
+        const result = await MQTT.getDeviceReceipeCount(req.body, req.user);
+        return res.status(result.statusCode).json(result);
+    };
     return {
         getDeviceLogCount,
         getDeviceData,
+        getDeviceReceipeCount
     };
 }
 
