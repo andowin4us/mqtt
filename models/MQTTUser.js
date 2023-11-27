@@ -316,7 +316,7 @@ const login = async (tData, res) => {
     let query = { };
     if (userName && password) {
         try {
-            query = { userName };
+            query = { email: userName };
             console.log("User:query, ", query)
             const user = await geUserData(query);
 
