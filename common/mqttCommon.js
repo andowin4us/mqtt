@@ -22,6 +22,16 @@ async function utilizeMqtt(message) {
                             return false;
                         }
                     }
+
+                    if(data.log_type && data.log_type === "receipeUpdate") {
+                        let res = await mongoInsert( data, {}, "MQTTDeviceReceipe", "update" );
+
+                        if(res) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
                 } else {
                     return false;
                 }
@@ -398,6 +408,12 @@ async function mongoInsert(data, filter, collectionName, type) {
         try {
             const db = client.db(connection.mongo.database);
             let collection = db.collection(collectionName);
+            if(data.log_type && data.log_type === "receipeUpdate") {
+                let res = await collection.updateOne( {deviceId: data.device_id, _id: data._id}, {$set: {receipeStatus: data.receipeStatus, modified_time: moment().format("YYYY-MM-DD HH:mm:ss") }});
+    
+                console.log("data update to receipeStatus ", collectionName);
+                return res;
+            }
             let res = await collection.updateOne( {device_id: data.device_id}, {$set: {status: "Active", modified_time: moment().format("YYYY-MM-DD HH:mm:ss") }});
     
             console.log("data update to ", collectionName);

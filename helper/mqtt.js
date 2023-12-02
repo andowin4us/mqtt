@@ -97,7 +97,7 @@ class MQTTConnector {
         let messageBe;
         let dataKeys = Object.keys(message);
         for (let i = 0; i < dataKeys.length; i++) {
-            if (dataKeys[i] !== 'id') {
+            // if (dataKeys[i] !== 'id') {
                if (dataKeys[i] !== 'deviceId') {
                     if (dataKeys[i] !== 'sendingTopic') {
                         if (dataKeys[i] !== 'logCount') {
@@ -111,7 +111,7 @@ class MQTTConnector {
                         }
                     }
                 }
-            }
+            // }
         }
 
         let sendingMessage = `mac_id:${device.mqttMacId},receipe_id:${message.receipeId},N:${message.logCount},Data:${messageBe}`;

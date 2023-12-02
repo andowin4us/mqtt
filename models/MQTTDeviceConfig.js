@@ -237,7 +237,7 @@ const createData = async (tData, userInfo = {}) => {
 
             let dataKeys = Object.keys(tData);
             for (let i = 0; i < dataKeys.length; i++) {
-                if (dataKeys[i] !== 'id') {
+                // if (dataKeys[i] !== 'id') {
                     if (dataKeys[i] !== 'deviceId') {
                         if (dataKeys[i] !== 'sendingTopic') {
                             if (dataKeys[i] !== 'logCount') {
@@ -247,7 +247,7 @@ const createData = async (tData, userInfo = {}) => {
                             }
                         }
                     }
-                }
+                // }
             }
 
             // console.log("createObj", createObj);

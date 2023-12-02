@@ -53,7 +53,7 @@ async function invokeDeviceStatusHandler() {
                         let minutes = duration.asMinutes();
                         minutes = Math.abs(minutes).toFixed(1);
     
-                        if(minutes > 2) {
+                        if(minutes > 10) {
                             console.log("Heartbeat didn't received for this", res[i].deviceName ," from past ", minutes, "minutes");
                             let MQTT_URL = `mqtt://${res[i].mqttIP}:${res[i].mqttPort}`;
                             new MQTT(MQTT_URL, res[i].mqttUserName, res[i].mqttPassword, res[i].mqttTopic, true);
