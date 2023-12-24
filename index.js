@@ -28,7 +28,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json({ limit: '5mb' }));
 app.use(cookieParser());
 
-app.use('/static', express.static(path.join(__dirname, '../private')));
+app.use('/static', express.static(path.join('./private')));
 
 // secure your private routes with jwt authentication middleware
 app.all('/private/*', (req, res, next) => auth(req, res, next));

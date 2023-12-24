@@ -470,7 +470,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"id\": \"882hj12j2hg12t3g3h\",\r\n    \"name\": \"Test\",\r\n    \"userName\": \"test\",\r\n    \"status\": \"Active\",\r\n    \"password\": \"test123\",\r\n    \"accesslevel\": 1,\r\n    \"email\": \"andowin4us@gmail.com\"\r\n}",
+							"raw": "{\r\n    \"id\": \"bj12h126j2hg12t3g3h\",\r\n    \"name\": \"Test1\",\r\n    \"userName\": \"test1\",\r\n    \"status\": \"Active\",\r\n    \"password\": \"test1234\",\r\n    \"accesslevel\": 1,\r\n    \"email\": \"cm14683@gmail.com\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -736,7 +736,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"id\": \"7878781bb1bv12hg12ggg1t2-\",\r\n    \"deviceId\": \"device_id\",\r\n    \"receipeName\": \"Biryanii\"\r\n}",
+							"raw": "{\r\n    \"receipeName\": \"Biryanii\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -830,6 +830,15 @@
 					"request": {
 						"method": "POST",
 						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
 						"url": {
 							"raw": "http://127.0.0.1:4330/api/getMQTTDeviceConfig",
 							"protocol": "http",

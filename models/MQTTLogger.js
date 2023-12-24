@@ -230,7 +230,7 @@ const downloadLogger = async (tData, userInfo = {}) => {
     return {
         success: true,
         statusCode: 200,
-        download: finalURL,
+        download: `http://127.0.0.1:4330${finalURL}`,
     };
 };
 
