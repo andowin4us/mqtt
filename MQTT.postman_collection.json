@@ -12,11 +12,21 @@
 				{
 					"name": "createMQTTDevice",
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3NsZXZlbCI6MSwibmFtZSI6IlRlc3QxIiwidXNlck5hbWUiOiJ0ZXN0MSIsImVtYWlsIjoiY20xNDY4M0BnbWFpbC5jb20iLCJpYXQiOjE3MDU3MTk1MjcsImV4cCI6MTcwODMxMTUyN30.NWwTcaptQ_yJJYUtb57hBQysRTSxazoWPhvE_ruy7SQ",
+									"type": "string"
+								}
+							]
+						},
 						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"id\": \"17262b1j2b12ug12gb1b2n1jk2njjbn\",\r\n    \"deviceId\": \"device_id\",\r\n    \"deviceName\": \"device_name\",\r\n    \"mqttIP\": \"192.168.31.244\",\r\n    \"mqttUserName\": \"admin\",\r\n    \"mqttPassword\": \"public\",\r\n    \"mqttTopic\": \"test\",\r\n    \"mqttPort\": \"1883\",\r\n    \"mqttMacId\": \"40:91:51:B2:EB:68\",\r\n    \"status\": \"Active\"\r\n}",
+							"raw": "{\r\n    \"id\": \"122b1j2b12ug12gb1b2n1jk2njjbn\",\r\n    \"deviceId\": \"device_id\",\r\n    \"deviceName\": \"device_name1\",\r\n    \"mqttIP\": \"192.168.31.244\",\r\n    \"mqttUserName\": \"admin\",\r\n    \"mqttPassword\": \"public\",\r\n    \"mqttTopic\": \"test\",\r\n    \"mqttPort\": \"1883\",\r\n    \"mqttMacId\": \"40:91:51:B2:EB:68\",\r\n    \"status\": \"Active\",\r\n    \"issue\": \"2024-01-20T08:33:20\",\r\n    \"expiry\": \"2024-02-20T08:33:20\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -425,6 +435,29 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "getAuditLog",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/getAuditLog",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"getAuditLog"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -557,7 +590,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"userName\": \"test\",\r\n    \"password\": \"test1234\"\r\n}",
+							"raw": "{\r\n    \"userName\": \"cm14683@gmail.com\",\r\n    \"password\": \"test1234\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"

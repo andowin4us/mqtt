@@ -28,6 +28,15 @@ const deleteData = async (tData, userInfo = {}) => {
         };
     }
 
+    if(userInfo && userInfo.accesslevel && userInfo.accesslevel > 1) {
+        return {
+            statusCode: 404,
+            success: false,
+            msg: "NOT ENOUGH PERMISSIONS TO PERFORM THIS OPERATION.",
+            err: "",
+        };
+    }
+
     try {
         let configDetails = await Util.mongo.findOne(deviceMongoCollection, {
             _id: tData.id,
@@ -100,6 +109,15 @@ const updateData = async (tData, userInfo = {}) => {
         };
     }
 
+    if(userInfo && userInfo.accesslevel && userInfo.accesslevel > 1) {
+        return {
+            statusCode: 404,
+            success: false,
+            msg: "NOT ENOUGH PERMISSIONS TO PERFORM THIS OPERATION.",
+            err: "",
+        };
+    }
+
     let MQTT_URL = `mqtt://${tData.mqttIP}:${tData.mqttPort}`;
     let updateObj = {
         $set: {
@@ -115,6 +133,8 @@ const updateData = async (tData, userInfo = {}) => {
             status: tData.status,
             mqttPort: tData.mqttPort,
             mqttExtraReceipe: tData.mqttExtraReceipe ? { ...tData.mqttExtraReceipe }: {},
+            issue: moment(tData.issue).format("YYYY-MM-DD HH:mm:ss"),
+            expiry: moment(tData.expiry).format("YYYY-MM-DD HH:mm:ss"),
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         }
     };
@@ -183,6 +203,15 @@ const createData = async (tData, userInfo = {}) => {
         };
     }
 
+    if(userInfo && userInfo.accesslevel && userInfo.accesslevel > 1) {
+        return {
+            statusCode: 404,
+            success: false,
+            msg: "NOT ENOUGH PERMISSIONS TO PERFORM THIS OPERATION.",
+            err: "",
+        };
+    }
+
     try {
         const isDublicate = await duplicate(tData.deviceName, tData.id);
 
@@ -210,6 +239,8 @@ const createData = async (tData, userInfo = {}) => {
             status: "Active",
             mqttPort: tData.mqttPort,
             mqttExtraReceipe: tData.mqttExtraReceipe ? { ...tData.mqttExtraReceipe }: {},
+            issue: moment(tData.issue).format("YYYY-MM-DD HH:mm:ss"),
+            expiry: moment(tData.expiry).format("YYYY-MM-DD HH:mm:ss"),
             created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         };
@@ -337,6 +368,16 @@ const assignMQTTDevice = async (tData, userInfo = {}) => {
             err: tCheck,
         };
     }
+
+    if(userInfo && userInfo.accesslevel && userInfo.accesslevel > 2) {
+        return {
+            statusCode: 404,
+            success: false,
+            msg: "NOT ENOUGH PERMISSIONS TO PERFORM THIS OPERATION.",
+            err: "",
+        };
+    }
+    
     try {
         let updateObj = {
             $set: {

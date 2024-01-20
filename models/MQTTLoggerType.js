@@ -27,6 +27,15 @@ const deleteData = async (tData, userInfo = {}) => {
         };
     }
 
+    if(userInfo && userInfo.accesslevel && userInfo.accesslevel > 2) {
+        return {
+            statusCode: 404,
+            success: false,
+            msg: "NOT ENOUGH PERMISSIONS TO PERFORM THIS OPERATION.",
+            err: "",
+        };
+    }
+
     try {
         let configDetails = await Util.mongo.findOne(deviceMongoCollection, {
             _id: tData.id,
@@ -87,6 +96,15 @@ const updateData = async (tData, userInfo = {}) => {
             success: false,
             msg: "PARAMETER_ISSUE",
             err: tCheck,
+        };
+    }
+
+    if(userInfo && userInfo.accesslevel && userInfo.accesslevel > 2) {
+        return {
+            statusCode: 404,
+            success: false,
+            msg: "NOT ENOUGH PERMISSIONS TO PERFORM THIS OPERATION.",
+            err: "",
         };
     }
 
@@ -162,6 +180,15 @@ const createData = async (tData, userInfo = {}) => {
         };
     }
 
+    if(userInfo && userInfo.accesslevel && userInfo.accesslevel > 2) {
+        return {
+            statusCode: 404,
+            success: false,
+            msg: "NOT ENOUGH PERMISSIONS TO PERFORM THIS OPERATION.",
+            err: "",
+        };
+    }
+    
     try {
         const isDublicate = await duplicate(tData.logType, tData.deviceId);
 

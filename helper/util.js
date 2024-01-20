@@ -37,7 +37,7 @@ const addAuditLogs = async (moduleName, userInfo, result) => {
         log: result
     }
 
-    await Mongo.db.collection("AuditLog").insertOne(insertObj);
+    await Mongo.db.collection("MQTTAuditLog").insertOne(insertObj);
     return insertObj;
 };
 

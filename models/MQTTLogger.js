@@ -255,7 +255,7 @@ const getAuditLog = async (tData, userInfo = {}) => {
             filter.moduleName = tData.moduleName
         }
         let result = await Util.mongo.findAndPaginate(
-            collectionName,
+            "MQTTAuditLog",
             filter,
             {},
             tData.skip,
