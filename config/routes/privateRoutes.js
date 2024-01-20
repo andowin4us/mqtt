@@ -1,7 +1,17 @@
-// const { ActivityLoggerPrivate } = require("./activityLogger.routes");
+const { MQTTPublic } = require("./mqtt.routes");
+const { mqttDevicePublic } = require("./mqttdevice.routes");
+const { MqttUserPublic } = require("./mqttuser.routes");
+const { MqttLoggerTypePublic } = require("./mqttloggertype.routes");
+const { MqttDeviceConfigPublic } = require("./mqtt.deviceconfig.routes");
+const { MQTTStatisticsPublic } = require("./mqtt.statistics.routes");
 
 const privateRoutes = {
-	// ...ActivityLoggerPrivate
+	...MQTTPublic,
+	...mqttDevicePublic,
+	...MqttUserPublic,
+	...MqttLoggerTypePublic,
+	...MqttDeviceConfigPublic,
+	...MQTTStatisticsPublic
 };
 
 module.exports = privateRoutes;

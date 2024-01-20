@@ -49,12 +49,14 @@ async function invokeDeviceStatusHandler() {
                         //checking that mqtt heartbeat updated status properly.
                         let startTime = moment().format('YYYY-MM-DD HH:mm:ss');
                         let end = moment(res[i].modified_time);
+                        let expiryDate = moment(res[i].expiry);
                         let duration = moment.duration(end.diff(startTime));
                         let minutes = duration.asMinutes();
                         minutes = Math.abs(minutes).toFixed(1);
     
-                        if(minutes > 10) {
+                        if(minutes > 10 || startTime > expiryDate) {
                             console.log("Heartbeat didn't received for this", res[i].deviceName ," from past ", minutes, "minutes");
+                            console.log("Payment not received for this device", res[i].deviceName ," and expiry was ", expiryDate);
                             let MQTT_URL = `mqtt://${res[i].mqttIP}:${res[i].mqttPort}`;
                             new MQTT(MQTT_URL, res[i].mqttUserName, res[i].mqttPassword, res[i].mqttTopic, true);
     
