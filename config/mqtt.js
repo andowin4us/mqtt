@@ -56,6 +56,7 @@ async function invokeDeviceStatusHandler() {
     
                         if(minutes > 10 || startTime > expiryDate) {
                             console.log("Heartbeat didn't received for this", res[i].deviceName ," from past ", minutes, "minutes");
+                            console.log("-------------------------- OR --------------------------------");
                             console.log("Payment not received for this device", res[i].deviceName ," and expiry was ", expiryDate);
                             let MQTT_URL = `mqtt://${res[i].mqttIP}:${res[i].mqttPort}`;
                             new MQTT(MQTT_URL, res[i].mqttUserName, res[i].mqttPassword, res[i].mqttTopic, true);
