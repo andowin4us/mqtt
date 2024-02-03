@@ -38,6 +38,7 @@ async function invokeDeviceStatusHandler() {
             const client = await MongoClient.connect(connection.mongo.url, { useNewUrlParser: true }).catch(err => { console.log(err); });
             const db = client.db(connection.mongo.database);
             let collection = db.collection("MQTTDevice");
+            let collectionAudit = db.collection("MQTTAuditLog");
             let res = await collection.find({}).toArray();
             
             console.log("list of devices present ", res.length);
@@ -62,6 +63,13 @@ async function invokeDeviceStatusHandler() {
                             new MQTT(MQTT_URL, res[i].mqttUserName, res[i].mqttPassword, res[i].mqttTopic, true);
     
                             await collection.updateOne({_id: res[i]._id}, {$set: {"status": "InActive", modified_time: moment().format('YYYY-MM-DD HH:mm:ss') }});
+                            await collectionAudit.insertOne({ 
+                                moduleName: "MQTTDevice",
+                                modified_user_id: "SYSTEM",
+                                modified_user_name: "SYSTEM",
+                                modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+                                log: JSON.stringify({...res[i], "status": "InActive", modified_time: moment().format('YYYY-MM-DD HH:mm:ss') })
+                            });
                         }
                     } else {
                         console.log("Device Status InActive Cannot initiate receiving events.", res[i].deviceName);
