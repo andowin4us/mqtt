@@ -60,7 +60,7 @@ server.listen(config.port, () => {
         console.error(`NODE_ENV is set to ${environment}, but only production and development are valid.`);
         process.exit(1);
     }
-    // eslint-disable-next-line no-console
+
     invokeInialization();
     invokeDeviceStatusHandler();
     console.log(`MQTT server is running on ${config.port}`);

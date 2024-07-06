@@ -118,7 +118,7 @@ const getProcessLogger = async (tData, userInfo = {}) => {
             tData.limit
         );
         let snatizedData = await Util.snatizeFromMongo(result);
-        console.log("snatizedData", snatizedData);
+
         if (snatizedData) {
             return {
                 statusCode: 200,
@@ -200,7 +200,6 @@ const downloadLogger = async (tData, userInfo = {}) => {
             {},
             sort
         );
-        console.log("finalJson", finalJson.length);
 
         if( finalJson && finalJson.length > 0 ) {
             const workerData = {

@@ -61,7 +61,7 @@ const getDeviceLogCount = async (tData, userInfo = {}) => {
             {}
         );
         let snatizedData = await Util.snatizeFromMongo(result);
-        console.log("snatizedData", snatizedData);
+
         if (snatizedData) {
             return {
                 statusCode: 200,
@@ -237,7 +237,7 @@ const getDeviceData = async (tData, userInfo = {}) => {
             filter,
         );
         let snatizedData = await Util.snatizeFromMongo(result);
-        console.log("snatizedData", snatizedData.length);
+
         if (snatizedData) {
             return {
                 statusCode: 200,
