@@ -1,7 +1,8 @@
-const Util = require("../helper/util");
-const deviceMongoCollection = "MQTTMaintainence";
 const dotenv = require("dotenv");
 const moment = require("moment");
+const Util = require("../helper/util");
+const workerHelper = require("../helper/mainWorkerHelper");
+const deviceMongoCollection = "MQTTMaintainence";
 const { sendEmail } = require("../common/mqttMail")
 
 const duplicate = async (logType, deviceId) => {
@@ -25,7 +26,7 @@ const downloadMaintainenceRequest = async (tData, userInfo = {}) => {
     console.log("tDATA-->", tData);
     let finalURL = "";
 
-    let coloum = [ "timestamp", "device_id", "device_name", "log_type", "log_desc", "log_line_count", "battery_level", "mac_id"];
+    let coloum = [ "modified_time", "devices", "maintainenceType", "engineerName", "engineerContact", "startTime", "endTime", "status"];
     try {
         let filter = {};
         
@@ -50,7 +51,7 @@ const downloadMaintainenceRequest = async (tData, userInfo = {}) => {
         }
 
         let finalJson = await Util.mongo.findAllSort(
-            collectionName,
+            deviceMongoCollection,
             filter,
             {},
             sort
