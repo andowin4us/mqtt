@@ -200,17 +200,6 @@ const createMaintainenceRequest = async (tData, userInfo = {}) => {
     }
     
     try {
-        const isDublicate = await duplicate(tData.logType, tData.deviceId);
-
-        if (isDublicate) {
-            return {
-                statusCode: 404,
-                success: false,
-                msg: "DUPLICATE NAME",
-                err: "",
-            };
-        }
-
         let createObj = {
             _id: tData.id,
             devices: tData.devices,
@@ -230,7 +219,16 @@ const createMaintainenceRequest = async (tData, userInfo = {}) => {
         );
 
         if (result) {
-            await sendEmail("ag14683@gmail.com", { DeviceName: "Device-12", DeviceId: "KT5138", Action: "Power is Connected", MacId: "00:1A:2B:3C:4D:5E", TimeofActivity: "2024-07-05T15:31:56+05:30" });
+            let sendEmailResponse = await sendEmail("ag14683@gmail.com", { DeviceName: "Device-12", DeviceId: "KT5138", Action: "Power is Connected", MacId: "00:1A:2B:3C:4D:5E", TimeofActivity: "2024-07-05T15:31:56+05:30" });
+            sendEmailResponse = JSON.parse(JSON.stringify(sendEmailResponse));
+
+            let mailResponse = {
+                ...sendEmailResponse,
+                status: sendEmailResponse.rejected.length > 0 ? "failed" : "success"
+            }
+
+            let result = await Util.mongo.insertOne("MQTTNotify", mailResponse);
+
             await Util.addAuditLogs(
                 deviceMongoCollection,
                 userInfo,
@@ -251,6 +249,7 @@ const createMaintainenceRequest = async (tData, userInfo = {}) => {
             };
         }
     } catch (error) {
+        console.log("error", error);
         return {
             statusCode: 500,
             success: false,

@@ -17,7 +17,6 @@ async function sendEmail(recipient, deviceInfo) {
     const senderEmail = process.env.SMTP_SENDING_EMAIL;
     const password = process.env.SMTP_SENDING_PASSWORD;
 
-    console.log("asdas", process.env.SMTP_SERVER)
     const transporter = nodemailer.createTransport({
         host: smtpServer,
         port: port,
@@ -83,7 +82,7 @@ async function sendEmail(recipient, deviceInfo) {
 
     try {
         let responseEmail = await transporter.sendMail(mailOptions);
-        console.log(`Email sent to ${recipient} for ${deviceInfo.DeviceName}, ${responseEmail}`);
+        console.log(`Email sent to ${recipient} for ${deviceInfo.DeviceName}`);
         return responseEmail;
     } catch (error) {
         console.error(`Error sending email to ${recipient}: ${error}`);
