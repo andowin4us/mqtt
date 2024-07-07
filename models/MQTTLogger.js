@@ -150,7 +150,7 @@ const downloadLogger = async (tData, userInfo = {}) => {
     console.log("tDATA-->", tData);
     let finalURL = "";
 
-    let coloum = [ "timestamp", "device_id", "device_name", "log_type", "log_desc", "log_line_count", "battery_level", "mac_id"];
+    let coloum = [ "timestamp", "device_id", "device_name", "mac_id", "log_type", "log_desc", "log_line_count", "battery_level"];
     try {
         let filter = {};
         

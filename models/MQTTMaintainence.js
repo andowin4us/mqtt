@@ -1,0 +1,338 @@
+const Util = require("../helper/util");
+const deviceMongoCollection = "MQTTMaintainence";
+const dotenv = require("dotenv");
+const moment = require("moment");
+const { sendEmail } = require("../common/mqttMail")
+
+const duplicate = async (logType, deviceId) => {
+    const query = { logType: logType, deviceId: deviceId };
+    const result = await Util.mongo.findOne(deviceMongoCollection, query);
+
+    if (result) {
+        return true;
+    }
+    return false;
+};
+
+const geMaintainenceData = async (query) => {
+    // const query = { userName: userName };
+    const result = await Util.mongo.findOne(deviceMongoCollection, query);
+
+    return result;
+};
+
+const downloadMaintainenceRequest = async (tData, userInfo = {}) => {
+    console.log("tDATA-->", tData);
+    let finalURL = "";
+
+    let coloum = [ "timestamp", "device_id", "device_name", "log_type", "log_desc", "log_line_count", "battery_level", "mac_id"];
+    try {
+        let filter = {};
+        
+        if( tData && tData.startTime ) {
+            filter.startTime = { "$gte": moment(tData.startTime).format("YYYY-MM-DD HH:mm:ss") };
+        }
+
+        if( tData && tData.endTime ) {
+            filter.endTime = { "$lte": moment(tData.endTime).format("YYYY-MM-DD HH:mm:ss") };
+        }
+
+        if( tData && tData.status ) {
+            filter.status = tData.status;
+        }
+
+        if( tData && tData.devices ) {
+            filter.devices =  { $in: tData.devices };
+        }
+
+        let sort = {
+            modified_time: 1,
+        }
+
+        let finalJson = await Util.mongo.findAllSort(
+            collectionName,
+            filter,
+            {},
+            sort
+        );
+
+        if( finalJson && finalJson.length > 0 ) {
+            const workerData = {
+                tData: finalJson,
+                column: coloum,
+                fileName: "MaintainenceLogReport",
+            };
+    
+            const dataFromWorker = await workerHelper.mainWorkerThreadCall(
+                workerData,
+                tData.type || "csv"
+            );
+            if (dataFromWorker.statusCode === 200) {
+                finalURL = dataFromWorker.status;
+            }
+        } else {
+            return {
+                success: false,
+                statusCode: 404,
+                message: "No data found to generate report.",
+            };
+        }
+    } catch (e) {
+        console.log("error", e);
+    }
+
+    return {
+        success: true,
+        statusCode: 200,
+        download: `http://127.0.0.1:4330${finalURL}`,
+    };
+};
+
+const submitMaintainenceRequest = async (tData, userInfo = {}) => {
+    // Required and sanity checks
+    let tCheck = await Util.checkQueryParams(tData, {
+        id: "required|string"
+    });
+
+    if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
+        return {
+            statusCode: 404,
+            success: false,
+            msg: "PARAMETER_ISSUE",
+            err: tCheck,
+        };
+    }
+
+    if(userInfo && userInfo.accesslevel && userInfo.accesslevel > 2) {
+        return {
+            statusCode: 404,
+            success: false,
+            msg: "NOT ENOUGH PERMISSIONS TO PERFORM THIS OPERATION.",
+            err: "",
+        };
+    }
+
+    const request = await geMaintainenceData({_id: tData.id});
+
+    if (request) {
+        if (!(moment().format("YYYY-MM-DD").isBetween(moment(request.startTime).format("YYYY-MM-DD"), moment(request.endTime).format("YYYY-MM-DD")))) {
+            return {
+                statusCode: 404,
+                success: false,
+                msg: "APPROVAL DATE AND TIME EXPIRED. KINDLY UPDATE YOUR REQUEST.",
+                err: "",
+            };
+        }
+    }
+
+    let updateObj = {
+        $set: {
+            _id: tData.id,
+            status: Boolean(isApproved) ? "Approved" : "Rejected",
+            modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
+        },
+    };
+    try {
+        let result = await Util.mongo.updateOne(
+            deviceMongoCollection,
+            { _id: tData.id },
+            updateObj
+        );
+        if (result) {
+            await Util.addAuditLogs(
+                deviceMongoCollection,
+                userInfo,
+                JSON.stringify(result)
+            );
+
+            return {
+                statusCode: 200,
+                success: true,
+                msg: "MQTTMaintainence Config Success",
+                status: result,
+            };
+        } else {
+            return {
+                statusCode: 404,
+                success: false,
+                msg: "MQTTMaintainence Config Error",
+                status: [],
+            };
+        }
+    } catch (error) {
+        return {
+            statusCode: 500,
+            success: false,
+            msg: "MQTTMaintainence Config Error",
+            status: [],
+            err: error,
+        };
+    }
+};
+
+const createMaintainenceRequest = async (tData, userInfo = {}) => {
+    let tCheck = await Util.checkQueryParams(tData, {
+        id: "required|string",
+        devices: "required|array",
+        maintainenceType: "required|string",
+        engineerName: "required|string",
+        engineerContact: "required|string",
+        startTime: "required|string",
+        endTime: "required|string"
+    });
+
+    if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
+        return {
+            statusCode: 404,
+            success: false,
+            msg: "PARAMETER_ISSUE",
+            err: tCheck,
+        };
+    }
+
+    if(userInfo && userInfo.accesslevel && userInfo.accesslevel > 2) {
+        return {
+            statusCode: 404,
+            success: false,
+            msg: "NOT ENOUGH PERMISSIONS TO PERFORM THIS OPERATION.",
+            err: "",
+        };
+    }
+    
+    try {
+        const isDublicate = await duplicate(tData.logType, tData.deviceId);
+
+        if (isDublicate) {
+            return {
+                statusCode: 404,
+                success: false,
+                msg: "DUPLICATE NAME",
+                err: "",
+            };
+        }
+
+        let createObj = {
+            _id: tData.id,
+            devices: tData.devices,
+            maintainenceType: tData.maintainenceType,
+            engineerName: tData.engineerName,
+            engineerContact: tData.engineerContact,
+            startTime: moment(tData.startTime).format("YYYY-MM-DD HH:mm:ss"),
+            endTime: moment(tData.endTime).format("YYYY-MM-DD HH:mm:ss"),
+            status: "Pending",
+            created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+            modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
+        };
+
+        let result = await Util.mongo.insertOne(
+            deviceMongoCollection,
+            createObj
+        );
+
+        if (result) {
+            await sendEmail("ag14683@gmail.com", { DeviceName: "Device-12", DeviceId: "KT5138", Action: "Power is Connected", MacId: "00:1A:2B:3C:4D:5E", TimeofActivity: "2024-07-05T15:31:56+05:30" });
+            await Util.addAuditLogs(
+                deviceMongoCollection,
+                userInfo,
+                JSON.stringify(result)
+            );
+            return {
+                statusCode: 200,
+                success: true,
+                msg: "MQTTMaintainence Created Successfull",
+                status: result,
+            };
+        } else {
+            return {
+                statusCode: 404,
+                success: false,
+                msg: "MQTTMaintainence Create Failed",
+                status: [],
+            };
+        }
+    } catch (error) {
+        return {
+            statusCode: 500,
+            success: false,
+            msg: "MQTTMaintainence Create Error",
+            status: [],
+            err: error,
+        };
+    }
+};
+
+const getMaintainenceRequest = async (tData, userInfo = {}) => {
+    let tCheck = await Util.checkQueryParams(tData, {
+        skip: "numeric",
+        limit: "numeric",
+    });
+
+    if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
+        return {
+            statusCode: 404,
+            success: false,
+            msg: "PARAMETER_ISSUE",
+            err: tCheck,
+        };
+    }
+    try {
+        let filter = {};
+
+        if( tData && tData.devices ) {
+            filter.devices =  { $in: tData.devices };
+        }
+
+        if( tData && tData.status ) {
+            filter.status = tData.status;
+        }
+
+        if( tData && tData.startTime ) {
+            filter.startTime = { "$gte": moment(tData.startTime).format("YYYY-MM-DD HH:mm:ss") };
+        }
+
+        if( tData && tData.endTime ) {
+            filter.endTime = { "$lte": moment(tData.endTime).format("YYYY-MM-DD HH:mm:ss") };
+        }
+
+        let result = await Util.mongo.findAndPaginate(
+            deviceMongoCollection,
+            filter,
+            {},
+            tData.skip,
+            tData.limit
+        );
+        let snatizedData = await Util.snatizeFromMongo(result);
+
+        if (snatizedData) {
+            return {
+                statusCode: 200,
+                success: true,
+                msg: "MQTTMaintainence get Successfull",
+                status: snatizedData[0].totalData,
+                totalSize: snatizedData[0].totalSize,
+            };
+        } else {
+            return {
+                statusCode: 404,
+                success: false,
+                msg: "MQTTMaintainence get Failed",
+                status: [],
+            };
+        }
+    } catch (error) {
+        return {
+            statusCode: 500,
+            success: false,
+            msg: "MQTTMaintainence get Error",
+            status: [],
+            err: error,
+        };
+    }
+};
+
+module.exports = {
+    downloadMaintainenceRequest,
+    submitMaintainenceRequest,
+    createMaintainenceRequest,
+    getMaintainenceRequest
+};
