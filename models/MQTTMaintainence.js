@@ -116,11 +116,20 @@ const submitMaintainenceRequest = async (tData, userInfo = {}) => {
     const request = await geMaintainenceData({_id: tData.id});
 
     if (request) {
-        if (!(moment().format("YYYY-MM-DD").isBetween(moment(request.startTime).format("YYYY-MM-DD"), moment(request.endTime).format("YYYY-MM-DD")))) {
+        if (!(moment().isBetween(moment(request.startTime), moment(request.endTime)))) {
             return {
                 statusCode: 404,
                 success: false,
                 msg: "APPROVAL DATE AND TIME EXPIRED. KINDLY UPDATE YOUR REQUEST.",
+                err: "",
+            };
+        }
+
+        if(["Approved", "Rejected"].includes(request.status)) {
+            return {
+                statusCode: 404,
+                success: false,
+                msg: "MAINTAINENCE FORM ALREADY SUBMITTED. KINDLY CREATE NEW REQUEST.",
                 err: "",
             };
         }
@@ -129,7 +138,7 @@ const submitMaintainenceRequest = async (tData, userInfo = {}) => {
     let updateObj = {
         $set: {
             _id: tData.id,
-            status: Boolean(isApproved) ? "Approved" : "Rejected",
+            status: Boolean(tData.isApproved) ? "Approved" : "Rejected",
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         },
     };

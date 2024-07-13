@@ -98,7 +98,7 @@
 							}
 						},
 						"url": {
-							"raw": "http://127.0.0.1:4330/api/getMQTTDeviceConfig",
+							"raw": "http://127.0.0.1:4330/api/getMQTTDevice",
 							"protocol": "http",
 							"host": [
 								"127",
@@ -109,7 +109,7 @@
 							"port": "4330",
 							"path": [
 								"api",
-								"getMQTTDeviceConfig"
+								"getMQTTDevice"
 							]
 						}
 					},
@@ -531,10 +531,20 @@
 				{
 					"name": "getUser",
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3NsZXZlbCI6MSwibmFtZSI6IlRlc3QxIiwidXNlck5hbWUiOiJ0ZXN0MSIsImVtYWlsIjoiY20xNDY4M0BnbWFpbC5jb20iLCJpYXQiOjE3MDU3MzYzMzIsImV4cCI6MTcwODMyODMzMn0.jOZIInZRdfCaaL3Fg_WKXhk3yMLQJdHRtjUx8JeBZlY",
+									"type": "string"
+								}
+							]
+						},
 						"method": "POST",
 						"header": [],
 						"url": {
-							"raw": "http://127.0.0.1:4330/api/getUser",
+							"raw": "http://127.0.0.1:4330/private/getUser",
 							"protocol": "http",
 							"host": [
 								"127",
@@ -544,7 +554,7 @@
 							],
 							"port": "4330",
 							"path": [
-								"api",
+								"private",
 								"getUser"
 							]
 						}
@@ -908,6 +918,139 @@
 							"path": [
 								"api",
 								"deleteMQTTDeviceConfig"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "MQTTMaintainence",
+			"item": [
+				{
+					"name": "createMaintainenceRequest",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": \"asa111s1w1qw1\",\r\n    \"devices\": [\"device_id\"],\r\n    \"maintainenceType\": \"Door Panel\",\r\n    \"engineerName\": \"s2\",\r\n    \"engineerContact\": \"131313\",\r\n    \"startTime\": \"2024-07-06 16:25:00\",\r\n    \"endTime\": \"2024-07-08 16:25:00\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/createMaintainenceRequest",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"createMaintainenceRequest"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "submitMaintainenceRequest",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": \"asa111s1w1qw1\",\r\n    \"isApproved\": true\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/submitMaintainenceRequest",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"submitMaintainenceRequest"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "downloadMaintainenceRequest",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/downloadMaintainenceRequest",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"downloadMaintainenceRequest"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "createMaintainenceRequest Copy 3",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": \"asa111s1w1qw1\",\r\n    \"devices\": [\"device_id\"],\r\n    \"maintainenceType\": \"Door Panel\",\r\n    \"engineerName\": \"s2\",\r\n    \"engineerContact\": \"131313\",\r\n    \"startTime\": \"2024-07-06 16:25:00\",\r\n    \"endTime\": \"2024-07-08 16:25:00\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/createMaintainenceRequest",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"createMaintainenceRequest"
 							]
 						}
 					},
