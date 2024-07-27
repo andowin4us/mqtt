@@ -76,8 +76,10 @@ class MQTTConnector {
         // this.client.publish(this.topic, 'Hello mqtt')
         // this.sendMessage(topic, message)
         // setTimeout(async () => {
-        if(this.resultDevice && this.createObj && this.createObj.logCount) {
-            await this.sendMessage(this.createObj.sendingTopic, this.resultDevice, this.createObj, packet);
+        if(this.resultDevice && this.createObj && this.createObj.length > 0) {
+            let response = await this.sendMessage(this.createObj.sendingTopic, this.resultDevice, this.createObj, packet);
+            this.createObj = null;
+            return response;
         }
         let processMessage = await utilizeMqtt( message );
 
@@ -94,30 +96,30 @@ class MQTTConnector {
     }
 
     async sendMessage(topic, device, message, packet) {
-        let messageBe;
-        let dataKeys = Object.keys(message);
-        for (let i = 0; i < dataKeys.length; i++) {
-            // if (dataKeys[i] !== 'id') {
-               if (dataKeys[i] !== 'deviceId') {
-                    if (dataKeys[i] !== 'sendingTopic') {
-                        if (dataKeys[i] !== 'logCount') {
-                            if (dataKeys[i] !== 'receipeId') {
-                                if (messageBe !== undefined) {
-                                    messageBe = `${messageBe},` + `${message[Object.keys(message)[i]]}`;
-                                } else {
-                                    messageBe = `${message[Object.keys(message)[i]]}`;
-                                }
-                            }
-                        }
-                    }
-                }
-            // }
-        }
+        // let messageBe;
+        // let dataKeys = Object.keys(message);
+        // for (let i = 0; i < dataKeys.length; i++) {
+        //     // if (dataKeys[i] !== 'id') {
+        //        if (dataKeys[i] !== 'deviceId') {
+        //             if (dataKeys[i] !== 'sendingTopic') {
+        //                 if (dataKeys[i] !== 'logCount') {
+        //                     if (dataKeys[i] !== 'receipeId') {
+        //                         if (messageBe !== undefined) {
+        //                             messageBe = `${messageBe},` + `${message[Object.keys(message)[i]]}`;
+        //                         } else {
+        //                             messageBe = `${message[Object.keys(message)[i]]}`;
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     // }
+        // }
+        let sendingMessage = message;
+        // let sendingMessage = `mac_id:${device.mqttMacId},receipe_id:${message.receipeId},N:${message.logCount},Data:${messageBe}`;
+        console.log('Topic='+' Relay/Control'+' sendingMessage= '+sendingMessage);
 
-        let sendingMessage = `mac_id:${device.mqttMacId},receipe_id:${message.receipeId},N:${message.logCount},Data:${messageBe}`;
-        console.log('Topic=' + topic + ' Message=' + typeof message, 'packet='+ packet, 'sendingMessage='+sendingMessage);
-
-        this.client.publish(topic, sendingMessage);
+        this.client.publish("Relay/Control", sendingMessage);
         return true;
     }
 

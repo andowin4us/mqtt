@@ -98,8 +98,6 @@ const mongoPool = {
             dataParams.push({ $project: projection });
         }
 
-        console.log("projection got in mongo func", projection);
-
         let result = [];
         result = await Mongo.db
             .collection(collection)
@@ -135,8 +133,6 @@ const mongoPool = {
             dataParams.push({ $project: projection });
         }
 
-        console.log("projection got in mongo func", projection);
-
         let result = [];
         result = await Mongo.db
             .collection(collection)
@@ -163,7 +159,6 @@ const mongoPool = {
         return result;
     },
     async findAll(collection, filter, projection = {}) {
-        console.log("(util.js):projection findAll, ", projection);
         const result = await Mongo.db
             .collection(collection)
             .find(filter, projection)
@@ -171,7 +166,6 @@ const mongoPool = {
         return result;
     },
     async findAllSort(collection, filter, projection = {}, sort) {
-        console.log("(util.js):projection findAll, ", projection);
         const result = await Mongo.db
             .collection(collection)
             .find(filter, projection)
@@ -186,7 +180,6 @@ const mongoPool = {
         skip = 0,
         limit = 0
     ) {
-        console.log("(util.js):projection findAll, ", projection);
         const result = await Mongo.db
             .collection(collection)
             .find(filter, projection)
@@ -260,8 +253,6 @@ const mongoPool = {
                     ...(createByObjTemp || {}),
                     _id: id,
                 };
-
-                console.log("filterTemp insertBulk", filterTemp);
 
                 bulk
                     .find({ ...filterTemp })

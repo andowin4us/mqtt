@@ -338,13 +338,10 @@ const getData = async (tData, userInfo) => {
 
 const login = async (tData, res) => {
     const { userName, password } = tData;
-    console.log("User:req.body, ", password, userName)
-
     let query = { };
     if (userName && password) {
         try {
             query = { email: userName };
-            console.log("User:query, ", query)
             const user = await geUserData(query);
 
             if (!user) {
@@ -455,8 +452,6 @@ const resetPassword = async (tData, userInfo = {}) => {
 
 const logout = async (tData, res) => {
     const { email, password, userName } = tData;
-    console.log("User:req.body, ", email, password, userName)
-
     let query = { email };
     if (userName) {
         query = { userName };
@@ -464,7 +459,6 @@ const logout = async (tData, res) => {
 
     if ((email || userName) && password) {
         try {
-            console.log("User:query, ", query)
             const user = await geUserData(query);
 
             if (!user) {

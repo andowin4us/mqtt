@@ -26,7 +26,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"id\": \"122b1j2b12ug12gb1b2n1jk2njjbn\",\r\n    \"deviceId\": \"device_id\",\r\n    \"deviceName\": \"device_name1\",\r\n    \"mqttIP\": \"192.168.31.244\",\r\n    \"mqttUserName\": \"admin\",\r\n    \"mqttPassword\": \"public\",\r\n    \"mqttTopic\": \"test\",\r\n    \"mqttPort\": \"1883\",\r\n    \"mqttMacId\": \"40:91:51:B2:EB:68\",\r\n    \"status\": \"Active\",\r\n    \"issue\": \"2024-01-20T08:33:20\",\r\n    \"expiry\": \"2024-02-20T08:33:20\"\r\n}",
+							"raw": "{\r\n    \"id\": \"122b1j2b12ug12gb1b2n1jk2njjbn\",\r\n    \"deviceId\": \"1\",\r\n    \"deviceName\": \"device_name1\",\r\n    \"mqttIP\": \"192.168.31.244\",\r\n    \"mqttUserName\": \"admin\",\r\n    \"mqttPassword\": \"public\",\r\n    \"mqttTopic\": [\"Power/State\", \"Logs\", \"DOOR\", \"Energy\", \"Weight\", \"process_status\", \"super_access\", \"status\", \"Relay/State\", \"State\", \"STATE\"],\r\n    \"mqttPort\": \"1883\",\r\n    \"mqttMacId\": \"40:91:51:B2:EB:68\",\r\n    \"status\": \"Active\",\r\n    \"issue\": \"2024-01-20T08:33:20\",\r\n    \"expiry\": \"2024-07-20T08:33:20\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -178,6 +178,38 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "relayTriggerOffMQTTDevice",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": \"122b1j2b12ug12gb1b2n1jk2njjbn\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/relayTriggerOffMQTTDevice",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"relayTriggerOffMQTTDevice"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -191,7 +223,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"id\": \"cffdtg1231kj1kb10j1oij1\",\r\n    \"deviceId\": \"device_id\",\r\n    \"logType\": \"DOOR\"\r\n}",
+							"raw": "{\r\n    \"id\": \"122cffdtg123e1kj1kb10j1oij1\",\r\n    \"deviceId\": \"1\",\r\n    \"logType\": \"WiFi\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -935,7 +967,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"id\": \"asa111s1w1qw1\",\r\n    \"devices\": [\"device_id\"],\r\n    \"maintainenceType\": \"Door Panel\",\r\n    \"engineerName\": \"s2\",\r\n    \"engineerContact\": \"131313\",\r\n    \"startTime\": \"2024-07-06 16:25:00\",\r\n    \"endTime\": \"2024-07-08 16:25:00\"\r\n}",
+							"raw": "{\r\n    \"id\": \"asa111s1w1qw1\",\r\n    \"devices\": [\"1\"],\r\n    \"maintainenceType\": \"Door Panel\",\r\n    \"engineerName\": \"s2\",\r\n    \"engineerContact\": \"131313\",\r\n    \"startTime\": \"2024-07-06 16:25:00\",\r\n    \"endTime\": \"2024-07-08 16:25:00\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"

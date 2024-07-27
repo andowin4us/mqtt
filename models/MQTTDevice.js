@@ -94,7 +94,7 @@ const updateData = async (tData, userInfo = {}) => {
         deviceId: "required|string",
         deviceName: "required|string",
         mqttIP: "required|string",
-        // mqttTopic: "required|string",
+        mqttTopic: "required|array",
         mqttPort: "required|string",
         mqttMacId: "required|string",
         status: "required|string",
@@ -239,6 +239,7 @@ const createData = async (tData, userInfo = {}) => {
             status: "Active",
             mqttPort: tData.mqttPort,
             mqttExtraReceipe: tData.mqttExtraReceipe ? { ...tData.mqttExtraReceipe }: {},
+            
             issue: moment(tData.issue).format("YYYY-MM-DD HH:mm:ss"),
             expiry: moment(tData.expiry).format("YYYY-MM-DD HH:mm:ss"),
             created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
@@ -325,7 +326,6 @@ const getData = async (tData, userInfo = {}) => {
             tData.limit
         );
         let snatizedData = await Util.snatizeFromMongo(result);
-        console.log("snatizedData", snatizedData);
         if (snatizedData) {
             return {
                 statusCode: 200,
@@ -422,10 +422,91 @@ const assignMQTTDevice = async (tData, userInfo = {}) => {
     }
 };
 
+const relayTriggerOffMQTTDevice = async (tData, userInfo = {}) => {
+    let tCheck = await Util.checkQueryParams(tData, {
+        id: "required|string"
+    });
+
+    if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
+        return {
+            statusCode: 404,
+            success: false,
+            msg: "PARAMETER_ISSUE",
+            err: tCheck,
+        };
+    }
+
+    if(userInfo && userInfo.accesslevel && userInfo.accesslevel > 1) {
+        return {
+            statusCode: 404,
+            success: false,
+            msg: "NOT ENOUGH PERMISSIONS TO PERFORM THIS OPERATION.",
+            err: "",
+        };
+    }
+    
+    try {
+        const resultDevice = await Util.mongo.findOne("MQTTDevice", {_id: tData.id});
+
+        if(resultDevice && resultDevice._id) {
+            let updateObj = {
+                $set: {
+                    status: "Active",
+                    modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
+                }
+            };
+
+            let result = await Util.mongo.updateOne(
+                deviceMongoCollection,
+                { _id: tData.id },
+                updateObj
+            );
+            if (result) {
+                let MQTT_URL = `mqtt://${resultDevice.mqttIP}:${resultDevice.mqttPort}`;
+                new MQTT(MQTT_URL, resultDevice.mqttUserName, resultDevice.mqttPassword, resultDevice.mqttTopic, false, resultDevice, "OFF");
+                await Util.addAuditLogs(
+                    deviceMongoCollection,
+                    userInfo,
+                    JSON.stringify(result)
+                );
+                return {
+                    statusCode: 200,
+                    success: true,
+                    msg: "MQTT device Trigger Successfull",
+                    status: result,
+                };
+            } else {
+                return {
+                    statusCode: 404,
+                    success: false,
+                    msg: "MQTT device Trigger Failed",
+                    status: [],
+                };
+            }
+        } else {
+            return {
+                statusCode: 404,
+                success: false,
+                msg: "MQTT device Not Found",
+                status: [],
+            };
+        }
+    } catch (error) {
+        return {
+            statusCode: 500,
+            success: false,
+            msg: "MQTT device Assigned Error",
+            status: [],
+            err: error,
+        };
+    }
+};
+
 module.exports = {
     deleteData,
     updateData,
     createData,
     getData,
-    assignMQTTDevice
+    assignMQTTDevice,
+    relayTriggerOffMQTTDevice
 };

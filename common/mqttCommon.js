@@ -38,11 +38,7 @@ async function utilizeMqtt(message) {
             if(message && message.device_id) {
                 let resultExisting = await mongoInsert(message, { device_id: message.device_id ? message.device_id : "", log_line_count: message.log_line_count ? message.log_line_count : "" }, "dump_device_id", "find");
 
-                if (resultExisting && resultExisting._id) {
-                    console.log("dump_device_id is already present.");
-
-                    return false;
-                } else {
+                if (!resultExisting) {
                     message._id = uuidv4();
                     data.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
                     await mongoInsert( message, {}, "dump_device_id", "create" );
@@ -56,6 +52,8 @@ async function utilizeMqtt(message) {
 
                 return false;
             }
+
+            return false;
         }
     } catch (err) {
         console.log("error occurred.", err);
@@ -76,20 +74,30 @@ async function processMessage (data) {
             //logger type check
             if (resultConfig && resultConfig._id) {
                 //Device state check.
-                if (data.log_type === "Status") {
+                if (data.log_type === "Status" || data.log_type === "STATE" || data.log_type === "Heartbeat") {
                     data._id = uuidv4();
                     data.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
                     data.user_id = result.userId;
                     await mongoInsert(data, {}, "MQTTLogger", "create");
-                    await mongoInsert({mqttState: data.state}, {deviceId: data.device_id}, "MQTTDevice", "update");
+                    
+                    let logTypeUpdate = {};
+                    logTypeUpdate[`${data.log_type}`] = {
+                        status: data.log_type === "Status" ? data.state : data.log_desc,
+                        modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
+                    };
+                    let mqttStatusDetails = {...result.mqttStatusDetails, 
+                        ...logTypeUpdate,
+                        mqttBattery: data.battery_level,
+                        mqttRelayState: data.relay_state ? data.relay_state : "OFF" 
+                    };
+
+                    await mongoInsert({mqttStatusDetails: mqttStatusDetails}, {deviceId: data.device_id}, "MQTTDevice", "update");
 
                     return true;
                 } 
                 let resultExisting = await mongoInsert( data, { device_id: data.device_id, log_line_count: data.log_line_count }, "MQTTLogger", "find" );
                 //Log Line count check
                 if (resultExisting && resultExisting._id) {
-                    console.log("In MQTTLogger data is already present.");
-
                     return false;
                 } else {
                     // Sending mail if log type is "POWER, DOOR".
@@ -105,9 +113,22 @@ async function processMessage (data) {
                         if (!checkMaintainence) {
                             await mongoInsert({status: "InActive", modified_time: moment().format("YYYY-MM-DD HH:mm:ss")}, {}, "MQTTDevice", "update" );
                             let MQTT_URL = `mqtt://${result.mqttIP}:${result.mqttPort}`;
+                            data.relay_state = "ON";
                             publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword);
                         }
                     }
+
+                    let logTypeUpdate = {};
+                    logTypeUpdate[`${data.log_type}`] = {
+                        status: data.log_desc,
+                        modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
+                    };
+                    let mqttStatusDetails = {...result.mqttStatusDetails, 
+                        ...logTypeUpdate,
+                        mqttBattery: data.battery_level,
+                        mqttRelayState: data.relay_state ? data.relay_state : "OFF" 
+                    };
+                    await mongoInsert({mqttStatusDetails: mqttStatusDetails}, {deviceId: data.device_id}, "MQTTDevice", "update");
 
                     data._id = uuidv4();
                     data.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
@@ -119,9 +140,7 @@ async function processMessage (data) {
             } else {
                 let resultExisting = await mongoInsert(data, { device_id: data.device_id, log_line_count: data.log_line_count }, "dump_logger_type", "find" );
 
-                if (resultExisting && resultExisting._id) {
-                    console.log("In dump_logger_type log_type is already present.");
-                } else {
+                if (!resultExisting) {
                     data._id = uuidv4();
                     data.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
                     await mongoInsert( data, {}, "dump_logger_type", "create" );
@@ -130,9 +149,7 @@ async function processMessage (data) {
         } else {
             let resultExisting = await mongoInsert( data, { device_id: data.device_id, log_line_count: data.log_line_count }, "dump_device_mac", "find" );
 
-            if (resultExisting && resultExisting._id) {
-                console.log("In dump_device_mac device_mac is already present.");
-            } else {
+            if (!resultExisting) {
                 data._id = uuidv4();
                 data.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
                 await mongoInsert( data, {}, "dump_device_mac", "create" );
@@ -142,19 +159,14 @@ async function processMessage (data) {
         if (data && data.device_id) {
             let resultExisting = await mongoInsert(data, { device_id: data.device_id, log_line_count: data.log_line_count }, "dump_device_id", "find");
 
-            if (resultExisting && resultExisting._id) {
-                console.log("In dump_device_id device_id is already present.");
-            } else {
+            if (!resultExisting) {
                 data._id = uuidv4();
                 data.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
                 await mongoInsert( data, {}, "dump_device_id", "create" );
             }
         } else {
             if (data === null || data === undefined) { 
-                let data = {}; 
-                data._id = uuidv4();
-                data.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
-                await mongoInsert(data, {}, "dump_device_id", "create");
+                data = {}; 
             }
 
             data._id = uuidv4();
@@ -186,8 +198,6 @@ async function mongoInsert(data, filter, collectionName, type) {
             let collection = db.collection(collectionName);
             let res = await collection.findOne(filter);
     
-            // console.log(res);
-
             return res;
         } catch (err) {
             console.log(err);
@@ -199,8 +209,7 @@ async function mongoInsert(data, filter, collectionName, type) {
             const db = client.db(connection.mongo.database);
             let collection = db.collection(collectionName);
             let res = await collection.insertOne(data);
-    
-            console.log("data insert to ", collectionName, res.insertedCount);
+
             return res;
         } catch (err) {
             console.log(err);
@@ -214,12 +223,10 @@ async function mongoInsert(data, filter, collectionName, type) {
             if(data.log_type && data.log_type === "receipeUpdate") {
                 let res = await collection.updateOne(filter, {$set: data});
     
-                console.log("data update to receipeStatus ", collectionName);
                 return res;
             }
             let res = await collection.updateOne(filter, {$set: data}, { upsert: true });
-    
-            console.log("data update to ", collectionName);
+            
             return res;
         } catch (err) {
             console.log(err);

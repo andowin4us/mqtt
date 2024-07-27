@@ -24,7 +24,6 @@ const MQTTUserController = () => {
     const login = async (req, res) => {
         console.log('login', req.body, req.User);
         return await MQTTUser.login(req.body, res);
-        // return res.status(result.statusCode).json(result);
     }
     const resetPassword = async (req, res) => {
         console.log('resetPassword', req.body, req.User);
@@ -34,7 +33,6 @@ const MQTTUserController = () => {
     const logout = async (req, res) => {
         console.log('logout', req.body, req.User);
         return await MQTTUser.logout(req.body, res);
-        // return res.status(result.statusCode).json(result);
     }
 
     return {

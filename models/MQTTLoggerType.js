@@ -276,7 +276,6 @@ const getData = async (tData, userInfo = {}) => {
             tData.limit
         );
         let snatizedData = await Util.snatizeFromMongo(result);
-        console.log("snatizedData", snatizedData);
         if (snatizedData) {
             return {
                 statusCode: 200,

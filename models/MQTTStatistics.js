@@ -325,7 +325,6 @@ const getDeviceReceipeCount = async (tData, userInfo = {}) => {
             {}
         );
         let snatizedData = await Util.snatizeFromMongo(result);
-        console.log("snatizedData", snatizedData);
         if (snatizedData) {
             return {
                 statusCode: 200,

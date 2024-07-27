@@ -54,12 +54,9 @@ class ThirdPartyAPICaller {
 						mResponse = JSON.parse(body);
 						resolve(mResponse);
 					} catch (e) {
-						console.log(e);
 						resolve({ succuss: false, status: "In Valid Data" });
 					}
 				} else {
-					console.log(`Get Error Is`);
-					console.log(error);
 					let mResponse = {}
 					try {
 						mResponse = JSON.parse(body);

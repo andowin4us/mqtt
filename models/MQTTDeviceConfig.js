@@ -130,7 +130,6 @@ const updateData = async (tData, userInfo = {}) => {
     try {
         const resultDevice = await Util.mongo.findOne("MQTTDevice", {deviceId: tData.deviceId});
 
-        console.log("resultDevice", resultDevice);
         if(resultDevice && resultDevice._id) {
             let result = await Util.mongo.updateOne(
                 deviceMongoCollection,
@@ -248,7 +247,6 @@ const createData = async (tData, userInfo = {}) => {
     try {
         const resultDevice = await Util.mongo.findOne("MQTTDevice", {deviceId: tData.deviceId});
 
-        console.log("resultDevice", resultDevice);
         if(resultDevice && resultDevice._id) {
             let createObj = {
                 _id: tData.id,
@@ -277,7 +275,6 @@ const createData = async (tData, userInfo = {}) => {
                 // }
             }
 
-            // console.log("createObj", createObj);
             let result = await Util.mongo.insertOne(
                 deviceMongoCollection,
                 createObj
@@ -351,7 +348,6 @@ const getData = async (tData, userInfo = {}) => {
             tData.limit
         );
         let snatizedData = await Util.snatizeFromMongo(result);
-        console.log("snatizedData", snatizedData);
         if (snatizedData) {
             return {
                 statusCode: 200,
@@ -569,7 +565,6 @@ const getReceipeData = async (tData, userInfo = {}) => {
             tData.limit
         );
         let snatizedData = await Util.snatizeFromMongo(result);
-        console.log("snatizedData", snatizedData);
 
         let totalConfigData = [];
         for(let i = 0; i < snatizedData[0].totalSize; i++) {
@@ -639,7 +634,6 @@ const getReceipeCommand = async (tData, userInfo = {}) => {
             {}
         );
         let snatizedData = await Util.snatizeFromMongo(result);
-        // console.log("snatizedData", snatizedData);
         if (snatizedData) {
             return {
                 statusCode: 200,
