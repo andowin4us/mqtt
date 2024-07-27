@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 const dotenv = require('dotenv');
 dotenv.config({ path: process.env.ENV_PATH || '.env' });
-const mqtt = require('mqtt')
+const mqtt = require('mqtt');
 const reconnectionTimeout = 2 * 1000;
 const clientId = `mqtt_${Math.random().toString(16).slice(3)}`;
 const { utilizeMqtt } = require("../common/mqttCommon");
@@ -76,20 +76,20 @@ class MQTTConnector {
         // this.client.publish(this.topic, 'Hello mqtt')
         // this.sendMessage(topic, message)
         // setTimeout(async () => {
-            if(this.resultDevice && this.createObj && this.createObj.logCount) {
-                await this.sendMessage(this.createObj.sendingTopic, this.resultDevice, this.createObj, packet);
-            }
-            let processMessage = await utilizeMqtt( message );
-    
-            if( processMessage === true ) {
-                console.log("Message Process Success.");
-    
-                return processMessage;
-            } else {
-                console.log("Message Process Failed.");
-    
-                return processMessage;
-            }
+        if(this.resultDevice && this.createObj && this.createObj.logCount) {
+            await this.sendMessage(this.createObj.sendingTopic, this.resultDevice, this.createObj, packet);
+        }
+        let processMessage = await utilizeMqtt( message );
+
+        if( processMessage === true ) {
+            console.log("Message Process Success.");
+
+            return processMessage;
+        } else {
+            console.log("Message Process Failed.");
+
+            return processMessage;
+        }
         // }, 10000);
     }
 

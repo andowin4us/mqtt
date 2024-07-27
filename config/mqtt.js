@@ -5,25 +5,18 @@ const cron = require('node-cron');
 const moment = require("moment");
 
 async function invokeInialization() {
-    console.log("invokeInialization");
     try {
         const client = await MongoClient.connect(connection.mongo.url, { useNewUrlParser: true }).catch(err => { console.log(err); });
         const db = client.db(connection.mongo.database);
         let collection = db.collection("MQTTDevice");
         let res = await collection.find({}).toArray();
         
-        console.log("list of devices present ", res.length);
+        console.log("list of devices present to start receiving events ", res.length);
         if(res && res.length > 0) {    
             for(let i = 0; i < res.length; i++ ) {
-                console.log("Device ", i ," is ", res[i].deviceName);
-
-                if(res[i].status === "Active") {
-                    console.log("Initiating Device Connections.");
-                    let MQTT_URL = `mqtt://${res[i].mqttIP}:${res[i].mqttPort}`;
-                    new MQTT(MQTT_URL, res[i].mqttUserName, res[i].mqttPassword, res[i].mqttTopic, false);
-                } else {
-                    console.log("Device Status InActive Cannot initiate receiving events.", res[i].deviceName);
-                }
+                console.log("Device ", i ," is ", res[i].deviceName, "Initiating Receiving Events.");
+                let MQTT_URL = `mqtt://${res[i].mqttIP}:${res[i].mqttPort}`;
+                new MQTT(MQTT_URL, res[i].mqttUserName, res[i].mqttPassword, res[i].mqttTopic, false);
             }
         }
     } catch (err) {
@@ -33,7 +26,6 @@ async function invokeInialization() {
 
 async function invokeDeviceStatusHandler() {
     cron.schedule('* */1 * * *', async () => {
-        console.log('This is an every minute device status check handler.');
         try {
             const client = await MongoClient.connect(connection.mongo.url, { useNewUrlParser: true }).catch(err => { console.log(err); });
             const db = client.db(connection.mongo.database);
@@ -41,7 +33,7 @@ async function invokeDeviceStatusHandler() {
             let collectionAudit = db.collection("MQTTAuditLog");
             let res = await collection.find({}).toArray();
             
-            console.log("list of devices present ", res.length);
+            console.log("list of devices present for expiry check ", res.length);
             if(res && res.length > 0) {    
                 for(let i = 0; i < res.length; i++ ) {
                     console.log("Device ", i ," is ", res[i].deviceName);
@@ -59,10 +51,12 @@ async function invokeDeviceStatusHandler() {
                             console.log("Heartbeat didn't received for this", res[i].deviceName ," from past ", minutes, "minutes");
                             console.log("-------------------------- OR --------------------------------");
                             console.log("Payment not received for this device", res[i].deviceName ," and expiry was ", expiryDate);
-                            let MQTT_URL = `mqtt://${res[i].mqttIP}:${res[i].mqttPort}`;
-                            new MQTT(MQTT_URL, res[i].mqttUserName, res[i].mqttPassword, res[i].mqttTopic, true);
+                            
+                            // To stop receiving events..
+                            // let MQTT_URL = `mqtt://${res[i].mqttIP}:${res[i].mqttPort}`;
+                            // new MQTT(MQTT_URL, res[i].mqttUserName, res[i].mqttPassword, res[i].mqttTopic, true);
     
-                            await collection.updateOne({_id: res[i]._id}, {$set: {"status": "InActive", modified_time: moment().format('YYYY-MM-DD HH:mm:ss') }});
+                            await collection.updateOne({_id: res[i]._id}, {$set: {"status": "InActive", modified_time: moment().format('YYYY-MM-DD HH:mm:ss')}});
                             await collectionAudit.insertOne({ 
                                 moduleName: "MQTTDevice",
                                 modified_user_id: "SYSTEM",
@@ -72,7 +66,7 @@ async function invokeDeviceStatusHandler() {
                             });
                         }
                     } else {
-                        console.log("Device Status InActive Cannot initiate receiving events.", res[i].deviceName);
+                        console.log("Device Status InActive.", res[i].deviceName);
                     }
                 }
             }

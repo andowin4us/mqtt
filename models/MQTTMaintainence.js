@@ -3,7 +3,7 @@ const moment = require("moment");
 const Util = require("../helper/util");
 const workerHelper = require("../helper/mainWorkerHelper");
 const deviceMongoCollection = "MQTTMaintainence";
-const { sendEmail } = require("../common/mqttMail")
+const { sendEmail } = require("../common/mqttMail");
 
 const duplicate = async (logType, deviceId) => {
     const query = { logType: logType, deviceId: deviceId };

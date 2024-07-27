@@ -94,7 +94,7 @@ const updateData = async (tData, userInfo = {}) => {
         deviceId: "required|string",
         deviceName: "required|string",
         mqttIP: "required|string",
-        mqttTopic: "required|string",
+        // mqttTopic: "required|string",
         mqttPort: "required|string",
         mqttMacId: "required|string",
         status: "required|string",
@@ -189,7 +189,7 @@ const createData = async (tData, userInfo = {}) => {
         deviceId: "required|string",
         deviceName: "required|string",
         mqttIP: "required|string",
-        mqttTopic: "required|string",
+        mqttTopic: "required|array",
         mqttPort: "required|string",
         mqttMacId: "required|string"
     });
