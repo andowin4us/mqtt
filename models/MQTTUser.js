@@ -288,16 +288,20 @@ const getData = async (tData, userInfo) => {
     try {
         let filter = {};
 
-        if(userInfo && userInfo.accesslevel >= 2) {
+        if (userInfo && userInfo.accesslevel >= 2) {
             filter.accesslevel = { $gte: userInfo.accesslevel }
         } 
 
-        if( tData && tData.userName ) {
+        if (tData && tData.userName) {
             filter.userName = tData.userName
         }
 
-        if( tData && tData.name ) {
+        if (tData && tData.name) {
             filter.name = tData.name
+        }
+
+        if (tData && tData.status) {
+            filter.status = tData.status
         }
 
         let result = await Util.mongo.findAndPaginate(
@@ -357,7 +361,7 @@ const login = async (tData, res) => {
                     email: user.email
                 };
                 const token = authService().issue(session);
-                return res.status(200).json({ token });
+                return res.status(200).json({ token, userData: session });
             }
 
             return res.status(401).json({ msg: 'Unauthorized' });
