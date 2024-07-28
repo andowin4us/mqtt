@@ -31,39 +31,52 @@ async function invokeDeviceStatusHandler() {
             const db = client.db(connection.mongo.database);
             let collection = db.collection("MQTTDevice");
             let collectionAudit = db.collection("MQTTAuditLog");
+            let collectionInstance = db.collection("MQTTFlag");
             let res = await collection.find({}).toArray();
+            let resInstance = await collectionInstance.findOne({});
             
             console.log("list of devices present for expiry check ", res.length);
-            if(res && res.length > 0) {    
-                for(let i = 0; i < res.length; i++ ) {
+            if (res && res.length > 0) {    
+                for (let i = 0; i < res.length; i++ ) {
                     console.log("Device ", i ," is ", res[i].deviceName);
 
-                    if(res[i].status === "Active") {
+                    if (res[i].status === "Active") {
                         //checking that mqtt heartbeat updated status properly.
                         let startTime = moment().format('YYYY-MM-DD HH:mm:ss');
                         let end = moment(res[i].modified_time);
-                        let expiryDate = moment(res[i].expiry);
+                        let expiryDate = moment(resInstance.instanceExpiry);
                         let duration = moment.duration(end.diff(startTime));
                         let minutes = duration.asMinutes();
                         minutes = Math.abs(minutes).toFixed(1);
     
-                        if(minutes > 10 || startTime > expiryDate) {
-                            console.log("Heartbeat didn't received for this", res[i].deviceName ," from past ", minutes, "minutes");
-                            console.log("-------------------------- OR --------------------------------");
-                            console.log("Payment not received for this device", res[i].deviceName ," and expiry was ", expiryDate);
-                            
+                        if (minutes > resInstance.heartBeatTimer || startTime > expiryDate) {
                             // To stop receiving events..
                             // let MQTT_URL = `mqtt://${res[i].mqttIP}:${res[i].mqttPort}`;
-                            // new MQTT(MQTT_URL, res[i].mqttUserName, res[i].mqttPassword, res[i].mqttTopic, true);
+                            // new MQTT(MQTT_URL, res[i].mqttUserName, res[i]truetrue.mqttPassword, res[i].mqttTopic, true);
     
-                            await collection.updateOne({_id: res[i]._id}, {$set: {"status": "InActive", modified_time: moment().format('YYYY-MM-DD HH:mm:ss')}});
-                            await collectionAudit.insertOne({ 
-                                moduleName: "MQTTDevice",
-                                modified_user_id: "SYSTEM",
-                                modified_user_name: "SYSTEM",
-                                modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
-                                log: JSON.stringify({...res[i], "status": "InActive", modified_time: moment().format('YYYY-MM-DD HH:mm:ss') })
-                            });
+                            if(minutes > parseInt(resInstance.heartBeatTimer)) {
+                                console.log("Heartbeat didn't received for this", res[i].deviceName ," from past ", minutes, "minutes");
+                                await collection.updateOne({_id: res[i]._id}, {$set: {"status": "InActive", modified_time: moment().format('YYYY-MM-DD HH:mm:ss')}});
+                                await collectionAudit.insertOne({ 
+                                    moduleName: "MQTTDevice",
+                                    modified_user_id: "SYSTEM",
+                                    modified_user_name: "SYSTEM",
+                                    modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+                                    log: JSON.stringify({...res[i], "status": "InActive", modified_time: moment().format('YYYY-MM-DD HH:mm:ss') })
+                                });
+                            }
+
+                            if(startTime > expiryDate) {
+                                console.log("Instance Expired and expiry was ", expiryDate);
+                                await collectionInstance.updateOne({_id: resInstance._id}, {$set: {"instanceExpired": true, modified_time: moment().format('YYYY-MM-DD HH:mm:ss')}});
+                                await collectionAudit.insertOne({ 
+                                    moduleName: "MQTTFlag",
+                                    modified_user_id: "SYSTEM",
+                                    modified_user_name: "SYSTEM",
+                                    modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+                                    log: JSON.stringify({...resInstance, "instanceExpired": true, modified_time: moment().format('YYYY-MM-DD HH:mm:ss') })
+                                });
+                            }
                         }
                     } else {
                         console.log("Device Status InActive.", res[i].deviceName);

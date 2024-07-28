@@ -5,6 +5,7 @@ const { MqttLoggerTypePublic } = require("./mqttloggertype.routes");
 const { MqttDeviceConfigPublic } = require("./mqtt.deviceconfig.routes");
 const { MQTTStatisticsPublic } = require("./mqtt.statistics.routes");
 const { MQTTMaintainencePublic } = require("./mqtt.maintainence.routes");
+const { MqttFlagPublic } = require("./mqtt.flag.routes");
 
 const privateRoutes = {
 	...MQTTPublic,
@@ -13,7 +14,8 @@ const privateRoutes = {
 	...MqttLoggerTypePublic,
 	...MqttDeviceConfigPublic,
 	...MQTTStatisticsPublic,
-	...MQTTMaintainencePublic
+	...MQTTMaintainencePublic,
+	...MqttFlagPublic
 };
 
 module.exports = privateRoutes;

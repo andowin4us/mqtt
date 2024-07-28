@@ -133,8 +133,6 @@ const updateData = async (tData, userInfo = {}) => {
             status: tData.status,
             mqttPort: tData.mqttPort,
             mqttExtraReceipe: tData.mqttExtraReceipe ? { ...tData.mqttExtraReceipe }: {},
-            issue: moment(tData.issue).format("YYYY-MM-DD HH:mm:ss"),
-            expiry: moment(tData.expiry).format("YYYY-MM-DD HH:mm:ss"),
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         }
     };
@@ -239,9 +237,6 @@ const createData = async (tData, userInfo = {}) => {
             status: "Active",
             mqttPort: tData.mqttPort,
             mqttExtraReceipe: tData.mqttExtraReceipe ? { ...tData.mqttExtraReceipe }: {},
-            
-            issue: moment(tData.issue).format("YYYY-MM-DD HH:mm:ss"),
-            expiry: moment(tData.expiry).format("YYYY-MM-DD HH:mm:ss"),
             created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         };

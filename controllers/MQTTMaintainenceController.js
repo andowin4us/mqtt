@@ -11,6 +11,11 @@ const MQTTMaintainenceController = () => {
         const result = await MQTTMaintainence.createMaintainenceRequest(req.body, req.user);
         return res.status(result.statusCode).json(result);
     };
+    const updateMaintainenceRequest = async (req, res) => {
+        console.log('updateMaintainenceRequest logs ', req.body, req.user);
+        const result = await MQTTMaintainence.updateMaintainenceRequest(req.body, req.user);
+        return res.status(result.statusCode).json(result);
+    };
     const downloadMaintainenceRequest = async (req, res) => {
         console.log('downloadMaintainenceRequest logs ', req.body, req.user);
         const result = await MQTTMaintainence.downloadMaintainenceRequest(req.body, req.user);
@@ -26,7 +31,8 @@ const MQTTMaintainenceController = () => {
         getMaintainenceRequest,
         createMaintainenceRequest,
         downloadMaintainenceRequest,
-        submitMaintainenceRequest
+        submitMaintainenceRequest,
+        updateMaintainenceRequest
     };
 }
 

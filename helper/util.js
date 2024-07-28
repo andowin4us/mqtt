@@ -35,7 +35,7 @@ const addAuditLogs = async (moduleName, userInfo, result) => {
         modified_user_name: userInfo.userName || "test",
         modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
         log: result
-    }
+    };
 
     await Mongo.db.collection("MQTTAuditLog").insertOne(insertObj);
     return insertObj;

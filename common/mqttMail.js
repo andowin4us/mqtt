@@ -11,11 +11,11 @@ const path = require('path');
 // ];
 
 // Email sending function
-async function sendEmail(recipient, deviceInfo) {
-    const smtpServer = process.env.SMTP_SERVER;
-    const port = 465;
-    const senderEmail = process.env.SMTP_SENDING_EMAIL;
-    const password = process.env.SMTP_SENDING_PASSWORD;
+async function sendEmail(recipient, deviceInfo, emailConfig) {
+    const smtpServer = emailConfig.SMTP_SERVER;
+    const port = parseInt(emailConfig.SMTP_PORT);
+    const senderEmail = emailConfig.SMTP_SENDING_EMAIL;
+    const password = emailConfig.SMTP_SENDING_PASSWORD;
 
     const transporter = nodemailer.createTransport({
         host: smtpServer,

@@ -1,3 +1,5 @@
+const dotenv = require('dotenv');
+require('dotenv').config(); // load .env file
 const Util = require('../helper/util');
 const workerHelper = require("../helper/mainWorkerHelper");
 let collectionName = "MQTTLogger"
@@ -228,7 +230,7 @@ const downloadLogger = async (tData, userInfo = {}) => {
     return {
         success: true,
         statusCode: 200,
-        download: `http://127.0.0.1:4330${finalURL}`,
+        download: `${process.env.HOSTNAME}${finalURL}`,
     };
 };
 

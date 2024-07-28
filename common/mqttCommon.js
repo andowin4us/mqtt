@@ -65,6 +65,7 @@ async function utilizeMqtt(message) {
 async function processMessage (data) {
     console.log("Processing your message now for ", data?.device_id);
     let result = await mongoInsert(data, { deviceId: data?.device_id }, "MQTTDevice", "find");
+    let getFlagData = await mongoInsert(data, {}, "MQTTFlag", "find");
 
     //device id check
     if (result && result.deviceId && data.device_id === result.deviceId) {
@@ -102,8 +103,11 @@ async function processMessage (data) {
                 } else {
                     // Sending mail if log type is "POWER, DOOR".
                     if (["DOOR", "POWER"].includes(data.log_type)) {
-                        await sendEmail("ag14683@gmail.com", { DeviceName: data.device_name, DeviceId: data.device_id, 
-                            Action: `${data.log_type} ${data.log_desc}`, MacId: data.mac_id, TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss") });
+                        await sendEmail(getFlagData.superUserMails, { DeviceName: data.device_name, DeviceId: data.device_id, 
+                            Action: `${data.log_type} ${data.log_desc}`, 
+                            MacId: data.mac_id, 
+                            TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss") 
+                        }, getFlagData);
                     }
 
                     // Check if Door is opened and maintainence request was approved via Super User.
@@ -112,6 +116,14 @@ async function processMessage (data) {
                         
                         if (!checkMaintainence) {
                             await mongoInsert({status: "InActive", modified_time: moment().format("YYYY-MM-DD HH:mm:ss")}, {}, "MQTTDevice", "update" );
+                            await mongoInsert({
+                                moduleName: "MQTTLogger",
+                                modified_user_id: "SYSTEM",
+                                modified_user_name: "SYSTEM",
+                                modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+                                log: "RELAY Turned ON"
+                            }, {}, "MQTTAuditLog", "create");
+
                             let MQTT_URL = `mqtt://${result.mqttIP}:${result.mqttPort}`;
                             data.relay_state = "ON";
                             publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword);
