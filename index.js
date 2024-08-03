@@ -51,7 +51,7 @@ app.get('/', (req, res) => {
     res.status(200).json({success: true, statusCode: 200, msg: "MQTT Home Called."});
 });
 
-server.listen(config.port, () => {
+server.listen(config.port, async () => {
     if (environment !== 'production' &&
         environment !== 'development' &&
         environment !== 'testing'
@@ -61,7 +61,7 @@ server.listen(config.port, () => {
         process.exit(1);
     }
 
-    invokeInialization();
-    invokeDeviceStatusHandler();
+    await invokeInialization();
+    await invokeDeviceStatusHandler();
     console.log(`MQTT server is running on ${config.port}`);
 });

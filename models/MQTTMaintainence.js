@@ -14,7 +14,6 @@ const geMaintainenceData = async (collectionName, query) => {
 };
 
 const downloadMaintainenceRequest = async (tData, userInfo = {}) => {
-    console.log("tDATA-->", tData);
     let finalURL = "";
 
     let coloum = [ "modified_time", "devices", "maintainenceType", "engineerName", "engineerContact", "startTime", "endTime", "status"];

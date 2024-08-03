@@ -1,5 +1,5 @@
 const { MongoClient } = require('mongodb');
-const mqtt = require('mqtt')
+const mqtt = require("async-mqtt");
 const connection = require('../config/connection');
 const { v4: uuidv4 } = require("uuid");
 const moment = require("moment");
@@ -89,10 +89,24 @@ async function processMessage (data) {
                     let mqttStatusDetails = {...result.mqttStatusDetails, 
                         ...logTypeUpdate,
                         mqttBattery: data.battery_level,
-                        mqttRelayState: data.relay_state ? data.relay_state : "OFF" 
+                        mqttRelayState: data.relay_state ? data.relay_state : "OFF"
                     };
 
-                    await mongoInsert({mqttStatusDetails: mqttStatusDetails}, {deviceId: data.device_id}, "MQTTDevice", "update");
+                    if (data.log_type === "Heartbeat") {
+                        let startTime = moment().format('YYYY-MM-DD HH:mm:ss');
+                        let end = moment(result.modified_time);
+                        let duration = moment.duration(end.diff(startTime));
+                        let minutes = Math.abs(duration.asMinutes());
+
+                        if(minutes > parseInt(getFlagData.heartBeatTimer)) {
+                            let MQTT_URL = `mqtt://${result.mqttIP}:${result.mqttPort}`;
+                            data.relay_state = "ON";
+                            await publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword);
+                        }
+                    }
+
+                    await mongoInsert({mqttStatusDetails: mqttStatusDetails, 
+                        modified_time: moment().format("YYYY-MM-DD HH:mm:ss")}, {deviceId: data.device_id}, "MQTTDevice", "update");
 
                     return true;
                 } 
@@ -126,7 +140,7 @@ async function processMessage (data) {
 
                             let MQTT_URL = `mqtt://${result.mqttIP}:${result.mqttPort}`;
                             data.relay_state = "ON";
-                            publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword);
+                            await publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword);
                         }
                     }
 
@@ -258,11 +272,12 @@ async function publishMessage(MQTT_URL, userName, password) {
     };
     const client = mqtt.connect(MQTT_URL, options);
     
-    client.on('connect', () => {
-        client.publish("Relay/Control", "ON");
+    client.on('connect', async () => {
+        await client.publish("Relay/Control", "ON");
     });
 }
 
 module.exports = {
-    utilizeMqtt
+    utilizeMqtt,
+    publishMessage,
 };

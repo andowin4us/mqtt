@@ -148,7 +148,6 @@ const getProcessLogger = async (tData, userInfo = {}) => {
 };
 
 const downloadLogger = async (tData, userInfo = {}) => {
-    console.log("tDATA-->", tData);
     let finalURL = "";
 
     let coloum = [ "timestamp", "device_id", "device_name", "mac_id", "log_type", "log_desc", "log_line_count", "battery_level"];

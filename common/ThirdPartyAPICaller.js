@@ -43,7 +43,6 @@ class ThirdPartyAPICaller {
 			request(clientServerOptions, function (error, res, body) {
 				try { console.log(body) } catch (e) { }
 				if (!error && res && res.statusCode == 200) {
-					console.log(res.statusCode);
 					let mResponse = {}
 					if (actucalResponse) {
 						resolve(body);
@@ -61,7 +60,6 @@ class ThirdPartyAPICaller {
 					try {
 						mResponse = JSON.parse(body);
 					} catch (e) {
-						console.log(e);
 						mResponse = body;
 					}
 					resolve(mResponse);
