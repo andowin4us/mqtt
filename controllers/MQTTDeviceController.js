@@ -31,6 +31,11 @@ const MQTTDeviceController = () => {
         const result = await MQTTDevice.relayTriggerOffMQTTDevice(req.body, req.user);
         return res.status(result.statusCode).json(result);
     }
+    const relayTriggerOnMQTTDevice = async (req, res) => {
+        console.log('relayTriggerOnMQTTDevice', req.body, req.user);
+        const result = await MQTTDevice.relayTriggerOnMQTTDevice(req.body, req.user);
+        return res.status(result.statusCode).json(result);
+    }
 
     return {
         updateMQTTDevice,
@@ -38,7 +43,8 @@ const MQTTDeviceController = () => {
         getMQTTDevice,
         deleteMQTTDevice,
         assignMQTTDevice,
-        relayTriggerOffMQTTDevice
+        relayTriggerOffMQTTDevice,
+        relayTriggerOnMQTTDevice
     };
 };
 

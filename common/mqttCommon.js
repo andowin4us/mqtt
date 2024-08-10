@@ -130,6 +130,11 @@ async function processMessage (data) {
                         
                         if (!checkMaintainence) {
                             await mongoInsert({status: "InActive", modified_time: moment().format("YYYY-MM-DD HH:mm:ss")}, {}, "MQTTDevice", "update" );
+                            await sendEmail(getFlagData.superUserMails, { DeviceName: data.device_name, DeviceId: data.device_id, 
+                                Action: `Relay triggered ON for device ${data.device_name}`, 
+                                MacId: data.mac_id, 
+                                TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss") 
+                            }, getFlagData);
                             await mongoInsert({
                                 moduleName: "MQTTLogger",
                                 modified_user_id: "SYSTEM",
@@ -270,7 +275,7 @@ async function publishMessage(MQTT_URL, userName, password) {
         password: password || null,
         reconnectPeriod: 1000,
     };
-    const client = mqtt.connect(MQTT_URL, options);
+    const client = await mqtt.connect(MQTT_URL, options);
     
     client.on('connect', async () => {
         await client.publish("Relay/Control", "ON");

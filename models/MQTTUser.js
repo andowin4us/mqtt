@@ -340,6 +340,47 @@ const getData = async (tData, userInfo) => {
     }
 };
 
+const getUserAsRole = async (tData, userInfo) => {
+    try {
+        let filter = {};
+
+        if (tData && tData.accesslevel) {
+            filter.accesslevel = tData.accesslevel
+            filter.status = "Active"
+        }
+        let result = await Util.mongo.findAll(
+            deviceMongoCollection,
+            filter
+        );
+        let snatizedData = await Util.snatizeFromMongo(result);
+
+        if (snatizedData) {
+            return {
+                statusCode: 200,
+                success: true,
+                msg: "MQTT User get Successfull",
+                status: snatizedData[0].totalData,
+                totalSize: snatizedData[0].totalSize,
+            };
+        } else {
+            return {
+                statusCode: 404,
+                success: false,
+                msg: "MQTT User get Failed",
+                status: [],
+            };
+        }
+    } catch (error) {
+        return {
+            statusCode: 500,
+            success: false,
+            msg: "MQTT User get Error",
+            status: [],
+            err: error,
+        };
+    }
+};
+
 const login = async (tData, res) => {
     const { userName, password } = tData;
     let query = { };
@@ -496,6 +537,7 @@ module.exports = {
     updateData,
     createData,
     getData,
+    getUserAsRole,
     login,
     resetPassword,
     logout

@@ -250,7 +250,7 @@ const getDeviceData = async (tData, userInfo = {}) => {
             return {
                 statusCode: 404,
                 success: false,
-                msg: "MQTT getProcessLogger " + +" get Failed",
+                msg: "MQTT getDeviceData " + +" get Failed",
                 status: [],
             };
         }

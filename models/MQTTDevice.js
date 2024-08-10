@@ -3,6 +3,7 @@ const deviceMongoCollection = "MQTTDevice";
 const dotenv = require("dotenv");
 const MQTT = require('../helper/mqtt');
 const moment = require("moment");
+const { sendEmail } = require("../common/mqttMail");
 
 const duplicate = async (deviceName, id) => {
     const query = { deviceName: deviceName, _id: { $ne: id } };
@@ -442,6 +443,7 @@ const relayTriggerOffMQTTDevice = async (tData, userInfo = {}) => {
     
     try {
         const resultDevice = await Util.mongo.findOne("MQTTDevice", {_id: tData.id});
+        const getFlagData = await Util.mongo.findOne("MQTTFlag", {});
 
         if(resultDevice && resultDevice._id) {
             let updateObj = {
@@ -459,6 +461,23 @@ const relayTriggerOffMQTTDevice = async (tData, userInfo = {}) => {
             if (result) {
                 let MQTT_URL = `mqtt://${resultDevice.mqttIP}:${resultDevice.mqttPort}`;
                 new MQTT(MQTT_URL, resultDevice.mqttUserName, resultDevice.mqttPassword, resultDevice.mqttTopic, false, resultDevice, "OFF");
+                
+                let sendEmailResponse = await sendEmail(getFlagData.superUserMails, 
+                    { DeviceName: resultDevice.deviceName, 
+                        DeviceId: resultDevice.deviceId, 
+                        Action: `Relay triggered ON for device ${resultDevice.deviceName}`, 
+                        MacId: resultDevice.mqttMacId, 
+                        TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss")
+                    }, getFlagData
+                );
+                sendEmailResponse = JSON.parse(JSON.stringify(sendEmailResponse));
+    
+                let mailResponse = {
+                    ...sendEmailResponse,
+                    status: sendEmailResponse.rejected.length > 0 ? "failed" : "success"
+                }
+    
+                await Util.mongo.insertOne("MQTTNotify", mailResponse);
                 await Util.addAuditLogs(
                     deviceMongoCollection,
                     userInfo,
@@ -467,7 +486,109 @@ const relayTriggerOffMQTTDevice = async (tData, userInfo = {}) => {
                 return {
                     statusCode: 200,
                     success: true,
-                    msg: "MQTT device Trigger Successfull",
+                    msg: "MQTT device Trigger OFF Successfull",
+                    status: result,
+                };
+            } else {
+                return {
+                    statusCode: 404,
+                    success: false,
+                    msg: "MQTT device Trigger Failed",
+                    status: [],
+                };
+            }
+        } else {
+            return {
+                statusCode: 404,
+                success: false,
+                msg: "MQTT device Not Found",
+                status: [],
+            };
+        }
+    } catch (error) {
+        return {
+            statusCode: 500,
+            success: false,
+            msg: "MQTT device Assigned Error",
+            status: [],
+            err: error,
+        };
+    }
+};
+
+const relayTriggerOnMQTTDevice = async (tData, userInfo = {}) => {
+    let tCheck = await Util.checkQueryParams(tData, {
+        id: "required|string"
+    });
+
+    if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
+        return {
+            statusCode: 404,
+            success: false,
+            msg: "PARAMETER_ISSUE",
+            err: tCheck,
+        };
+    }
+
+    if(userInfo && userInfo.accesslevel && userInfo.accesslevel > 1) {
+        return {
+            statusCode: 404,
+            success: false,
+            msg: "NOT ENOUGH PERMISSIONS TO PERFORM THIS OPERATION.",
+            err: "",
+        };
+    }
+    
+    try {
+        const resultDevice = await Util.mongo.findOne("MQTTDevice", {_id: tData.id});
+        const getFlagData = await Util.mongo.findOne("MQTTFlag", {});
+
+        if(resultDevice && resultDevice._id) {
+            let updateObj = {
+                $set: {
+                    status: "InActive",
+                    mqttStatusDetails: {
+                        mqttRelayState: "ON"
+                    },
+                    modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
+                }
+            };
+
+            let result = await Util.mongo.updateOne(
+                deviceMongoCollection,
+                { _id: tData.id },
+                updateObj
+            );
+            if (result) {
+                let MQTT_URL = `mqtt://${resultDevice.mqttIP}:${resultDevice.mqttPort}`;
+                new MQTT(MQTT_URL, resultDevice.mqttUserName, resultDevice.mqttPassword, resultDevice.mqttTopic, false, resultDevice, "ON");
+                
+                let sendEmailResponse = await sendEmail(getFlagData.superUserMails, 
+                    { DeviceName: resultDevice.deviceName, 
+                        DeviceId: resultDevice.deviceId, 
+                        Action: `Relay triggered ON for device ${resultDevice.deviceName}`, 
+                        MacId: resultDevice.mqttMacId, 
+                        TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss")
+                    }, getFlagData
+                );
+                sendEmailResponse = JSON.parse(JSON.stringify(sendEmailResponse));
+    
+                let mailResponse = {
+                    ...sendEmailResponse,
+                    status: sendEmailResponse.rejected.length > 0 ? "failed" : "success"
+                }
+    
+                await Util.mongo.insertOne("MQTTNotify", mailResponse);
+
+                await Util.addAuditLogs(
+                    deviceMongoCollection,
+                    userInfo,
+                    JSON.stringify(result)
+                );
+                return {
+                    statusCode: 200,
+                    success: true,
+                    msg: "MQTT device Trigger ON Successfull",
                     status: result,
                 };
             } else {
@@ -503,5 +624,6 @@ module.exports = {
     createData,
     getData,
     assignMQTTDevice,
-    relayTriggerOffMQTTDevice
+    relayTriggerOffMQTTDevice,
+    relayTriggerOnMQTTDevice
 };

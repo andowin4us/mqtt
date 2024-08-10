@@ -10,8 +10,13 @@ async function invokeInialization() {
         const client = await MongoClient.connect(connection.mongo.url, { useNewUrlParser: true }).catch(err => { console.log(err); });
         const db = client.db(connection.mongo.database);
         let collection = db.collection("MQTTDevice");
+        let collectionInstance = db.collection("MQTTFlag");
+        let resInstance = await collectionInstance.findOne({});
         let res = await collection.find({}).toArray();
         
+        if (!resInstance) {
+            
+        }
         console.log("list of devices present to start receiving events ", res.length);
         if(res && res.length > 0) {
             for(let i = 0; i < res.length; i++ ) {
@@ -54,7 +59,7 @@ async function invokeDeviceStatusHandler() {
                     // let MQTT_URL = `mqtt://${res[i].mqttIP}:${res[i].mqttPort}`;
                     // new MQTT(MQTT_URL, res[i].mqttUserName, res[i]truetrue.mqttPassword, res[i].mqttTopic, true);
 
-                    if(minutes > parseInt(resInstance.heartBeatTimer)) {
+                    if(resInstance.isRelayTimer && minutes > parseInt(resInstance.heartBeatTimer)) {
                         console.log("Heartbeat didn't received for this", res[i].deviceName ," from past ", minutes, "minutes");
                         let MQTT_URL = `mqtt://${res[i].mqttIP}:${res[i].mqttPort}`;
                         await publishMessage(MQTT_URL, res[i].mqttUserName, res[i].mqttPassword);

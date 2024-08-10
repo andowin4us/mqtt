@@ -18,18 +18,15 @@ const updateFlag = async (tData, userInfo = {}) => {
     try {
         if (result) {
             let updateObj = {
-                $set: {
-                    ...result,
-                    ...tData,
-                    created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
-                    modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
-                }
+                ...result,
+                created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+                modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
             };
 
             let resultAdd = await Util.mongo.updateOne(
                 deviceMongoCollection,
                 {_id: result._id},
-                updateObj
+                {$set: {...updateObj, ...tData}}
             );
             if (resultAdd) {
                 await Util.addAuditLogs(
@@ -52,35 +49,6 @@ const updateFlag = async (tData, userInfo = {}) => {
                     status: [],
                 };
             }
-        } else {
-            let insertObj = {
-                $set: {
-                    _id: Util.getUuid(),
-                    ...tData,
-                    created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
-                    modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
-                }
-            };
-
-            let resultAdd = await Util.mongo.updateOne(
-                deviceMongoCollection,
-                {},
-                insertObj
-            );
-            if (resultAdd) {
-                await Util.addAuditLogs(
-                    deviceMongoCollection,
-                    userInfo,
-                    JSON.stringify(resultAdd)
-                );
-
-                return {
-                    statusCode: 200,
-                    success: true,
-                    msg: "MQTT Flag Success",
-                    status: resultAdd,
-                };
-            }
         }
     } catch (error) {
         return {
@@ -93,6 +61,44 @@ const updateFlag = async (tData, userInfo = {}) => {
     }
 };
 
+const getData = async (tData, userInfo) => {
+    try {
+        let filter = {};
+
+        let result = await Util.mongo.findAll(
+            deviceMongoCollection,
+            filter
+        );
+        let snatizedData = await Util.snatizeFromMongo(result);
+
+        if (snatizedData) {
+            return {
+                statusCode: 200,
+                success: true,
+                msg: "MQTT Flags get Successfull",
+                status: snatizedData[0].totalData,
+                totalSize: snatizedData[0].totalSize,
+            };
+        } else {
+            return {
+                statusCode: 404,
+                success: false,
+                msg: "MQTT Flags get Failed",
+                status: [],
+            };
+        }
+    } catch (error) {
+        return {
+            statusCode: 500,
+            success: false,
+            msg: "MQTT Flags get Error",
+            status: [],
+            err: error,
+        };
+    }
+};
+
 module.exports = {
-    updateFlag
+    updateFlag,
+    getData
 };

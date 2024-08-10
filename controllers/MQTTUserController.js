@@ -16,6 +16,11 @@ const MQTTUserController = () => {
         const result = await MQTTUser.getData(req.body, req.User);
         return res.status(result.statusCode).json(result);
     }
+    const getUserAsRole = async (req, res) => {
+        console.log('getUserAsRole', req.body, req.User);
+        const result = await MQTTUser.getUserAsRole(req.body, req.User);
+        return res.status(result.statusCode).json(result);
+    }
     const deleteUser = async (req, res) => {
         console.log('deleteUser', req.body, req.User);
         const result = await MQTTUser.deleteData(req.body, req.User);
@@ -39,6 +44,7 @@ const MQTTUserController = () => {
         updateUser,
         createUser,
         getUser,
+        getUserAsRole,
         deleteUser,
         login,
         resetPassword,

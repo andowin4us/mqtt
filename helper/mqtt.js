@@ -5,6 +5,7 @@ const mqtt = require('mqtt');
 const reconnectionTimeout = 2 * 1000;
 const clientId = `mqtt_${Math.random().toString(16).slice(3)}`;
 const { utilizeMqtt } = require("../common/mqttCommon");
+const amqp = require('amqplib');
 
 class MQTTConnector {
 	constructor(url, userName, password, topic, closeConnCheck, resultDevice, createObj) {
@@ -72,6 +73,10 @@ class MQTTConnector {
 	}
 
     async onMessage(topic, message, packet) {
+        const rabbitMQ = await amqp.connect('amqp://localhost');
+        const channel = await rabbitMQ.createChannel();
+        await channel.assertQueue('mqtt_events', { durable: true });
+
         console.log('Topic=' + topic + ' Message=' + message, 'packet='+ packet);
         // this.client.publish(this.topic, 'Hello mqtt')
         // this.sendMessage(topic, message)
@@ -81,7 +86,8 @@ class MQTTConnector {
             this.createObj = null;
             return response;
         }
-        let processMessage = await utilizeMqtt( message );
+        await channel.sendToQueue('mqtt_events', Buffer.from(JSON.stringify({ topic, message })));
+        let processMessage = await utilizeMqtt( message, channel );
 
         if( processMessage === true ) {
             console.log("Message Process Success.");

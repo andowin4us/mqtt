@@ -16,7 +16,7 @@ const geMaintainenceData = async (collectionName, query) => {
 const downloadMaintainenceRequest = async (tData, userInfo = {}) => {
     let finalURL = "";
 
-    let coloum = [ "modified_time", "devices", "maintainenceType", "engineerName", "engineerContact", "startTime", "endTime", "status"];
+    let coloum = [ "modified_time", "devices", "engineerName", "engineerContact", "startTime", "endTime", "status"];
     try {
         let filter = {};
         
@@ -129,6 +129,7 @@ const submitMaintainenceRequest = async (tData, userInfo = {}) => {
         $set: {
             _id: tData.id,
             status: Boolean(tData.isApproved) ? "Approved" : "Rejected",
+            isEditable: false,
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         },
     };
@@ -174,7 +175,6 @@ const createMaintainenceRequest = async (tData, userInfo = {}) => {
     let tCheck = await Util.checkQueryParams(tData, {
         id: "required|string",
         devices: "required|array",
-        maintainenceType: "required|string",
         engineerName: "required|string",
         engineerContact: "required|string",
         startTime: "required|string",
@@ -209,6 +209,7 @@ const createMaintainenceRequest = async (tData, userInfo = {}) => {
             startTime: moment(tData.startTime).format("YYYY-MM-DD HH:mm:ss"),
             endTime: moment(tData.endTime).format("YYYY-MM-DD HH:mm:ss"),
             status: "Pending",
+            isEditable: true,
             created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         };
@@ -226,7 +227,7 @@ const createMaintainenceRequest = async (tData, userInfo = {}) => {
                     let sendEmailResponse = await sendEmail(getFlagData.superUserMails, 
                         { DeviceName: deviceData.deviceName, 
                             DeviceId: deviceData.deviceId, 
-                            Action: "Maintainence Request raised.", 
+                            Action: "Maintainence Request Raised.", 
                             MacId: deviceData.mqttMacId, 
                             TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss")
                         }, getFlagData
@@ -347,7 +348,6 @@ const updateMaintainenceRequest = async (tData, userInfo = {}) => {
     let tCheck = await Util.checkQueryParams(tData, {
         id: "required|string",
         devices: "required|array",
-        maintainenceType: "required|string",
         engineerName: "required|string",
         engineerContact: "required|string",
         startTime: "required|string",
@@ -398,7 +398,7 @@ const updateMaintainenceRequest = async (tData, userInfo = {}) => {
                         let sendEmailResponse = await sendEmail(getFlagData.superUserMails, 
                             { DeviceName: deviceData.deviceName, 
                                 DeviceId: deviceData.deviceId, 
-                                Action: "Maintainence Request raised.", 
+                                Action: "Maintainence Request Updated.", 
                                 MacId: deviceData.mqttMacId, 
                                 TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss")
                             }, getFlagData
