@@ -1,14 +1,6 @@
-const dotenv = require('dotenv');
-require('dotenv').config(); // load .env file
 const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
-
-// Sample data
-// const data = [
-//     { DeviceName: "Device-12", DeviceId: "KT5138", Action: "Power is Connected", MacId: "00:1A:2B:3C:4D:5E", TimeofActivity: "2024-07-05T15:31:56+05:30" },
-//     // Add more entries as needed
-// ];
 
 // Email sending function
 async function sendEmail(recipient, deviceInfo, emailConfig) {

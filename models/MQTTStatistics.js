@@ -66,7 +66,7 @@ const getDeviceLogCount = async (tData, userInfo = {}) => {
             return {
                 statusCode: 200,
                 success: true,
-                msg: "MQTT getDeviceLogCount " +snatizedData.length +" get Successfull",
+                msg: "MQTT getDeviceLogCount get Successfull",
                 status: snatizedData,
                 totalSize: snatizedData.length > 0 ? snatizedData.length : 0,
             };
@@ -74,7 +74,7 @@ const getDeviceLogCount = async (tData, userInfo = {}) => {
             return {
                 statusCode: 404,
                 success: false,
-                msg: "MQTT getDeviceLogCount " + +" get Failed",
+                msg: "MQTT getDeviceLogCount get Failed",
                 status: [],
             };
         }

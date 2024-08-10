@@ -4,6 +4,7 @@ const { MongoClient } = require('mongodb');
 const cron = require('node-cron');
 const moment = require("moment");
 const { publishMessage } = require("../common/mqttCommon");
+const { getUuid } = require("../helper/util")
 
 async function invokeInialization() {
     try {
@@ -15,8 +16,22 @@ async function invokeInialization() {
         let res = await collection.find({}).toArray();
         
         if (!resInstance) {
-            
+            console.log("Seems no seeding data was found, inserting it now", res.length);
+            let flagsData = {
+                "_id": getUuid(),
+                "instanceExpiry": moment().add(1, 'years').format("YYYY-MM-DD HH:mm:ss"),
+                "heartBeatTimer": 5,
+                "isRelayTimer": true,
+                "instanceExpired": false,
+                "superUserMails": "ag14683@gmail.com, andowin4us@gmail.com",
+                "SMTP_SERVER": "smtp.migadu.com",
+                "SMTP_SENDING_EMAIL": "test@gccglobetech.com",
+                "SMTP_SENDING_PASSWORD": "Gofortest@321",
+                "SMTP_PORT": 465
+            }
+            await collectionInstance.insertOne(flagsData);
         }
+
         console.log("list of devices present to start receiving events ", res.length);
         if(res && res.length > 0) {
             for(let i = 0; i < res.length; i++ ) {
@@ -43,7 +58,6 @@ async function invokeDeviceStatusHandler() {
             let res = await collection.find({status: "Active"}).toArray();
             let resInstance = await collectionInstance.findOne({});
             
-            console.log("list of devices present for expiry check ", res.length);
             if (res && res.length > 0) {    
                 for (let i = 0; i < res.length; i++ ) {
                     console.log("Device ", i ," is ", res[i].deviceName);
@@ -59,7 +73,7 @@ async function invokeDeviceStatusHandler() {
                     // let MQTT_URL = `mqtt://${res[i].mqttIP}:${res[i].mqttPort}`;
                     // new MQTT(MQTT_URL, res[i].mqttUserName, res[i]truetrue.mqttPassword, res[i].mqttTopic, true);
 
-                    if(resInstance.isRelayTimer && minutes > parseInt(resInstance.heartBeatTimer)) {
+                    if (resInstance.isRelayTimer && minutes > parseInt(resInstance.heartBeatTimer)) {
                         console.log("Heartbeat didn't received for this", res[i].deviceName ," from past ", minutes, "minutes");
                         let MQTT_URL = `mqtt://${res[i].mqttIP}:${res[i].mqttPort}`;
                         await publishMessage(MQTT_URL, res[i].mqttUserName, res[i].mqttPassword);
@@ -73,7 +87,7 @@ async function invokeDeviceStatusHandler() {
                         });
                     }
 
-                    if(startTime > expiryDate) {
+                    if (startTime > expiryDate) {
                         console.log("Instance Expired and expiry was ", expiryDate);
                         await collectionInstance.updateOne({_id: resInstance._id}, {$set: {"instanceExpired": true, modified_time: moment().format('YYYY-MM-DD HH:mm:ss')}});
                         await collectionAudit.insertOne({ 

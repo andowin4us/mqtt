@@ -22,7 +22,6 @@ class MongoConnector {
 	}
 
 	startMongoDB() {
-		// eslint-disable-next-line no-underscore-dangle
 		const _this = this;
 		MongoClient.connect(this.url, {
 			// reconnectInterval: 10 * 1000,
