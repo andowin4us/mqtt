@@ -493,8 +493,12 @@
 						},
 						"method": "POST",
 						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
 						"url": {
-							"raw": "http://127.0.0.1:4330/private/getUserAsRole",
+							"raw": "http://127.0.0.1:4330/api/getUserAsRole",
 							"protocol": "http",
 							"host": [
 								"127",
@@ -504,7 +508,7 @@
 							],
 							"port": "4330",
 							"path": [
-								"private",
+								"api",
 								"getUserAsRole"
 							]
 						}
@@ -674,7 +678,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"skip\": 0,\r\n    \"limit\": 20\r\n}",
+							"raw": "{\r\n    \"skip\": 0,\r\n    \"limit\": 20,\r\n    \"device_name\": \"faraz_test\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -772,6 +776,29 @@
 							"path": [
 								"api",
 								"getAuditLog"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "downloaAuditLog",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/downloaAuditLog",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"downloaAuditLog"
 							]
 						}
 					},
