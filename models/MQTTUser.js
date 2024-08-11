@@ -352,15 +352,14 @@ const getUserAsRole = async (tData, userInfo) => {
             deviceMongoCollection,
             filter
         );
-        let snatizedData = await Util.snatizeFromMongo(result);
 
-        if (snatizedData) {
+        if (result) {
             return {
                 statusCode: 200,
                 success: true,
                 msg: "MQTT User get Successfull",
-                status: snatizedData[0].totalData,
-                totalSize: snatizedData[0].totalSize,
+                status: result,
+                totalSize: result.length,
             };
         } else {
             return {

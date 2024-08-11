@@ -3,7 +3,8 @@ const MQTTPrivate = {
     'POST /downloadLogger': 'MQTTController.downloadLogger',
     'POST /getStateLogger': 'MQTTController.getStateLogger',
     'POST /downloadStateLogger': 'MQTTController.downloadStateLogger',
-    'POST /getAuditLog': 'MQTTController.getAuditLog'
+    'POST /getAuditLog': 'MQTTController.getAuditLog',
+    'POST /downloaAuditLog': 'MQTTController.downloaAuditLog'
 };
 const MQTTPublic = MQTTPrivate;
 

@@ -111,9 +111,7 @@ const getStateLogger = async (tData, userInfo = {}) => {
         };
     }
     try {
-        let filter = {
-            log_type: {$or: ["STATE", "Status"]}
-        }
+        let filter = {$or: [{log_type: "STATE"}, {log_type: "Status"}]}
 
         if( tData && tData.device_name ) {
             filter.device_name = tData.device_name;
@@ -367,7 +365,7 @@ const getAuditLog = async (tData, userInfo = {}) => {
             return {
                 statusCode: 200,
                 success: true,
-                msg: "MQTT Audit Logs " + +" get Successfull",
+                msg: "MQTT Audit Logs get Successfull",
                 status: snatizedData[0].totalData,
                 totalSize: snatizedData[0].totalSize,
             };
@@ -375,7 +373,7 @@ const getAuditLog = async (tData, userInfo = {}) => {
             return {
                 statusCode: 404,
                 success: false,
-                msg: "MQTT Audit Logs " + +" get Failed",
+                msg: "MQTT Audit Logs get Failed",
                 status: [],
             };
         }
@@ -390,10 +388,68 @@ const getAuditLog = async (tData, userInfo = {}) => {
     }
 };
 
+const downloaAuditLog = async (tData, userInfo = {}) => {
+    let finalURL = "";
+
+    let coloum = ["moduleName", "modified_user_id", "modified_user_name", "modified_time", "log"];
+    try {
+        let filter = {};
+        if( tData && tData.moduleName ) {
+            filter.device_name = tData.moduleName;
+        }
+
+        if( tData && tData.modified_user_name ) {
+            filter.state = tData.modified_user_name;
+        }
+
+        let sort = {
+            modified_time: 1,
+        };
+
+        let finalJson = await Util.mongo.findAllSort(
+            "MQTTAuditLog",
+            filter,
+            {},
+            sort
+        );
+
+        if( finalJson && finalJson.length > 0 ) {
+            const workerData = {
+                tData: finalJson,
+                column: coloum,
+                fileName: "AuditLogReport",
+            };
+    
+            const dataFromWorker = await workerHelper.mainWorkerThreadCall(
+                workerData,
+                tData.type || "csv"
+            );
+            if (dataFromWorker.statusCode === 200) {
+                finalURL = dataFromWorker.status;
+            }
+        } else {
+            return {
+                success: false,
+                statusCode: 404,
+                message: "No data found to generate report.",
+            };
+        }
+    } catch (e) {
+        console.log("error", e);
+    }
+
+    return {
+        success: true,
+        statusCode: 200,
+        download: `${process.env.HOSTNAME}${finalURL}`,
+    };
+};
+
 module.exports = {
     getDeviceLogger,
     getStateLogger,
     downloadLogger,
     downloadStateLogger,
-    getAuditLog
+    getAuditLog,
+    downloaAuditLog
 };

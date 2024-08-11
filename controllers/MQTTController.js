@@ -15,23 +15,29 @@ const MQTTController = () => {
         console.log('download activity logs ', req.body, req.user);
         const result = await MQTT.downloadLogger(req.body, req.user);
         return res.status(result.statusCode).json(result);
-    }
+    };
     const downloadStateLogger = async (req, res) => {
         console.log('downloadStateLogger activity logs ', req.body, req.user);
         const result = await MQTT.downloadStateLogger(req.body, req.user);
         return res.status(result.statusCode).json(result);
-    }
+    };
     const getAuditLog = async (req, res) => {
         console.log('getAuditLog logs ', req.body, req.user);
         const result = await MQTT.getAuditLog(req.body, req.user);
         return res.status(result.statusCode).json(result);
     };
+    const downloaAuditLog = async (req, res) => {
+        console.log('downloaAuditLog', req.body, req.user);
+        const result = await MQTT.downloaAuditLog(req.body, req.user);
+        return res.status(result.statusCode).json(result);
+    }
     return {
         getDeviceLogger,
         getStateLogger,
         downloadLogger,
         downloadStateLogger,
-        getAuditLog
+        getAuditLog,
+        downloaAuditLog
     };
 }
 
