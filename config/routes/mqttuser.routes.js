@@ -5,7 +5,8 @@ const MqttUserPrivate = {
     "POST /deleteUser": "MQTTUserController.deleteUser",
     "POST /login": "MQTTUserController.login",
     "POST /resetPassword": "MQTTUserController.resetPassword",
-    "POST /logout": "MQTTUserController.logout"
+    "POST /logout": "MQTTUserController.logout",
+    "POST /getUserAsRole": "MQTTUserController.getUserAsRole"
 };
 const MqttUserPublic = MqttUserPrivate;
 

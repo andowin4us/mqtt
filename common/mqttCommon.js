@@ -79,6 +79,7 @@ async function processMessage (data) {
                     data._id = uuidv4();
                     data.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
                     data.user_id = result.userId;
+                    data.timestamp = moment(new Date(data.timestamp)).format("YYYY-MM-DD HH:mm:ss");
                     await mongoInsert(data, {}, "MQTTLogger", "create");
                     
                     let logTypeUpdate = {};
@@ -164,6 +165,7 @@ async function processMessage (data) {
                     data._id = uuidv4();
                     data.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
                     data.user_id = result.userId;
+                    data.timestamp = moment(new Date(data.timestamp)).format("YYYY-MM-DD HH:mm:ss");
                     await mongoInsert( data, {}, "MQTTLogger", "create");
 
                     return true;

@@ -1,6 +1,6 @@
 const MqttFlagPrivate = {
-    "POST /updateFlag"   : "MQTTFlag.updateFlag",
-    "POST /getFlag"   : "MQTTFlag.getData"
+    "POST /updateFlag": 'MQTTFlagController.updateFlag',
+    "POST /getFlag": 'MQTTFlagController.getFlag',
 };
 const MqttFlagPublic = MqttFlagPrivate;
 

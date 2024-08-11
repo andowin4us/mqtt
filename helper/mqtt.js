@@ -73,10 +73,6 @@ class MQTTConnector {
 	}
 
     async onMessage(topic, message, packet) {
-        const rabbitMQ = await amqp.connect('amqp://localhost');
-        const channel = await rabbitMQ.createChannel();
-        await channel.assertQueue('mqtt_events', { durable: true });
-
         console.log('Topic=' + topic + ' Message=' + message, 'packet='+ packet);
         // this.client.publish(this.topic, 'Hello mqtt')
         // this.sendMessage(topic, message)
@@ -86,8 +82,7 @@ class MQTTConnector {
             this.createObj = null;
             return response;
         }
-        await channel.sendToQueue('mqtt_events', Buffer.from(JSON.stringify({ topic, message })));
-        let processMessage = await utilizeMqtt( message, channel );
+        let processMessage = await utilizeMqtt( message );
 
         if( processMessage === true ) {
             console.log("Message Process Success.");
