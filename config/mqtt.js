@@ -12,6 +12,7 @@ async function invokeInialization() {
         const db = client.db(connection.mongo.database);
         let collection = db.collection("MQTTDevice");
         let collectionInstance = db.collection("MQTTFlag");
+        let collectionUser = db.collection("MQTTUser");
         let resInstance = await collectionInstance.findOne({});
         let res = await collection.find({}).toArray();
         
@@ -28,8 +29,20 @@ async function invokeInialization() {
                 "SMTP_SENDING_EMAIL": "test@gccglobetech.com",
                 "SMTP_SENDING_PASSWORD": "Gofortest@321",
                 "SMTP_PORT": 465
+            };
+            let userData = {
+                "_id": getUuid(),
+                "name": "Test1",
+                "userName": "test1",
+                "status": "Active",
+                "password": "test1234",
+                "accesslevel": 1,
+                "email": "super@logsense.com",
+                "created_time": moment().format("YYYY-MM-DD HH:mm:ss"),
+                "modified_time": moment().format("YYYY-MM-DD HH:mm:ss")
             }
             await collectionInstance.insertOne(flagsData);
+            await collectionUser.insertOne(userData);
         }
 
         console.log("list of devices present to start receiving events ", res.length);

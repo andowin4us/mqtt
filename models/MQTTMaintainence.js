@@ -8,7 +8,7 @@ const { sendEmail } = require("../common/mqttMail");
 
 const geMaintainenceData = async (collectionName, query) => {
     // const query = { userName: userName };
-    const result = await Util.mongo.findOne(deviceMongoCollection, query);
+    const result = await Util.mongo.findOne(collectionName, query);
 
     return result;
 };
@@ -222,7 +222,7 @@ const createMaintainenceRequest = async (tData, userInfo = {}) => {
         if (result) {
             let getFlagData = await geMaintainenceData("MQTTFlag", {});
             for (let i = 0; i < tData.devices.length; i++) {
-                let deviceData = await geMaintainenceData("MQTTDevice", {deviceId: tData.devices[i]});
+                let deviceData = await geMaintainenceData("MQTTDevice", {_id: tData.devices[i]});
                 if (deviceData) {
                     let sendEmailResponse = await sendEmail(getFlagData.superUserMails, 
                         { DeviceName: deviceData.deviceName, 
@@ -393,7 +393,7 @@ const updateMaintainenceRequest = async (tData, userInfo = {}) => {
             if (result) {
                 let getFlagData = await geMaintainenceData("MQTTFlag", {});
                 for (let i = 0; i < tData.devices.length; i++) {
-                    let deviceData = await geMaintainenceData("MQTTDevice", {deviceId: tData.devices[i]});
+                    let deviceData = await geMaintainenceData("MQTTDevice", {_id: tData.devices[i]});
                     if (deviceData) {
                         let sendEmailResponse = await sendEmail(getFlagData.superUserMails, 
                             { DeviceName: deviceData.deviceName, 

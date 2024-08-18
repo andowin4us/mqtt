@@ -465,7 +465,7 @@ const relayTriggerOffMQTTDevice = async (tData, userInfo = {}) => {
                 let sendEmailResponse = await sendEmail(getFlagData.superUserMails, 
                     { DeviceName: resultDevice.deviceName, 
                         DeviceId: resultDevice.deviceId, 
-                        Action: `Relay triggered ON for device ${resultDevice.deviceName}`, 
+                        Action: `Relay triggered OFF for device ${resultDevice.deviceName}`, 
                         MacId: resultDevice.mqttMacId, 
                         TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss")
                     }, getFlagData

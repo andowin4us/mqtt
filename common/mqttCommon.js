@@ -111,13 +111,13 @@ async function processMessage (data) {
 
                     return true;
                 } 
-                let resultExistingLogLimit = await mongoInsert( data, { device_id: data.device_id, log_line_count: 24000 }, "MQTTLogger", "find" );
+                let resultExistingLogLimit = await mongoInsert( data, { device_id: data.device_id, log_line_count: 240000 }, "MQTTLogger", "find" );
                 let resultExisting = await mongoInsert( data, { device_id: data.device_id, log_line_count: data.log_line_count }, "MQTTLogger", "find" );
                 //Log Line count check
                 if (!resultExistingLogLimit && resultExisting && resultExisting._id) {
                     return false;
                 } else {
-                    // Log limit 24K length check
+                    // Log limit 240K length check
                     if (resultExistingLogLimit && resultExistingLogLimit._id) {
                         if (moment(new Date(data.timestamp)).format("YYYY-MM-DD") < moment().format("YYYY-MM-DD")) {
                             return false;

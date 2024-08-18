@@ -37,7 +37,7 @@ const getDeviceLogger = async (tData, userInfo = {}) => {
         }
 
         if( tData && tData.log_type ) {
-            filter.log_type = tData.log_type;
+            filter.log_type = tData.log_type.toUpperCase();
         }
 
         if( tData && tData.log_desc ) {
