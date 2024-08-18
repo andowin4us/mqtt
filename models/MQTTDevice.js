@@ -449,7 +449,8 @@ const relayTriggerOffMQTTDevice = async (tData, userInfo = {}) => {
             let updateObj = {
                 $set: {
                     status: "Active",
-                    modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
+                    modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+                    mqttStatusDetails: {...resultDevice.mqttStatusDetails, mqttRelayState: "OFF"}
                 }
             };
 
@@ -547,9 +548,7 @@ const relayTriggerOnMQTTDevice = async (tData, userInfo = {}) => {
             let updateObj = {
                 $set: {
                     status: "InActive",
-                    mqttStatusDetails: {
-                        mqttRelayState: "ON"
-                    },
+                    mqttStatusDetails: {...resultDevice.mqttStatusDetails, mqttRelayState: "ON"},
                     modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
                 }
             };

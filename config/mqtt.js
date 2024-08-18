@@ -86,11 +86,25 @@ async function invokeDeviceStatusHandler() {
                     // let MQTT_URL = `mqtt://${res[i].mqttIP}:${res[i].mqttPort}`;
                     // new MQTT(MQTT_URL, res[i].mqttUserName, res[i]truetrue.mqttPassword, res[i].mqttTopic, true);
 
-                    if (resInstance.isRelayTimer && minutes > parseInt(resInstance.heartBeatTimer)) {
+                    if (resInstance.isRelayTimer && res[i].status === "InActive" && res[i].mqttStatusDetails.mqttRelayState === "OFF") {
+                        console.log("Device is already inActive", res[i].deviceName ," from past ", minutes, "minutes");
+                        let MQTT_URL = `mqtt://${res[i].mqttIP}:${res[i].mqttPort}`;
+                        await publishMessage(MQTT_URL, res[i].mqttUserName, res[i].mqttPassword);
+                        await collection.updateOne({_id: res[i]._id}, {$set: {"status": "InActive", mqttStatusDetails: {...res[i].mqttStatusDetails, mqttRelayState: "ON"}, modified_time: moment().format('YYYY-MM-DD HH:mm:ss')}});
+                        await collectionAudit.insertOne({ 
+                            moduleName: "MQTTDevice",
+                            modified_user_id: "SYSTEM",
+                            modified_user_name: "SYSTEM",
+                            modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+                            log: JSON.stringify({...res[i], "status": "InActive", modified_time: moment().format('YYYY-MM-DD HH:mm:ss') })
+                        });
+                    }
+
+                    if (resInstance.isRelayTimer && Math.abs(minutes) > parseInt(resInstance.heartBeatTimer)) {
                         console.log("Heartbeat didn't received for this", res[i].deviceName ," from past ", minutes, "minutes");
                         let MQTT_URL = `mqtt://${res[i].mqttIP}:${res[i].mqttPort}`;
                         await publishMessage(MQTT_URL, res[i].mqttUserName, res[i].mqttPassword);
-                        await collection.updateOne({_id: res[i]._id}, {$set: {"status": "InActive", modified_time: moment().format('YYYY-MM-DD HH:mm:ss')}});
+                        await collection.updateOne({_id: res[i]._id}, {$set: {"status": "InActive", mqttStatusDetails: {...res[i].mqttStatusDetails, mqttRelayState: "ON"}, modified_time: moment().format('YYYY-MM-DD HH:mm:ss')}});
                         await collectionAudit.insertOne({ 
                             moduleName: "MQTTDevice",
                             modified_user_id: "SYSTEM",
