@@ -238,6 +238,9 @@ const createData = async (tData, userInfo = {}) => {
             status: "Active",
             mqttPort: tData.mqttPort,
             mqttExtraReceipe: tData.mqttExtraReceipe ? { ...tData.mqttExtraReceipe }: {},
+            mqttStatusDetails: {
+                mqttRelayState: false
+            },
             created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         };
@@ -418,9 +421,9 @@ const assignMQTTDevice = async (tData, userInfo = {}) => {
     }
 };
 
-const relayTriggerOffMQTTDevice = async (tData, userInfo = {}) => {
+const relayTriggerOnOrOffMQTTDevice = async (tData, userInfo = {}) => {
     let tCheck = await Util.checkQueryParams(tData, {
-        id: "required|string"
+        id: "required|string",
     });
 
     if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
@@ -442,69 +445,74 @@ const relayTriggerOffMQTTDevice = async (tData, userInfo = {}) => {
     }
     
     try {
-        const resultDevice = await Util.mongo.findOne("MQTTDevice", {_id: tData.id});
-        const getFlagData = await Util.mongo.findOne("MQTTFlag", {});
 
-        if(resultDevice && resultDevice._id) {
-            let updateObj = {
-                $set: {
-                    status: "Active",
-                    modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
-                    mqttStatusDetails: {...resultDevice.mqttStatusDetails, mqttRelayState: "OFF"}
-                }
-            };
+        if (tData && Boolean(tData.mqttRelayState) === true) {
+            return relayTriggerOnMQTTDevice(tData, userInfo);
+        } else {
+            const resultDevice = await Util.mongo.findOne("MQTTDevice", {_id: tData.id});
+            const getFlagData = await Util.mongo.findOne("MQTTFlag", {});
 
-            let result = await Util.mongo.updateOne(
-                deviceMongoCollection,
-                { _id: tData.id },
-                updateObj
-            );
-            if (result) {
-                let MQTT_URL = `mqtt://${resultDevice.mqttIP}:${resultDevice.mqttPort}`;
-                new MQTT(MQTT_URL, resultDevice.mqttUserName, resultDevice.mqttPassword, resultDevice.mqttTopic, false, resultDevice, "OFF");
-                
-                let sendEmailResponse = await sendEmail(getFlagData.superUserMails, 
-                    { DeviceName: resultDevice.deviceName, 
-                        DeviceId: resultDevice.deviceId, 
-                        Action: `Relay triggered OFF for device ${resultDevice.deviceName}`, 
-                        MacId: resultDevice.mqttMacId, 
-                        TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss")
-                    }, getFlagData
-                );
-                sendEmailResponse = JSON.parse(JSON.stringify(sendEmailResponse));
-    
-                let mailResponse = {
-                    ...sendEmailResponse,
-                    status: sendEmailResponse.rejected.length > 0 ? "failed" : "success"
-                }
-    
-                await Util.mongo.insertOne("MQTTNotify", mailResponse);
-                await Util.addAuditLogs(
-                    deviceMongoCollection,
-                    userInfo,
-                    JSON.stringify(result)
-                );
-                return {
-                    statusCode: 200,
-                    success: true,
-                    msg: "MQTT device Trigger OFF Successfull",
-                    status: result,
+            if(resultDevice && resultDevice._id) {
+                let updateObj = {
+                    $set: {
+                        status: "Active",
+                        modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+                        mqttStatusDetails: {...resultDevice.mqttStatusDetails, mqttRelayState: false}
+                    }
                 };
+
+                let result = await Util.mongo.updateOne(
+                    deviceMongoCollection,
+                    { _id: tData.id },
+                    updateObj
+                );
+                if (result) {
+                    let MQTT_URL = `mqtt://${resultDevice.mqttIP}:${resultDevice.mqttPort}`;
+                    new MQTT(MQTT_URL, resultDevice.mqttUserName, resultDevice.mqttPassword, resultDevice.mqttTopic, false, resultDevice, "OFF");
+                    
+                    let sendEmailResponse = await sendEmail(getFlagData.superUserMails, 
+                        { DeviceName: resultDevice.deviceName, 
+                            DeviceId: resultDevice.deviceId, 
+                            Action: `Relay triggered OFF for device ${resultDevice.deviceName}`, 
+                            MacId: resultDevice.mqttMacId, 
+                            TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss")
+                        }, getFlagData
+                    );
+                    sendEmailResponse = JSON.parse(JSON.stringify(sendEmailResponse));
+        
+                    let mailResponse = {
+                        ...sendEmailResponse,
+                        status: sendEmailResponse.rejected.length > 0 ? "failed" : "success"
+                    }
+        
+                    await Util.mongo.insertOne("MQTTNotify", mailResponse);
+                    await Util.addAuditLogs(
+                        deviceMongoCollection,
+                        userInfo,
+                        JSON.stringify(result)
+                    );
+                    return {
+                        statusCode: 200,
+                        success: true,
+                        msg: "MQTT device Trigger OFF Successfull",
+                        status: result,
+                    };
+                } else {
+                    return {
+                        statusCode: 404,
+                        success: false,
+                        msg: "MQTT device Trigger Failed",
+                        status: [],
+                    };
+                }
             } else {
                 return {
                     statusCode: 404,
                     success: false,
-                    msg: "MQTT device Trigger Failed",
+                    msg: "MQTT device Not Found",
                     status: [],
                 };
             }
-        } else {
-            return {
-                statusCode: 404,
-                success: false,
-                msg: "MQTT device Not Found",
-                status: [],
-            };
         }
     } catch (error) {
         return {
@@ -548,7 +556,7 @@ const relayTriggerOnMQTTDevice = async (tData, userInfo = {}) => {
             let updateObj = {
                 $set: {
                     status: "InActive",
-                    mqttStatusDetails: {...resultDevice.mqttStatusDetails, mqttRelayState: "ON"},
+                    mqttStatusDetails: {...resultDevice.mqttStatusDetails, mqttRelayState: true},
                     modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
                 }
             };
@@ -623,6 +631,6 @@ module.exports = {
     createData,
     getData,
     assignMQTTDevice,
-    relayTriggerOffMQTTDevice,
+    relayTriggerOnOrOffMQTTDevice,
     relayTriggerOnMQTTDevice
 };

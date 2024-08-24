@@ -90,7 +90,7 @@ async function processMessage (data) {
                     let mqttStatusDetails = {...result.mqttStatusDetails, 
                         ...logTypeUpdate,
                         mqttBattery: data.battery_level,
-                        mqttRelayState: data.relay_state ? data.relay_state : "OFF"
+                        mqttRelayState: data.relay_state ? data.relay_state : false
                     };
 
                     if (data.log_type === "Heartbeat") {
@@ -165,7 +165,7 @@ async function processMessage (data) {
                     let mqttStatusDetails = {...result.mqttStatusDetails, 
                         ...logTypeUpdate,
                         mqttBattery: data.battery_level,
-                        mqttRelayState: data.relay_state ? data.relay_state : "OFF" 
+                        mqttRelayState: data.relay_state ? data.relay_state : false 
                     };
                     await mongoInsert({mqttStatusDetails: mqttStatusDetails}, {deviceId: data.device_id}, "MQTTDevice", "update");
 

@@ -90,7 +90,7 @@ async function invokeDeviceStatusHandler() {
                         console.log("Device is already inActive", res[i].deviceName ," from past ", minutes, "minutes");
                         let MQTT_URL = `mqtt://${res[i].mqttIP}:${res[i].mqttPort}`;
                         await publishMessage(MQTT_URL, res[i].mqttUserName, res[i].mqttPassword);
-                        await collection.updateOne({_id: res[i]._id}, {$set: {"status": "InActive", mqttStatusDetails: {...res[i].mqttStatusDetails, mqttRelayState: "ON"}, modified_time: moment().format('YYYY-MM-DD HH:mm:ss')}});
+                        await collection.updateOne({_id: res[i]._id}, {$set: {"status": "InActive", mqttStatusDetails: {...res[i].mqttStatusDetails, mqttRelayState: true}, modified_time: moment().format('YYYY-MM-DD HH:mm:ss')}});
                         await collectionAudit.insertOne({ 
                             moduleName: "MQTTDevice",
                             modified_user_id: "SYSTEM",
@@ -104,7 +104,7 @@ async function invokeDeviceStatusHandler() {
                         console.log("Heartbeat didn't received for this", res[i].deviceName ," from past ", minutes, "minutes");
                         let MQTT_URL = `mqtt://${res[i].mqttIP}:${res[i].mqttPort}`;
                         await publishMessage(MQTT_URL, res[i].mqttUserName, res[i].mqttPassword);
-                        await collection.updateOne({_id: res[i]._id}, {$set: {"status": "InActive", mqttStatusDetails: {...res[i].mqttStatusDetails, mqttRelayState: "ON"}, modified_time: moment().format('YYYY-MM-DD HH:mm:ss')}});
+                        await collection.updateOne({_id: res[i]._id}, {$set: {"status": "InActive", mqttStatusDetails: {...res[i].mqttStatusDetails, mqttRelayState: true}, modified_time: moment().format('YYYY-MM-DD HH:mm:ss')}});
                         await collectionAudit.insertOne({ 
                             moduleName: "MQTTDevice",
                             modified_user_id: "SYSTEM",

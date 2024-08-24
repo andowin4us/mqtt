@@ -4,7 +4,7 @@ const mqttDevicePrivate = {
     "POST /getMQTTDevice": "MQTTDeviceController.getMQTTDevice",
     "POST /deleteMQTTDevice": "MQTTDeviceController.deleteMQTTDevice",
     "POST /assignMQTTDevice": "MQTTDeviceController.assignMQTTDevice",
-    "POST /relayTriggerOffMQTTDevice": "MQTTDeviceController.relayTriggerOffMQTTDevice",
+    "POST /relayTriggerOnOrOffMQTTDevice": "MQTTDeviceController.relayTriggerOnOrOffMQTTDevice",
     "POST /relayTriggerOnMQTTDevice": "MQTTDeviceController.relayTriggerOnMQTTDevice",
 };
 let mqttDevicePublic = mqttDevicePrivate;
