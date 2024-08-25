@@ -122,7 +122,7 @@ async function handleOtherLogs(data, result, getFlagData) {
         return false;
     }
 
-    if (existingLogLimit?._id && moment(data.timestamp).isBefore(moment().startOf('day'))) {
+    if (existingLogLimit?._id && moment(new Date(data.timestamp)).isBefore(moment().startOf('day'))) {
         return false;
     }
 
@@ -182,7 +182,7 @@ async function handleOtherLogs(data, result, getFlagData) {
     data._id = uuidv4();
     data.modified_time = moment().format('YYYY-MM-DD HH:mm:ss');
     data.user_id = result.userId;
-    data.timestamp = moment(data.timestamp).format('YYYY-MM-DD HH:mm:ss');
+    data.timestamp = moment(new Date(data.timestamp)).format('YYYY-MM-DD HH:mm:ss');
 
     await mongoInsert(data, {}, 'MQTTLogger', 'create');
 

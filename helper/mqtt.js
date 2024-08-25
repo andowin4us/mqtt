@@ -2,17 +2,17 @@
 const dotenv = require('dotenv');
 dotenv.config({ path: process.env.ENV_PATH || '.env' });
 const mqtt = require('mqtt');
-const reconnectionTimeout = 2 * 1000;
-const clientId = `mqtt_${Math.random().toString(16).slice(3)}`;
-const { utilizeMqtt } = require("../common/mqttCommon");
-const amqp = require('amqplib');
+const { utilizeMqtt } = require('../common/mqttCommon');
+
+const RECONNECTION_TIMEOUT = 2000; // 2 seconds
+const CLIENT_ID = `mqtt_${Math.random().toString(16).slice(3)}`;
 
 class MQTTConnector {
-	constructor(url, userName, password, topic, closeConnCheck, resultDevice, createObj) {
-		this.url = url;
-		this.isConnected = false;
+    constructor(url, userName, password, topic, closeConnCheck, resultDevice, createObj) {
+        this.url = url;
+        this.isConnected = false;
         this.options = {
-            clientId: clientId,
+            clientId: CLIENT_ID,
             clean: true,
             connectTimeout: 4000,
             username: userName || null,
@@ -25,120 +25,94 @@ class MQTTConnector {
         this.resultDevice = resultDevice;
         this.createObj = createObj;
 
-		this.startMQTT();
-	}
+        this.initialize();
+    }
 
-	startMQTT() {
-		let _this = this;
-
-        if( this.closeConnCheck === true ) {
-            _this.client.end();
+    initialize() {
+        if (this.closeConnCheck) {
+            this.client.end();
+        } else {
+            this.setupEventHandlers();
         }
+    }
 
-        this.client.on('connect', (packet) => {
-            console.log("\n\npacket incoming received type ", packet.cmd);
-            
-            if( this.closeConnCheck !== true ) {
-                if(packet.cmd !== "connack") {
-                    _this.isConnected = false;
-                    console.log("onConnect events error occured ", packet.cmd);
-                    setTimeout(() => {
-                        _this.startMQTT();
-                    }, reconnectionTimeout);
-                } else {                
-                    _this.isConnected = true;
-                    console.log("Successfully connected to broker on "+this.url+" events receiving started.");
-                    this.client.subscribe(this.topic, _this.onSubscribe.bind(_this));
-                    // this.client.subscribe("deviceConfiguration", _this.onSubscribe.bind(_this));
-                    this.client.on('message', _this.onMessage.bind(_this));
-                    this.client.on('reconnect', _this.onReconnect.bind(_this));
-                    this.client.on('close', _this.onClose.bind(_this));
-                    this.client.on('error', _this.onError.bind(_this));
-                }
-            }
-        });
-	}
+    setupEventHandlers() {
+        this.client.on('connect', this.onConnect.bind(this));
+        this.client.on('message', this.onMessage.bind(this));
+        this.client.on('reconnect', this.onReconnect.bind(this));
+        this.client.on('close', this.onClose.bind(this));
+        this.client.on('error', this.onError.bind(this));
+    }
+
+    onConnect(packet) {
+        console.log("\n\nPacket incoming received type ", packet.cmd);
+
+        if (packet.cmd === 'connack') {
+            this.isConnected = true;
+            console.log("Successfully connected to broker on " + this.url);
+            this.client.subscribe(this.topic, this.onSubscribe.bind(this));
+        } else {
+            this.handleConnectionError(packet.cmd);
+        }
+    }
+
+    handleConnectionError(cmd) {
+        this.isConnected = false;
+        console.log("Connect event error occurred ", cmd);
+        this.reconnect();
+    }
 
     onSubscribe(err) {
-		let _this = this;        
         if (err) {
-            _this.isConnected = false;
-            console.log("onSubscribe events error occured ",err);
-            setTimeout(() => {
-                _this.startMQTT();
-            }, reconnectionTimeout);
+            this.isConnected = false;
+            console.log("Subscription error occurred ", err);
+            this.reconnect();
         } else {
-            console.log("onSubscribe events success for "+this.topic+" topic.");
+            console.log("Subscribed successfully to " + this.topic + " topic.");
         }
-	}
+    }
 
     async onMessage(topic, message, packet) {
-        console.log('Topic=' + topic + ' Message=' + message, 'packet='+ packet);
-        // this.client.publish(this.topic, 'Hello mqtt')
-        // this.sendMessage(topic, message)
-        // setTimeout(async () => {
-        if(this.resultDevice && this.createObj && this.createObj.length > 0) {
+        console.log('Topic=' + topic);
+
+        if (this.resultDevice && this.createObj && this.createObj.length > 0) {
             let response = await this.sendMessage(this.createObj.sendingTopic, this.resultDevice, this.createObj, packet);
             this.createObj = null;
             return response;
         }
-        let processMessage = await utilizeMqtt( message );
 
-        if( processMessage === true ) {
-            console.log("Message Process Success.");
-
-            return processMessage;
-        } else {
-            console.log("Message Process Failed.");
-
-            return processMessage;
-        }
-        // }, 10000);
+        let processMessage = await utilizeMqtt(message);
+        console.log(processMessage ? "Message Process Success." : "Message Process Failed.");
+        return processMessage;
     }
 
     async sendMessage(topic, device, message, packet) {
-        // let messageBe;
-        // let dataKeys = Object.keys(message);
-        // for (let i = 0; i < dataKeys.length; i++) {
-        //     // if (dataKeys[i] !== 'id') {
-        //        if (dataKeys[i] !== 'deviceId') {
-        //             if (dataKeys[i] !== 'sendingTopic') {
-        //                 if (dataKeys[i] !== 'logCount') {
-        //                     if (dataKeys[i] !== 'receipeId') {
-        //                         if (messageBe !== undefined) {
-        //                             messageBe = `${messageBe},` + `${message[Object.keys(message)[i]]}`;
-        //                         } else {
-        //                             messageBe = `${message[Object.keys(message)[i]]}`;
-        //                         }
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     // }
-        // }
-        let sendingMessage = message;
-        // let sendingMessage = `mac_id:${device.mqttMacId},receipe_id:${message.receipeId},N:${message.logCount},Data:${messageBe}`;
-        console.log('Topic='+' Relay/Control'+' sendingMessage= '+sendingMessage);
-
-        this.client.publish("Relay/Control", sendingMessage);
+        console.log('Topic=' + topic + ' Sending message: ', message);
+        this.client.publish(topic, JSON.stringify(message));
         return true;
     }
 
-	onClose() {
+    onClose() {
         this.client.end();
-		console.log(`MQTT connection was closed ${this.url}`);
-	}
+        console.log(`MQTT connection was closed ${this.url}`);
+    }
 
-	onReconnect() {
-        this.client.end();
-        this.client = mqtt.connect(this.url, this.options);
-		console.log(`MQTT reconnected on ${this.url}`);
-	}
+    onReconnect() {
+        console.log(`MQTT reconnecting to ${this.url}`);
+        this.reconnect();
+    }
 
     onError() {
-        this.client.end();
-		console.log(`MQTT error occurred ${this.url}`);
-	}
+        console.log(`MQTT error occurred ${this.url}`);
+        this.reconnect();
+    }
+
+    reconnect() {
+        setTimeout(() => {
+            this.client = mqtt.connect(this.url, this.options);
+            this.setupEventHandlers();
+        }, RECONNECTION_TIMEOUT);
+    }
 }
 
 module.exports = MQTTConnector;
