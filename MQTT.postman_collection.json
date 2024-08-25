@@ -180,13 +180,13 @@
 					"response": []
 				},
 				{
-					"name": "relayTriggerOffMQTTDevice",
+					"name": "relayTriggerOnOrOffMQTTDevice",
 					"request": {
 						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"id\": \"122b1j2b12ug12gb1b2n1jk2njjbn\"\r\n}",
+							"raw": "{\r\n    \"id\": \"122b1j2b12ug12gb1b2n1jk2njjbn\",\r\n    \"mqttRelayState\": false\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -194,7 +194,7 @@
 							}
 						},
 						"url": {
-							"raw": "http://127.0.0.1:4330/api/relayTriggerOffMQTTDevice",
+							"raw": "http://127.0.0.1:4330/api/relayTriggerOnOrOffMQTTDevice",
 							"protocol": "http",
 							"host": [
 								"127",
@@ -205,7 +205,7 @@
 							"port": "4330",
 							"path": [
 								"api",
-								"relayTriggerOffMQTTDevice"
+								"relayTriggerOnOrOffMQTTDevice"
 							]
 						}
 					},
@@ -740,6 +740,10 @@
 					"request": {
 						"method": "POST",
 						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
 						"url": {
 							"raw": "http://127.0.0.1:4330/api/getDeviceLogger",
 							"protocol": "http",
