@@ -1,67 +1,68 @@
-const bodyParser = require('body-parser');
 const express = require('express');
-const helmet = require('helmet');
 const http = require('http');
-const mapRoutes = require('express-routes-mapper');
 const path = require('path');
-var cookieParser = require("cookie-parser");
+const bodyParser = require('body-parser');
+const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
 const cors = require('cors');
+const mapRoutes = require('express-routes-mapper');
 const config = require('./config/config');
 const auth = require('./policies/auth.policy');
-const { invokeInialization, invokeDeviceStatusHandler } = require('./config/mqtt');
-const environment = process.env.NODE_ENV;
+const { invokeInitialization, scheduleDeviceStatusHandler } = require('./config/mqtt');
+
+// Initialize Express app
 const app = express();
 const server = http.Server(app);
-const mappedOpenRoutes = mapRoutes(config.publicRoutes, 'controllers/');
-const mappedAuthRoutes = mapRoutes(config.privateRoutes, 'controllers/');
-app.use(cors());
 
-// secure express app
+// Middleware setup
+app.use(cors());
 app.use(helmet({
     dnsPrefetchControl: false,
     frameguard: false,
     ieNoOpen: false,
 }));
-
-// parsing the request bodys
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json({ limit: '5mb' }));
 app.use(cookieParser());
+app.use('/static', express.static(path.join(__dirname, 'private')));
 
-app.use('/static', express.static(path.join('./private')));
+// Route handlers
+const mappedOpenRoutes = mapRoutes(config.publicRoutes, 'controllers/');
+const mappedAuthRoutes = mapRoutes(config.privateRoutes, 'controllers/');
 
-// secure your private routes with jwt authentication middleware
-app.all('/private/*', (req, res, next) => auth(req, res, next));
-app.all('/api/*', (req, res, next) => defaultUserInfo(req, res, next));
+// Auth and default user info middleware
+app.all('/private/*', auth);
+app.all('/api/*', (req, res, next) => {
+    req.user = { id: 1, accesslevel: 1 };
+    next();
+});
 
-// fill routes for express application
+// Register routes
 app.use('/api', mappedOpenRoutes);
 app.use('/private', mappedAuthRoutes);
 
-function defaultUserInfo(req, res, next) {
-    req.user = {
-        "id": 1,
-        "accesslevel": 1
-    };
-    return next();
-}
-
+// Default route
 app.get('/', (req, res) => {
-    console.log("MQTT Home called.");
-    res.status(200).json({success: true, statusCode: 200, msg: "MQTT Home Called."});
+    res.status(200).json({ success: true, statusCode: 200, msg: 'MQTT Home Called.' });
 });
 
-server.listen(config.port, async () => {
-    if (environment !== 'production' &&
-        environment !== 'development' &&
-        environment !== 'testing'
-    ) {
-        // eslint-disable-next-line no-console
-        console.error(`NODE_ENV is set to ${environment}, but only production and development are valid.`);
+// Start server
+const startServer = async () => {
+    try {
+        if (!['production', 'development', 'testing'].includes(process.env.NODE_ENV)) {
+            console.error(`Invalid NODE_ENV: ${process.env.NODE_ENV}. Valid values are 'production', 'development', or 'testing'.`);
+            process.exit(1);
+        }
+
+        await invokeInitialization();
+        await scheduleDeviceStatusHandler();
+        server.listen(config.port, () => {
+            console.log(`MQTT server is running on port ${config.port}`);
+        });
+    } catch (error) {
+        console.error('Error starting server:', error);
         process.exit(1);
     }
+};
 
-    await invokeInialization();
-    await invokeDeviceStatusHandler();
-    console.log(`MQTT server is running on ${config.port}`);
-});
+startServer();

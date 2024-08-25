@@ -1,294 +1,247 @@
 const { MongoClient } = require('mongodb');
-const mqtt = require("async-mqtt");
+const mqtt = require('async-mqtt');
 const connection = require('../config/connection');
-const { v4: uuidv4 } = require("uuid");
-const moment = require("moment");
-const { sendEmail } = require("../common/mqttMail");
+const { v4: uuidv4 } = require('uuid');
+const moment = require('moment');
+const { sendEmail } = require('../common/mqttMail');
+
+const MAX_RETRIES = 4;
 
 async function utilizeMqtt(message) {
     try {
-        //data type check
-        if (typeof message === "object" && JSON.parse(message)) {
-            let data = JSON.parse(message);
+        let data;
 
-            // Already accumulated logs check.
-            if (data.mqttDataLogs_onPrem && data.mqttDataLogs_onPrem.extra_data) {
-                console.log("log length is ", data.mqttDataLogs_onPrem.extra_data.length, data.mqttDataLogs_onPrem.device_id);
-                let count = [];
-
-                for (let i = 0; i < data.mqttDataLogs_onPrem.extra_data.length; i++) {
-                    let onPremProcess = await processMessage(data.mqttDataLogs_onPrem.extra_data[i]);
-                    count.push(onPremProcess);
-                }
-
-                if(count === data.mqttDataLogs_onPrem.extra_data.length) {
-                    const allEqual = count => count.every( v => v === count[0] );
-
-                    if (allEqual(count) === true) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
-            } else {
-                // Normal logs check
-                return await processMessage(data);
-            }
+        // Ensure message is a valid JSON object
+        if (typeof message === 'object' && JSON.parse(message)) {
+            data = JSON.parse(message);
         } else {
-            if(message && message.device_id) {
-                let resultExisting = await mongoInsert(message, { device_id: message.device_id ? message.device_id : "", log_line_count: message.log_line_count ? message.log_line_count : "" }, "dump_device_id", "find");
-
-                if (!resultExisting) {
-                    message._id = uuidv4();
-                    data.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
-                    await mongoInsert( message, {}, "dump_device_id", "create" );
-
-                    return false;
-                }
-            } else {
-                message._id = uuidv4();
-                message.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
-                await mongoInsert( message, {}, "dump_device_id", "create" );
-
-                return false;
-            }
-
-            return false;
+            return handleInvalidJson(message);
         }
-    } catch (err) {
-        console.log("error occurred.", err);
 
+        // Process logs if available
+        if (data.mqttDataLogs_onPrem?.extra_data) {
+            return await processLogs(data.mqttDataLogs_onPrem.extra_data);
+        }
+
+        // Process single message
+        return await processMessage(data);
+    } catch (err) {
+        console.error('Error occurred:', err);
         return false;
     }
 }
 
-async function processMessage (data) {
-    console.log("Processing your message now for ", data?.device_id);
-    let result = await mongoInsert(data, { deviceId: data?.device_id }, "MQTTDevice", "find");
-    let getFlagData = await mongoInsert(data, {}, "MQTTFlag", "find");
+async function handleInvalidJson(message) {
+    message._id = uuidv4();
+    message.modified_time = moment().format('YYYY-MM-DD HH:mm:ss');
+    await mongoInsert(message, {}, 'dump_device_id', 'create');
+    return false;
+}
 
-    //device id check
-    if (result && result.deviceId && data.device_id === result.deviceId) {
-        //device mac check
-        if (data.mac_id && data.mac_id === result.mqttMacId) {
-            let resultConfig = await mongoInsert( data, { deviceId: data.device_id, logType: data.log_type }, "MQTTLoggerType", "find" );
-            //logger type check
-            if (resultConfig && resultConfig._id) {
-                //Device state check.
-                if (data.log_type === "Status" || data.log_type === "STATE" || data.log_type === "Heartbeat") {
-                    data._id = uuidv4();
-                    data.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
-                    data.user_id = result.userId;
-                    data.timestamp = moment(new Date(data.timestamp)).format("YYYY-MM-DD HH:mm:ss");
-                    await mongoInsert(data, {}, "MQTTLogger", "create");
-                    
-                    let logTypeUpdate = {};
-                    logTypeUpdate[`${data.log_type}`] = {
-                        status: data.log_type === "Status" ? data.state : data.log_desc,
-                        modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
-                    };
-                    let mqttStatusDetails = {...result.mqttStatusDetails, 
-                        ...logTypeUpdate,
-                        mqttBattery: data.battery_level,
-                        mqttRelayState: data.relay_state ? data.relay_state : false
-                    };
+async function processLogs(logs) {
+    const results = await Promise.all(logs.map(processMessage));
 
-                    if (data.log_type === "Heartbeat") {
-                        let startTime = moment().format('YYYY-MM-DD HH:mm:ss');
-                        let end = moment(result.modified_time);
-                        let duration = moment.duration(end.diff(startTime));
-                        let minutes = Math.abs(duration.asMinutes());
+    return results.every(result => result === true);
+}
 
-                        if(minutes > parseInt(getFlagData.heartBeatTimer)) {
-                            let MQTT_URL = `mqtt://${result.mqttIP}:${result.mqttPort}`;
-                            data.relay_state = "ON";
-                            await publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword);
-                        }
-                    }
+async function processMessage(data) {
+    console.log('Processing message for device', data.device_id);
 
-                    await mongoInsert({mqttStatusDetails: mqttStatusDetails, 
-                        modified_time: moment().format("YYYY-MM-DD HH:mm:ss")}, {deviceId: data.device_id}, "MQTTDevice", "update");
+    const result = await mongoInsert(data, { deviceId: data.device_id }, 'MQTTDevice', 'find');
+    const getFlagData = await mongoInsert(data, {}, 'MQTTFlag', 'find');
 
-                    return true;
-                } 
-                let resultExistingLogLimit = await mongoInsert( data, { device_id: data.device_id, log_line_count: 240000 }, "MQTTLogger", "find" );
-                let resultExisting = await mongoInsert( data, { device_id: data.device_id, log_line_count: data.log_line_count }, "MQTTLogger", "find" );
-                //Log Line count check
-                if (!resultExistingLogLimit && resultExisting && resultExisting._id) {
-                    return false;
-                } else {
-                    // Log limit 240K length check
-                    if (resultExistingLogLimit && resultExistingLogLimit._id) {
-                        if (moment(new Date(data.timestamp)).format("YYYY-MM-DD") < moment().format("YYYY-MM-DD")) {
-                            return false;
-                        }
-                    }
-                    // Sending mail if log type is "POWER, DOOR".
-                    if (["DOOR", "POWER"].includes(data.log_type)) {
-                        await sendEmail(getFlagData.superUserMails, { DeviceName: data.device_name, DeviceId: data.device_id, 
-                            Action: `${data.log_type} ${data.log_desc}`, 
-                            MacId: data.mac_id, 
-                            TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss") 
-                        }, getFlagData);
-                    }
+    if (!result || !data.device_id || data.device_id !== result.deviceId) {
+        return handleInvalidDeviceData(data);
+    }
 
-                    // Check if Door is opened and maintainence request was approved via Super User.
-                    if (data.log_type === "DOOR" && data.log_desc === "OPENED") {
-                        let checkMaintainence = await mongoInsert(data, {devices: {$all: [data.device_id]}, status: "Approved", endTime: {"$gte": moment().format("YYYY-MM-DD HH:mm:ss")}}, "MQTTMaintainence", "find");
-                        
-                        if (!checkMaintainence) {
-                            await mongoInsert({status: "InActive", modified_time: moment().format("YYYY-MM-DD HH:mm:ss")}, {}, "MQTTDevice", "update" );
-                            await sendEmail(getFlagData.superUserMails, { DeviceName: data.device_name, DeviceId: data.device_id, 
-                                Action: `Relay triggered ON for device ${data.device_name}`, 
-                                MacId: data.mac_id, 
-                                TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss") 
-                            }, getFlagData);
-                            await mongoInsert({
-                                moduleName: "MQTTLogger",
-                                modified_user_id: "SYSTEM",
-                                modified_user_name: "SYSTEM",
-                                modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
-                                log: "RELAY Turned ON"
-                            }, {}, "MQTTAuditLog", "create");
+    if (data.mac_id && data.mac_id !== result.mqttMacId) {
+        return handleInvalidMacId(data);
+    }
 
-                            let MQTT_URL = `mqtt://${result.mqttIP}:${result.mqttPort}`;
-                            data.relay_state = "ON";
-                            await publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword);
-                        }
-                    }
+    if (data.log_type === 'Heartbeat') {
+        return await handleHeartbeat(data, result, getFlagData);
+    }
 
-                    let logTypeUpdate = {};
-                    logTypeUpdate[`${data.log_type}`] = {
-                        status: data.log_desc,
-                        modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
-                    };
-                    let mqttStatusDetails = {...result.mqttStatusDetails, 
-                        ...logTypeUpdate,
-                        mqttBattery: data.battery_level,
-                        mqttRelayState: data.relay_state ? data.relay_state : false 
-                    };
-                    await mongoInsert({mqttStatusDetails: mqttStatusDetails}, {deviceId: data.device_id}, "MQTTDevice", "update");
+    return await handleOtherLogs(data, result, getFlagData);
+}
 
-                    data._id = uuidv4();
-                    data.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
-                    data.user_id = result.userId;
-                    data.timestamp = moment(new Date(data.timestamp)).format("YYYY-MM-DD HH:mm:ss");
-                    await mongoInsert( data, {}, "MQTTLogger", "create");
+async function handleInvalidDeviceData(data) {
+    return await handleDumpData(data, 'dump_device_id');
+}
 
-                    return true;
-                }
-            } else {
-                let resultExisting = await mongoInsert(data, { device_id: data.device_id, log_line_count: data.log_line_count }, "dump_logger_type", "find" );
+async function handleInvalidMacId(data) {
+    return await handleDumpData(data, 'dump_device_mac');
+}
 
-                if (!resultExisting) {
-                    data._id = uuidv4();
-                    data.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
-                    await mongoInsert( data, {}, "dump_logger_type", "create" );
-                }
-            }
-        } else {
-            let resultExisting = await mongoInsert( data, { device_id: data.device_id, log_line_count: data.log_line_count }, "dump_device_mac", "find" );
+async function handleDumpData(data, collectionName) {
+    const existing = await mongoInsert(data, { device_id: data.device_id, log_line_count: data.log_line_count }, collectionName, 'find');
 
-            if (!resultExisting) {
-                data._id = uuidv4();
-                data.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
-                await mongoInsert( data, {}, "dump_device_mac", "create" );
-            }
-        }
-    } else {
-        if (data && data.device_id) {
-            let resultExisting = await mongoInsert(data, { device_id: data.device_id, log_line_count: data.log_line_count }, "dump_device_id", "find");
-
-            if (!resultExisting) {
-                data._id = uuidv4();
-                data.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
-                await mongoInsert( data, {}, "dump_device_id", "create" );
-            }
-        } else {
-            if (data === null || data === undefined) { 
-                data = {}; 
-            }
-
-            data._id = uuidv4();
-            data.modified_time = moment().format("YYYY-MM-DD HH:mm:ss");
-            await mongoInsert( data, {}, "dump_device_id", "create" );
-        }
+    if (!existing) {
+        data._id = uuidv4();
+        data.modified_time = moment().format('YYYY-MM-DD HH:mm:ss');
+        await mongoInsert(data, {}, collectionName, 'create');
     }
 
     return false;
 }
 
-async function mongoInsert(data, filter, collectionName, type) {
-    let count = 0;
-    const client = await MongoClient.connect(connection.mongo.url, { useNewUrlParser: true }).catch(err => { console.log(err); });
+async function handleHeartbeat(data, result, getFlagData) {
+    const startTime = moment();
+    const end = moment(result.modified_time);
+    const duration = moment.duration(startTime.diff(end)).asSeconds();
 
-    if (!client) {
+    const logTypeUpdate = {
+        [data.log_type]: {
+            status: data.log_desc,
+            modified_time: moment().format('YYYY-MM-DD HH:mm:ss'),
+        },
+    };
 
-        if(count === 4) {
-            return false;
-        } else {
-            count++;
-            await mongoInsert(data);
-        }
+    const mqttStatusDetails = {
+        ...result.mqttStatusDetails,
+        ...logTypeUpdate,
+        mqttBattery: data.battery_level,
+        mqttRelayState: data.relay_state === 'OFF' ? false : true,
+    };
+
+    await mongoInsert({ mqttStatusDetails, modified_time: moment().format('YYYY-MM-DD HH:mm:ss') }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
+
+    if (getFlagData.isRelayTimer && duration > parseInt(getFlagData.heartBeatTimer, 10)) {
+        const MQTT_URL = `mqtt://${result.mqttIP}:${result.mqttPort}`;
+        await publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword, 'ON');
     }
 
-    if(type === "find") {
-        try {
-            const db = client.db(connection.mongo.database);
-            let collection = db.collection(collectionName);
-            let res = await collection.findOne(filter);
-    
-            return res;
-        } catch (err) {
-            console.log(err);
-        }
-    }
-
-    if(type === "create") {
-        try {
-            const db = client.db(connection.mongo.database);
-            let collection = db.collection(collectionName);
-            let res = await collection.insertOne(data);
-
-            return res;
-        } catch (err) {
-            console.log(err);
-        }
-    }
-
-    if(type === "update") {
-        try {
-            const db = client.db(connection.mongo.database);
-            let collection = db.collection(collectionName);
-            if(data.log_type && data.log_type === "receipeUpdate") {
-                let res = await collection.updateOne(filter, {$set: data});
-    
-                return res;
-            }
-            let res = await collection.updateOne(filter, {$set: data}, { upsert: true });
-            
-            return res;
-        } catch (err) {
-            console.log(err);
-        }
-    }
+    return true;
 }
 
-async function publishMessage(MQTT_URL, userName, password) {
+async function handleOtherLogs(data, result, getFlagData) {
+    const existingLogLimit = await mongoInsert(data, { device_id: data.device_id, log_line_count: getFlagData.logLineLimit }, 'MQTTLogger', 'find');
+    const existing = await mongoInsert(data, { device_id: data.device_id, log_line_count: data.log_line_count }, 'MQTTLogger', 'find');
+
+    if (!existingLogLimit && existing?._id) {
+        return false;
+    }
+
+    if (existingLogLimit?._id && moment(data.timestamp).isBefore(moment().startOf('day'))) {
+        return false;
+    }
+
+    if (['DOOR', 'POWER'].includes(data.log_type)) {
+        await sendEmail(getFlagData.superUserMails, {
+            DeviceName: data.device_name,
+            DeviceId: data.device_id,
+            Action: `${data.log_type} ${data.log_desc}`,
+            MacId: data.mac_id,
+            TimeofActivity: moment().format('YYYY-MM-DD HH:mm:ss'),
+        }, getFlagData);
+    }
+
+    if (data.log_type === 'DOOR' && data.log_desc === 'OPENED') {
+        const checkMaintainence = await mongoInsert(data, { devices: { $all: [data.device_id] }, status: 'Approved', endTime: { $gte: moment().format('YYYY-MM-DD HH:mm:ss') } }, 'MQTTMaintainence', 'find');
+
+        if (!checkMaintainence) {
+            await mongoInsert({ status: 'InActive', modified_time: moment().format('YYYY-MM-DD HH:mm:ss') }, {}, 'MQTTDevice', 'update');
+            const MQTT_URL = `mqtt://${result.mqttIP}:${result.mqttPort}`;
+            data.relay_state = 'ON';
+            await publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword, 'ON');
+
+            await sendEmail(getFlagData.superUserMails, {
+                DeviceName: data.device_name,
+                DeviceId: data.device_id,
+                Action: `Relay triggered ON for device ${data.device_name}`,
+                MacId: data.mac_id,
+                TimeofActivity: moment().format('YYYY-MM-DD HH:mm:ss'),
+            }, getFlagData);
+
+            await mongoInsert({
+                moduleName: 'MQTTLogger',
+                modified_user_id: 'SYSTEM',
+                modified_user_name: 'SYSTEM',
+                modified_time: moment().format('YYYY-MM-DD HH:mm:ss'),
+                log: 'RELAY Turned ON',
+            }, {}, 'MQTTAuditLog', 'create');
+        }
+    }
+
+    const logTypeUpdate = {
+        [data.log_type]: {
+            status: data.log_desc,
+            modified_time: moment().format('YYYY-MM-DD HH:mm:ss'),
+        },
+    };
+
+    const mqttStatusDetails = {
+        ...result.mqttStatusDetails,
+        ...logTypeUpdate,
+        mqttBattery: data.battery_level,
+        mqttRelayState: data.relay_state || false,
+    };
+
+    await mongoInsert({ mqttStatusDetails }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
+
+    data._id = uuidv4();
+    data.modified_time = moment().format('YYYY-MM-DD HH:mm:ss');
+    data.user_id = result.userId;
+    data.timestamp = moment(data.timestamp).format('YYYY-MM-DD HH:mm:ss');
+
+    await mongoInsert(data, {}, 'MQTTLogger', 'create');
+
+    return true;
+}
+
+async function mongoInsert(data, filter, collectionName, type) {
+    const client = await MongoClient.connect(connection.mongo.url, { useNewUrlParser: true }).catch(err => {
+        console.error(err);
+        return null;
+    });
+
+    if (!client) return null;
+
+    const db = client.db(connection.mongo.database);
+    const collection = db.collection(collectionName);
+
+    try {
+        switch (type) {
+            case 'find':
+                return await collection.findOne(filter);
+            case 'create':
+                return await collection.insertOne(data);
+            case 'update':
+                if (data.log_type === 'receipeUpdate') {
+                    return await collection.updateOne(filter, { $set: data });
+                }
+                return await collection.updateOne(filter, { $set: data }, { upsert: true });
+            default:
+                throw new Error(`Unknown operation type: ${type}`);
+        }
+    } catch (err) {
+        console.error(err);
+    } finally {
+        client.close();
+    }
+
+    return null;
+}
+
+async function publishMessage(MQTT_URL, userName, password, message) {
     const clientId = `mqtt_${Math.random().toString(16).slice(3)}`;
-    let options = {
-        clientId: clientId,
+    const options = {
+        clientId,
         clean: true,
         connectTimeout: 4000,
         username: userName || null,
         password: password || null,
         reconnectPeriod: 1000,
     };
-    const client = await mqtt.connect(MQTT_URL, options);
-    
-    client.on('connect', async () => {
-        await client.publish("Relay/Control", "ON");
-    });
+
+    try {
+        const client = await mqtt.connect(MQTT_URL, options);
+        client.on('connect', async () => {
+            await client.publish('Relay/Control', message);
+        });
+    } catch (err) {
+        console.error('MQTT publish error:', err);
+    }
 }
 
 module.exports = {

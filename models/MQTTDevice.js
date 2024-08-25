@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 const MQTT = require('../helper/mqtt');
 const moment = require("moment");
 const { sendEmail } = require("../common/mqttMail");
+const { publishMessage } = require("../common/mqttCommon");
 
 const duplicate = async (deviceName, id) => {
     const query = { deviceName: deviceName, _id: { $ne: id } };
@@ -468,7 +469,8 @@ const relayTriggerOnOrOffMQTTDevice = async (tData, userInfo = {}) => {
                 );
                 if (result) {
                     let MQTT_URL = `mqtt://${resultDevice.mqttIP}:${resultDevice.mqttPort}`;
-                    new MQTT(MQTT_URL, resultDevice.mqttUserName, resultDevice.mqttPassword, resultDevice.mqttTopic, false, resultDevice, "OFF");
+                    // new MQTT(MQTT_URL, resultDevice.mqttUserName, resultDevice.mqttPassword, resultDevice.mqttTopic, false, resultDevice, "OFF");
+                    await publishMessage(MQTT_URL, resultDevice.mqttUserName, resultDevice.mqttPassword, 'OFF');
                     
                     let sendEmailResponse = await sendEmail(getFlagData.superUserMails, 
                         { DeviceName: resultDevice.deviceName, 
@@ -568,8 +570,8 @@ const relayTriggerOnMQTTDevice = async (tData, userInfo = {}) => {
             );
             if (result) {
                 let MQTT_URL = `mqtt://${resultDevice.mqttIP}:${resultDevice.mqttPort}`;
-                new MQTT(MQTT_URL, resultDevice.mqttUserName, resultDevice.mqttPassword, resultDevice.mqttTopic, false, resultDevice, "ON");
-                
+                // new MQTT(MQTT_URL, resultDevice.mqttUserName, resultDevice.mqttPassword, resultDevice.mqttTopic, false, resultDevice, "ON");
+                await publishMessage(MQTT_URL, resultDevice.mqttUserName, resultDevice.mqttPassword, 'ON');
                 let sendEmailResponse = await sendEmail(getFlagData.superUserMails, 
                     { DeviceName: resultDevice.deviceName, 
                         DeviceId: resultDevice.deviceId, 
