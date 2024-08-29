@@ -5,6 +5,7 @@ const cron = require('node-cron');
 const moment = require('moment');
 const { publishMessage } = require('../common/mqttCommon');
 const { getUuid } = require('../helper/util');
+const md5Service = require('../services/md5.service');
 
 let client;
 let db;
