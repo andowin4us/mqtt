@@ -48,7 +48,7 @@ async function seedData() {
             name: 'Test1',
             userName: 'test1',
             status: 'Active',
-            password: md5Service().password('test1234'),
+            password: md5Service().password({password: 'test1234'}),
             accesslevel: 1,
             email: 'super@logsense.com',
             created_time: moment().format('YYYY-MM-DD HH:mm:ss'),
