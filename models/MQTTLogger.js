@@ -129,6 +129,7 @@ const downloadLogs = async (tData, userInfo, filter, columns, fileName) => {
 const downloadLogger = async (tData, userInfo) => {
     const filter = buildFilter(tData, userInfo);
     const columns = ["timestamp", "device_id", "device_name", "mac_id", "log_type", "log_desc", "log_line_count", "battery_level"];
+    await Util.addAuditLogs("MQTTLogger", userInfo, "download", `${userInfo.userName} has downloaded logger report.`, JSON.stringify(result));
     return downloadLogs(tData, userInfo, filter, columns, "ActivityLogReport");
 };
 
@@ -136,6 +137,7 @@ const downloadLogger = async (tData, userInfo) => {
 const downloadStateLogger = async (tData, userInfo) => {
     const filter = buildFilter(tData, userInfo);
     const columns = ["timestamp", "device_id", "device_name", "mac_id", "log_type", "log_desc", "state", "battery_level"];
+    await Util.addAuditLogs("MQTTLogger", userInfo, "download", `${userInfo.userName} has downloaded state report.`, JSON.stringify(result));
     return downloadLogs(tData, userInfo, filter, columns, "StateLogReport");
 };
 
@@ -168,7 +170,8 @@ const getAuditLog = async (tData, userInfo) => {
 // Download Audit Log
 const downloadAuditLog = async (tData, userInfo) => {
     const filter = tData?.moduleName ? { moduleName: tData.moduleName } : {};
-    const columns = ["moduleName", "modified_user_id", "modified_user_name", "modified_time", "log"];
+    const columns = ["moduleName", "operation", "message", "modified_user_name", "modified_time"];
+    await Util.addAuditLogs("MQTTLogger", userInfo, "download", `${userInfo.userName} has downloaded audit log report.`, JSON.stringify(result));
     return downloadLogs(tData, userInfo, filter, columns, "AuditLogReport");
 };
 

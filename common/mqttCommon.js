@@ -157,6 +157,8 @@ async function handleOtherLogs(data, result, getFlagData) {
 
             await mongoInsert({
                 moduleName: 'MQTTLogger',
+                operation: "trigger relay ON",
+                message: `Relay Timer breached has triggered the relay ON via the predefined timer of ${durationSeconds}`,
                 modified_user_id: 'SYSTEM',
                 modified_user_name: 'SYSTEM',
                 modified_time: moment().format('YYYY-MM-DD HH:mm:ss'),

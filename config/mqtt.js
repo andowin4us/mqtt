@@ -119,6 +119,8 @@ async function checkDeviceStatus() {
                     });
                     await collectionAudit.insertOne({
                         moduleName: 'MQTTDevice',
+                        operation: "trigger relay ON",
+                        message: `Relay Timer breached has triggered the relay ON via the predefined timer of ${durationSeconds}`,
                         modified_user_id: 'SYSTEM',
                         modified_user_name: 'SYSTEM',
                         modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss'),

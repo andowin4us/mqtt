@@ -55,7 +55,7 @@ const deleteData = async (tData, userInfo = {}) => {
 
         const result = await Util.mongo.remove(deviceMongoCollection, { _id: tData.id });
         if (result) {
-            await Util.addAuditLogs(deviceMongoCollection, userInfo, JSON.stringify(result));
+            await Util.addAuditLogs(deviceMongoCollection, userInfo, "delete", `${userInfo.userName} has deleted a user.`, JSON.stringify(result));
             return {
                 statusCode: 200,
                 success: true,
@@ -114,7 +114,7 @@ const updateData = async (tData, userInfo = {}) => {
 
         const result = await Util.mongo.updateOne(deviceMongoCollection, { _id: tData.id }, updateObj);
         if (result) {
-            await Util.addAuditLogs(deviceMongoCollection, userInfo, JSON.stringify(result));
+            await Util.addAuditLogs(deviceMongoCollection, userInfo, "update", `${userInfo.userName} has updated a user.`, JSON.stringify(result));
             return {
                 statusCode: 200,
                 success: true,
@@ -179,7 +179,7 @@ const createData = async (tData, userInfo = {}) => {
 
         const result = await Util.mongo.insertOne(deviceMongoCollection, createObj);
         if (result) {
-            await Util.addAuditLogs(deviceMongoCollection, userInfo, JSON.stringify(result));
+            await Util.addAuditLogs(deviceMongoCollection, userInfo, "create", `${userInfo.userName} has created a new user.`, JSON.stringify(result));
             return {
                 statusCode: 200,
                 success: true,
@@ -353,7 +353,7 @@ const resetPassword = async (tData, userInfo = {}) => {
 
         const result = await Util.mongo.updateOne(deviceMongoCollection, { _id: user._id }, updateObj);
         if (result) {
-            await Util.addAuditLogs(deviceMongoCollection, userInfo, JSON.stringify(result));
+            await Util.addAuditLogs(deviceMongoCollection, userInfo, "reset", `${userInfo.userName} has resetted his password.`, JSON.stringify(result));
             return {
                 statusCode: 200,
                 success: true,

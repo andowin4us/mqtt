@@ -30,8 +30,8 @@ const isDuplicate = async (logType, deviceId) => {
 };
 
 // Helper function to handle audit logs
-const handleAuditLogs = async (userInfo, result) => {
-    await Util.addAuditLogs(deviceMongoCollection, userInfo, JSON.stringify(result));
+const handleAuditLogs = async (userInfo, result, operation, message) => {
+    await Util.addAuditLogs(deviceMongoCollection, userInfo, operation, message, JSON.stringify(result));
 };
 
 // Main CRUD functions
@@ -53,7 +53,7 @@ const deleteData = async (tData, userInfo = {}) => {
         if (configDetails && configDetails.logType) {
             const result = await Util.mongo.remove(deviceMongoCollection, { _id: tData.id });
             if (result) {
-                await handleAuditLogs(userInfo, result);
+                await handleAuditLogs(userInfo, result, "delete", `${userInfo.userName} deleted log type ${configDetails.logType}.`);
                 return {
                     statusCode: 200,
                     success: true,

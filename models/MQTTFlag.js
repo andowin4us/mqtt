@@ -43,7 +43,7 @@ const updateFlag = async (tData, userInfo = {}) => {
             );
 
             if (updateResult) {
-                await Util.addAuditLogs(deviceMongoCollection, userInfo, JSON.stringify(updateResult));
+                await Util.addAuditLogs(deviceMongoCollection, userInfo, "update", `${userInfo.userName} updated flags.`, JSON.stringify(updateResult));
                 return createResponse(200, true, "MQTT Flag Success", updateResult);
             }
         }
