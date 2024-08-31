@@ -184,6 +184,7 @@ const getData = async (tData, userInfo = {}) => {
     if (validation?.error === "PARAMETER_ISSUE") return handleParameterIssue(validation);
 
     try {
+        let filter = {};
         if( userInfo && userInfo.accesslevel && userInfo.accesslevel === 3 ) {
             filter.userId = userInfo.userId;
             if (tData && tData.deviceId) {
@@ -207,10 +208,7 @@ const getData = async (tData, userInfo = {}) => {
 
         if (!sanitizedData) return handleError("MQTT device Retrieval Failed");
 
-        return handleSuccess("MQTT device Retrieval Successful", {
-            totalData: sanitizedData[0].totalData,
-            totalSize: sanitizedData[0].totalSize,
-        });
+        return handleSuccess("MQTT device Retrieval Successful", sanitizedData[0].totalData);
     } catch (error) {
         return handleError("MQTT device Retrieval Error", error);
     }
