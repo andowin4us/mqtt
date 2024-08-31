@@ -1,448 +1,175 @@
 const dotenv = require('dotenv');
-require('dotenv').config(); // load .env file
 const Util = require('../helper/util');
 const workerHelper = require("../helper/mainWorkerHelper");
-let collectionName = "MQTTLogger"
 
-const getDeviceLogger = async (tData, userInfo = {}) => {
-    let tCheck = await Util.checkQueryParams(tData, {
-        skip: "numeric",
-        limit: "numeric",
-    });
+dotenv.config(); // Load .env file only once
 
-    if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
-        return {
-            statusCode: 404,
-            success: false,
-            msg: "PARAMETER_ISSUE",
-            err: tCheck,
-        };
+const collectionName = "MQTTLogger";
+
+// Helper function to create standard responses
+const createResponse = (statusCode, success, msg, status = [], err = "") => ({
+    statusCode,
+    success,
+    msg,
+    status,
+    err
+});
+
+// Helper function to build filter from query parameters
+const buildFilter = (tData, userInfo) => {
+    let filter = {};
+
+    if (userInfo && userInfo.accesslevel === 3) {
+        filter.user_id = userInfo.id;
     }
+
+    if (tData) {
+        const { device_id, device_name, log_type, log_desc, log_line_count, battery_level, mac_id, state } = tData;
+
+        if (device_id) filter.device_id = device_id;
+        if (device_name) filter.device_name = device_name;
+        if (log_type) filter.log_type = log_type.toUpperCase();
+        if (log_desc) filter.log_desc = log_desc;
+        if (log_line_count) filter.log_line_count = log_line_count;
+        if (battery_level) filter.battery_level = battery_level;
+        if (mac_id) filter.mac_id = mac_id;
+        if (state) filter.state = state;
+    }
+
+    return filter;
+};
+
+// Generalized method to handle fetching logs
+const fetchLogs = async (tData, userInfo, filter, collection) => {
     try {
-        let filter = {};
-        
-        if( userInfo && userInfo.accesslevel && userInfo.accesslevel === 3 ) {
-            filter.user_id = userInfo.id;
-            if( tData && tData.device_id ) {
-                filter.device_id = tData.device_id;
-            }
-        } else {
-            if( tData && tData.device_id ) {
-                filter.device_id = tData.device_id;
-            }
+        const tCheck = await Util.checkQueryParams(tData, {
+            skip: "numeric",
+            limit: "numeric",
+        });
+
+        if (tCheck?.error === "PARAMETER_ISSUE") {
+            return createResponse(404, false, "PARAMETER_ISSUE", [], tCheck);
         }
 
-        if( tData && tData.device_name ) {
-            filter.device_name = tData.device_name;
-        }
-
-        if( tData && tData.log_type ) {
-            filter.log_type = tData.log_type.toUpperCase();
-        }
-
-        if( tData && tData.log_desc ) {
-            filter.log_desc = tData.log_desc;
-        }
-
-        if( tData && tData.log_line_count ) {
-            filter.log_line_count = tData.log_line_count;
-        }
-
-        if( tData && tData.battery_level ) {
-            filter.battery_level = tData.battery_level;
-        }
-
-        if( tData && tData.mac_id ) {
-            filter.mac_id = tData.mac_id;
-        }
-        
-        let sort = {
+        const sort = {
             log_line_count: 1,
             modified_time: 1,
-        }
-        let result = await Util.mongo.findPaginateAndSort(
-            collectionName,
+        };
+
+        const result = await Util.mongo.findPaginateAndSort(
+            collection,
             filter,
             {},
             tData.skip,
             tData.limit,
             sort
         );
-        let snatizedData = await Util.snatizeFromMongo(result);
-        if (snatizedData) {
-            return {
-                statusCode: 200,
-                success: true,
-                msg: "MQTT getDeviceLogger get Successfull",
-                status: snatizedData[0].totalData,
-                totalSize: snatizedData[0].totalSize,
-            };
+
+        const sanitizedData = await Util.snatizeFromMongo(result);
+
+        if (sanitizedData) {
+            return createResponse(200, true, "Fetch successful", sanitizedData[0].totalData, sanitizedData[0].totalSize);
         } else {
-            return {
-                statusCode: 404,
-                success: false,
-                msg: "MQTT getDeviceLogger get Failed",
-                status: [],
-            };
+            return createResponse(404, false, "Fetch failed", []);
         }
     } catch (error) {
-        return {
-            statusCode: 500,
-            success: false,
-            msg: "MQTT  Error",
-            status: [],
-            err: error,
-        };
+        return createResponse(500, false, "Error", [], error);
     }
 };
 
-const getStateLogger = async (tData, userInfo = {}) => {
-    let tCheck = await Util.checkQueryParams(tData, {
+// Fetch Device Logger
+const getDeviceLogger = async (tData, userInfo) => {
+    const filter = buildFilter(tData, userInfo);
+    return fetchLogs(tData, userInfo, filter, collectionName);
+};
+
+// Fetch State Logger
+const getStateLogger = async (tData, userInfo) => {
+    const filter = buildFilter(tData, userInfo);
+    filter.$or = [{ log_type: "STATE" }, { log_type: "Status" }];
+    return fetchLogs(tData, userInfo, filter, collectionName);
+};
+
+// Generalized method to handle downloading logs
+const downloadLogs = async (tData, userInfo, filter, columns, fileName) => {
+    let finalURL = "";
+
+    try {
+        const sort = {
+            log_line_count: 1,
+            modified_time: 1,
+        };
+
+        const finalJson = await Util.mongo.findAllSort(collectionName, filter, {}, sort);
+
+        if (finalJson?.length > 0) {
+            const workerData = {
+                tData: finalJson,
+                column: columns,
+                fileName,
+            };
+
+            const dataFromWorker = await workerHelper.mainWorkerThreadCall(workerData, tData.type || "csv");
+            if (dataFromWorker.statusCode === 200) {
+                finalURL = dataFromWorker.status;
+            } else {
+                return createResponse(404, false, "No data found to generate report.");
+            }
+        } else {
+            return createResponse(404, false, "No data found to generate report.");
+        }
+    } catch (e) {
+        console.error("Error", e);
+    }
+
+    return createResponse(200, true, "Download successful", [], { download: `${process.env.HOSTNAME}${finalURL}` });
+};
+
+// Download Logger
+const downloadLogger = async (tData, userInfo) => {
+    const filter = buildFilter(tData, userInfo);
+    const columns = ["timestamp", "device_id", "device_name", "mac_id", "log_type", "log_desc", "log_line_count", "battery_level"];
+    return downloadLogs(tData, userInfo, filter, columns, "ActivityLogReport");
+};
+
+// Download State Logger
+const downloadStateLogger = async (tData, userInfo) => {
+    const filter = buildFilter(tData, userInfo);
+    const columns = ["timestamp", "device_id", "device_name", "mac_id", "log_type", "log_desc", "state", "battery_level"];
+    return downloadLogs(tData, userInfo, filter, columns, "StateLogReport");
+};
+
+// Fetch Audit Log
+const getAuditLog = async (tData, userInfo) => {
+    const tCheck = await Util.checkQueryParams(tData, {
         skip: "numeric",
         limit: "numeric",
     });
 
-    if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
-        return {
-            statusCode: 404,
-            success: false,
-            msg: "PARAMETER_ISSUE",
-            err: tCheck,
-        };
+    if (tCheck?.error === "PARAMETER_ISSUE") {
+        return createResponse(404, false, "PARAMETER_ISSUE", [], tCheck);
     }
+
     try {
-        let filter = {$or: [{log_type: "STATE"}, {log_type: "Status"}]}
+        const filter = tData?.moduleName ? { moduleName: tData.moduleName } : {};
+        const result = await Util.mongo.findAndPaginate("MQTTAuditLog", filter, {}, tData.skip, tData.limit);
+        const sanitizedData = await Util.snatizeFromMongo(result);
 
-        if( tData && tData.device_name ) {
-            filter.device_name = tData.device_name;
-        }
-
-        if( tData && tData.device_id ) {
-            filter.device_id = tData.device_id;
-        }
-
-        if( tData && tData.state ) {
-            filter.state = tData.state;
-        }
-
-        if( tData && tData.battery_level ) {
-            filter.battery_level = tData.battery_level;
-        }
-
-        if( tData && tData.mac_id ) {
-            filter.mac_id = tData.mac_id;
-        }
-
-        let result = await Util.mongo.findAndPaginate(
-            collectionName,
-            filter,
-            {},
-            tData.skip,
-            tData.limit
-        );
-        let snatizedData = await Util.snatizeFromMongo(result);
-
-        if (snatizedData) {
-            return {
-                statusCode: 200,
-                success: true,
-                msg: "MQTT getStateLogger get Successfull",
-                status: snatizedData[0].totalData,
-                totalSize: snatizedData[0].totalSize,
-            };
+        if (sanitizedData) {
+            return createResponse(200, true, "MQTT Audit Logs get Successful", sanitizedData[0].totalData, sanitizedData[0].totalSize);
         } else {
-            return {
-                statusCode: 404,
-                success: false,
-                msg: "MQTT getStateLogger get Failed",
-                status: [],
-            };
+            return createResponse(404, false, "MQTT Audit Logs get Failed", []);
         }
     } catch (error) {
-        return {
-            statusCode: 500,
-            success: false,
-            msg: "MQTT  Error",
-            status: [],
-            err: error,
-        };
+        return createResponse(500, false, "MQTT Error", [], error);
     }
 };
 
-const downloadLogger = async (tData, userInfo = {}) => {
-    let finalURL = "";
-
-    let coloum = [ "timestamp", "device_id", "device_name", "mac_id", "log_type", "log_desc", "log_line_count", "battery_level"];
-    try {
-        let filter = {};
-        
-        if( userInfo && userInfo.accesslevel && userInfo.accesslevel === 3 ) {
-            filter.user_id = userInfo.id;
-            if( tData && tData.device_id ) {
-                filter.device_id = tData.device_id;
-            }
-        } else {
-            if( tData && tData.device_id ) {
-                filter.device_id = tData.device_id;
-            }
-        }
-
-        if( tData && tData.device_name ) {
-            filter.device_name = tData.device_name;
-        }
-
-        if( tData && tData.log_type ) {
-            filter.log_type = tData.log_type;
-        }
-
-        if( tData && tData.log_desc ) {
-            filter.log_desc = tData.log_desc;
-        }
-
-        if( tData && tData.log_line_count ) {
-            filter.log_line_count = tData.log_line_count;
-        }
-
-        if( tData && tData.battery_level ) {
-            filter.battery_level = tData.battery_level;
-        }
-
-        if( tData && tData.mac_id ) {
-            filter.mac_id = tData.mac_id;
-        }
-
-        let sort = {
-            log_line_count: 1,
-            modified_time: 1,
-        }
-
-        let finalJson = await Util.mongo.findAllSort(
-            collectionName,
-            filter,
-            {},
-            sort
-        );
-
-        if( finalJson && finalJson.length > 0 ) {
-            const workerData = {
-                tData: finalJson,
-                column: coloum,
-                fileName: "ActivityLogReport",
-            };
-    
-            const dataFromWorker = await workerHelper.mainWorkerThreadCall(
-                workerData,
-                tData.type || "csv"
-            );
-            if (dataFromWorker.statusCode === 200) {
-                finalURL = dataFromWorker.status;
-            }
-        } else {
-            return {
-                success: false,
-                statusCode: 404,
-                message: "No data found to generate report.",
-            };
-        }
-    } catch (e) {
-        console.log("error", e);
-    }
-
-    return {
-        success: true,
-        statusCode: 200,
-        download: `${process.env.HOSTNAME}${finalURL}`,
-    };
-};
-
-const downloadStateLogger = async (tData, userInfo = {}) => {
-    let finalURL = "";
-
-    let coloum = [ "timestamp", "device_id", "device_name", "mac_id", "log_type", "log_desc", "state", "battery_level"];
-    try {
-        let filter = {};
-        
-        if( userInfo && userInfo.accesslevel && userInfo.accesslevel === 3 ) {
-            filter.user_id = userInfo.id;
-            if( tData && tData.device_id ) {
-                filter.device_id = tData.device_id;
-            }
-        } else {
-            if( tData && tData.device_id ) {
-                filter.device_id = tData.device_id;
-            }
-        }
-
-        if( tData && tData.device_name ) {
-            filter.device_name = tData.device_name;
-        }
-
-        if( tData && tData.state ) {
-            filter.state = tData.state;
-        }
-        
-        if( tData && tData.battery_level ) {
-            filter.battery_level = tData.battery_level;
-        }
-
-        if( tData && tData.mac_id ) {
-            filter.mac_id = tData.mac_id;
-        }
-
-        let sort = {
-            log_line_count: 1,
-            modified_time: 1,
-        }
-
-        let finalJson = await Util.mongo.findAllSort(
-            collectionName,
-            filter,
-            {},
-            sort
-        );
-
-        if( finalJson && finalJson.length > 0 ) {
-            const workerData = {
-                tData: finalJson,
-                column: coloum,
-                fileName: "StateLogReport",
-            };
-    
-            const dataFromWorker = await workerHelper.mainWorkerThreadCall(
-                workerData,
-                tData.type || "csv"
-            );
-            if (dataFromWorker.statusCode === 200) {
-                finalURL = dataFromWorker.status;
-            }
-        } else {
-            return {
-                success: false,
-                statusCode: 404,
-                message: "No data found to generate report.",
-            };
-        }
-    } catch (e) {
-        console.log("error", e);
-    }
-
-    return {
-        success: true,
-        statusCode: 200,
-        download: `${process.env.HOSTNAME}${finalURL}`,
-    };
-};
-
-const getAuditLog = async (tData, userInfo = {}) => {
-    let tCheck = await Util.checkQueryParams(tData, {
-        skip: "numeric",
-        limit: "numeric",
-    });
-
-    if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
-        return {
-            statusCode: 404,
-            success: false,
-            msg: "PARAMETER_ISSUE",
-            err: tCheck,
-        };
-    }
-    try {
-        let filter = {};
-
-        if ( tData && tData.moduleName ) {
-            filter.moduleName = tData.moduleName
-        }
-        let result = await Util.mongo.findAndPaginate(
-            "MQTTAuditLog",
-            filter,
-            {},
-            tData.skip,
-            tData.limit
-        );
-        let snatizedData = await Util.snatizeFromMongo(result);
-        if (snatizedData) {
-            return {
-                statusCode: 200,
-                success: true,
-                msg: "MQTT Audit Logs get Successfull",
-                status: snatizedData[0].totalData,
-                totalSize: snatizedData[0].totalSize,
-            };
-        } else {
-            return {
-                statusCode: 404,
-                success: false,
-                msg: "MQTT Audit Logs get Failed",
-                status: [],
-            };
-        }
-    } catch (error) {
-        return {
-            statusCode: 500,
-            success: false,
-            msg: "MQTT Error",
-            status: [],
-            err: error,
-        };
-    }
-};
-
-const downloaAuditLog = async (tData, userInfo = {}) => {
-    let finalURL = "";
-
-    let coloum = ["moduleName", "modified_user_id", "modified_user_name", "modified_time", "log"];
-    try {
-        let filter = {};
-        if( tData && tData.moduleName ) {
-            filter.device_name = tData.moduleName;
-        }
-
-        if( tData && tData.modified_user_name ) {
-            filter.state = tData.modified_user_name;
-        }
-
-        let sort = {
-            modified_time: 1,
-        };
-
-        let finalJson = await Util.mongo.findAllSort(
-            "MQTTAuditLog",
-            filter,
-            {},
-            sort
-        );
-
-        if( finalJson && finalJson.length > 0 ) {
-            const workerData = {
-                tData: finalJson,
-                column: coloum,
-                fileName: "AuditLogReport",
-            };
-    
-            const dataFromWorker = await workerHelper.mainWorkerThreadCall(
-                workerData,
-                tData.type || "csv"
-            );
-            if (dataFromWorker.statusCode === 200) {
-                finalURL = dataFromWorker.status;
-            }
-        } else {
-            return {
-                success: false,
-                statusCode: 404,
-                message: "No data found to generate report.",
-            };
-        }
-    } catch (e) {
-        console.log("error", e);
-    }
-
-    return {
-        success: true,
-        statusCode: 200,
-        download: `${process.env.HOSTNAME}${finalURL}`,
-    };
+// Download Audit Log
+const downloadAuditLog = async (tData, userInfo) => {
+    const filter = tData?.moduleName ? { moduleName: tData.moduleName } : {};
+    const columns = ["moduleName", "modified_user_id", "modified_user_name", "modified_time", "log"];
+    return downloadLogs(tData, userInfo, filter, columns, "AuditLogReport");
 };
 
 module.exports = {
@@ -451,5 +178,5 @@ module.exports = {
     downloadLogger,
     downloadStateLogger,
     getAuditLog,
-    downloaAuditLog
+    downloadAuditLog
 };

@@ -1,35 +1,32 @@
 const Mongo = require("../config/mongo");
-const MQTT = require("../config/mqtt");
+const { v4: uuidv4 } = require("uuid");
 const ObjectID = require("mongodb").ObjectID;
 const moment = require("moment");
-const { v4: uuidv4 } = require("uuid");
-const { Validator } = require("node-input-validator");
 const passwordValidator = require("password-validator");
-
-// Password Validator schema pass with min 6 in liength has digit in it and not spaces
-let passValidator = new passwordValidator();
-passValidator.is().min(6).has().digits().has().not().spaces();
+const { Validator } = require("node-input-validator");
 require("dotenv").config();
 
+// Password Validator schema
+const passValidator = new passwordValidator();
+passValidator.is().min(6).has().digits().has().not().spaces();
 
+// Helper Functions
 const snatizeFromMongo = async (result) => {
-    if (result && result[0] && result[0].totalData) {
-        for (let res of result[0].totalData) {
+    if (result?.[0]?.totalData) {
+        result[0].totalData.forEach(res => {
             if (res._id) {
                 res.id = res._id;
                 delete res._id;
             }
-        }
-        result[0].totalSize = result[0].totalCount[0]
-            ? result[0].totalCount[0].count
-            : 0;
+        });
+        result[0].totalSize = result[0].totalCount?.[0]?.count || 0;
         delete result[0].totalCount;
     }
     return result;
 };
 
 const addAuditLogs = async (moduleName, userInfo, result) => {
-    let insertObj = {
+    const logEntry = {
         moduleName,
         modified_user_id: userInfo.id || 0,
         modified_user_name: userInfo.userName || "test",
@@ -37,18 +34,18 @@ const addAuditLogs = async (moduleName, userInfo, result) => {
         log: result
     };
 
-    await Mongo.db.collection("MQTTAuditLog").insertOne(insertObj);
-    return insertObj;
+    await Mongo.db.collection("MQTTAuditLog").insertOne(logEntry);
+    return logEntry;
 };
 
 const snatizeArrayForId = async (result) => {
     if (result) {
-        for (let res of result) {
+        result.forEach(res => {
             if (res._id) {
                 res.id = res._id;
                 delete res._id;
             }
-        }
+        });
     }
     return result;
 };
@@ -61,316 +58,164 @@ const mongoPool = {
         return ObjectID(id);
     },
     async findOne(collection, filter, projection = {}) {
-        const result = await Mongo.db
-            .collection(collection)
-            .findOne(filter, projection);
-        return result;
+        return Mongo.db.collection(collection).findOne(filter, { projection });
     },
     async count(collection, filter, options = {}) {
-        const result = await Mongo.db.collection(collection).count(filter, options);
-        return result;
+        return Mongo.db.collection(collection).countDocuments(filter, options);
     },
-    async find(
-        collection,
-        filter = {},
-        projection = {},
-        skip = 0,
-        limit = 200000
-    ) {
-        const result = await Mongo.db
-            .collection(collection)
-            .find(filter, projection)
-            .skip(skip)
-            .limit(limit)
-            // .aggregate()
-            .toArray();
-        return result;
+    async find(collection, filter = {}, projection = {}, skip = 0, limit = 200000) {
+        return Mongo.db.collection(collection).find(filter, { projection }).skip(skip).limit(limit).toArray();
     },
-    async findAndPaginate(
-        collection,
-        filter = {},
-        projection = {},
-        skip = 0,
-        limit = 200000
-    ) {
+    async findAndPaginate(collection, filter = {}, projection = {}, skip = 0, limit = 200000) {
         const dataParams = [{ $match: filter }, { $skip: skip }, { $limit: limit }];
-        if (Object.keys(projection).length > 0) {
+        if (Object.keys(projection).length) {
             dataParams.push({ $project: projection });
         }
 
-        let result = [];
-        result = await Mongo.db
-            .collection(collection)
-            .aggregate([
-                {
-                    $facet: {
-                        totalData: dataParams,
-                        totalCount: [
-                            {
-                                $match: filter,
-                            },
-                            {
-                                $group: { _id: null, count: { $sum: 1 } },
-                            },
-                        ],
-                    },
-                },
-            ])
-            .toArray();
-
-        return result;
+        return Mongo.db.collection(collection).aggregate([
+            {
+                $facet: {
+                    totalData: dataParams,
+                    totalCount: [
+                        { $match: filter },
+                        { $group: { _id: null, count: { $sum: 1 } } }
+                    ]
+                }
+            }
+        ]).toArray();
     },
-    async findPaginateAndSort(
-        collection,
-        filter = {},
-        projection = {},
-        skip = 0,
-        limit = 200000,
-        sort
-    ) {
+    async findPaginateAndSort(collection, filter = {}, projection = {}, skip = 0, limit = 200000, sort = {}) {
         const dataParams = [{ $match: filter }, { $skip: skip }, { $limit: limit }];
-        if (Object.keys(projection).length > 0) {
+        if (Object.keys(projection).length) {
             dataParams.push({ $project: projection });
         }
 
-        let result = [];
-        result = await Mongo.db
-            .collection(collection)
-            .aggregate([
-                { 
-                    $sort: sort
-                },
-                {
-                    $facet: {
-                        totalData: dataParams,
-                        totalCount: [
-                            {
-                                $match: filter,
-                            },
-                            {
-                                $group: { _id: null, count: { $sum: 1 } },
-                            },
-                        ],
-                    },
-                },
-            ])
-            .toArray();
-
-        return result;
+        return Mongo.db.collection(collection).aggregate([
+            { $sort: sort },
+            {
+                $facet: {
+                    totalData: dataParams,
+                    totalCount: [
+                        { $match: filter },
+                        { $group: { _id: null, count: { $sum: 1 } } }
+                    ]
+                }
+            }
+        ]).toArray();
     },
     async findAll(collection, filter, projection = {}) {
-        const result = await Mongo.db
-            .collection(collection)
-            .find(filter, projection)
-            .toArray();
-        return result;
+        return Mongo.db.collection(collection).find(filter, { projection }).toArray();
     },
-    async findAllSort(collection, filter, projection = {}, sort) {
-        const result = await Mongo.db
-            .collection(collection)
-            .find(filter, projection)
-            .sort(sort)
-            .toArray();
-        return result;
+    async findAllSort(collection, filter, projection = {}, sort = {}) {
+        return Mongo.db.collection(collection).find(filter, { projection }).sort(sort).toArray();
     },
-    async findAllSkipLimit(
-        collection,
-        filter,
-        projection = {},
-        skip = 0,
-        limit = 0
-    ) {
-        const result = await Mongo.db
-            .collection(collection)
-            .find(filter, projection)
-            .skip(skip)
-            .limit(limit)
-            .toArray();
-        return result;
+    async findAllSkipLimit(collection, filter, projection = {}, skip = 0, limit = 0) {
+        return Mongo.db.collection(collection).find(filter, { projection }).skip(skip).limit(limit).toArray();
     },
     async insertOne(collection, insertData) {
-        const result = await Mongo.db.collection(collection).insertOne(insertData);
-        return result;
+        return Mongo.db.collection(collection).insertOne(insertData);
     },
     async insertMany(collection, insertData) {
-        const result = await Mongo.db.collection(collection).insertMany(insertData);
-        return result;
+        return Mongo.db.collection(collection).insertMany(insertData);
     },
-    async updateOne(collection, filter, upsetData) {
-        const result = await Mongo.db
-            .collection(collection)
-            .updateOne(filter, upsetData, { upsert: true });
-        return result;
+    async updateOne(collection, filter, updateData) {
+        return Mongo.db.collection(collection).updateOne(filter, updateData, { upsert: true });
     },
-    async updateMany(collection, filter, upsetData) {
-        const result = await Mongo.db
-            .collection(collection)
-            .updateMany(filter, upsetData, { upsert: true });
-        return result;
+    async updateMany(collection, filter, updateData) {
+        return Mongo.db.collection(collection).updateMany(filter, updateData, { upsert: true });
     },
     async aggregateData(collection, query) {
-        return await Mongo.db
-            .collection(collection)
-            .aggregate(query, { allowDiskUse: true })
-            .toArray();
+        return Mongo.db.collection(collection).aggregate(query, { allowDiskUse: true }).toArray();
     },
     async remove(collection, filter) {
-        const result = await Mongo.db.collection(collection).deleteOne(filter);
-        return result;
+        return Mongo.db.collection(collection).deleteOne(filter);
     },
     async removeAll(collection, filter) {
-        const result = await Mongo.db.collection(collection).remove(filter);
-        return result;
+        return Mongo.db.collection(collection).deleteMany(filter);
     },
-    async insertBulk(
-        collection,
-        arrayOfObject,
-        filter,
-        createByObjTemp,
-        uniqueKeyName
-    ) {
-        var bulk = Mongo.db.collection(collection).initializeUnorderedBulkOp();
-        arrayOfObject.forEach((item) => {
-            let filterTemp = {};
-
+    async insertBulk(collection, arrayOfObject, filter = [], createByObjTemp = {}, uniqueKeyName = '') {
+        const bulk = Mongo.db.collection(collection).initializeUnorderedBulkOp();
+        arrayOfObject.forEach(item => {
             const id = uuidv4();
-
-            const uniqueKey = uniqueKeyName
-                ? item[uniqueKeyName].toLowerCase().trim().replace(/ +/g, "")
-                : "";
+            const uniqueKey = uniqueKeyName ? item[uniqueKeyName].toLowerCase().trim().replace(/ +/g, "") : "";
 
             item.uniqueKey = uniqueKey;
+            const filterTemp = filter.reduce((acc, key) => {
+                if (item[key]) acc[key] = item[key];
+                return acc;
+            }, {});
 
-            if (filter && Array.isArray(filter) && filter.length) {
-                filter.forEach((key) => {
-                    if (item[key]) {
-                        filterTemp[key] = item[key];
-                    }
-                });
-
-                const storeObj = {
-                    ...item,
-                    ...(createByObjTemp || {}),
-                    _id: id,
-                };
-
-                bulk
-                    .find({ ...filterTemp })
-                    .upsert()
-                    .updateOne({
-                        $set: storeObj,
-                    });
+            if (Object.keys(filterTemp).length) {
+                bulk.find(filterTemp).upsert().updateOne({ $set: { ...item, ...createByObjTemp, _id: id } });
             } else {
-                bulk.insert({
-                    ...item,
-                    uniqueKey: uniqueKey,
-                    ...(createByObjTemp || {}),
-                    _id: id,
-                });
+                bulk.insert({ ...item, uniqueKey, ...createByObjTemp, _id: id });
             }
-
-            // bulk.insert({
-            // _id: uuidv4(),
-            // ...item,
-            // });
         });
-        bulk.execute();
+        await bulk.execute();
         return true;
-    },
+    }
 };
 
 const jsonParser = async (obj) => {
-    if (obj) {
-        if (typeof obj == "string") {
-            try {
-                let data = JSON.parse(obj);
-                return data;
-            } catch (error) {
-                return {};
-            }
-        } else if (typeof obj == "object") {
-            return obj;
-        } else {
+    if (typeof obj === "string") {
+        try {
+            return JSON.parse(obj);
+        } catch {
             return {};
         }
-    } else {
-        return {};
     }
+    return obj || {};
 };
 
 const checkQueryParams = async (getData, checkData) => {
-    const v = new Validator(getData, checkData);
-    let matched = await v.check();
-
-    if (matched) {
-        return v;
-    } else {
-        return {
-            error: "PARAMETER_ISSUE",
-            list: v.errors || "SERVER_INTERNAL_ERROR",
-        };
-    }
+    const validator = new Validator(getData, checkData);
+    const isValid = await validator.check();
+    return isValid ? validator : { error: "PARAMETER_ISSUE", list: validator.errors || "SERVER_INTERNAL_ERROR" };
 };
 
-const getArray = (tObjectArray, key) => {
-    let tArray = [];
-    tObjectArray.forEach((element) => {
-        tArray.push(element[key]);
-    });
+const getArray = (objectArray, key) => objectArray.map(element => element[key]);
 
-    return tArray;
+const getList = (objectArray, key, valueKey) => {
+    return objectArray.reduce((acc, element) => {
+        if (element[key]) acc[element[key]] = element[valueKey] || "";
+        return acc;
+    }, {});
 };
 
-const getList = (tObjectArray, key, valueKey) => {
-    let tArray = {};
-    tObjectArray.forEach((element) => {
-        if (element[key]) {
-            tArray[element[key]] = element[valueKey] || "";
-        }
-    });
+const passValidate = async (param) => passValidator.validate(param);
 
-    return tArray;
-};
+const getStringArray = (list) => list.map(String);
 
-const passValidate = async (param) => {
-    return passValidator.validate(param);
-};
+const getUuid = () => uuidv4();
 
-const getStringArray = (list) => {
-    return list.map(String);
-};
-
-const getUuid = () => {
-    return uuidv4();
-};
-
-const createHeader = async (summarySheet, coloum, headerName = "Report") => {
+const createHeader = async (summarySheet, columns, headerName = "Report") => {
     summarySheet.row(1).height(20);
-    var topFirst = "A",
-        first = "A",
-        last = "Z",
-        prefix = "",
-        topLast = "Z";
-    var i = first.charCodeAt(0);
-    for (data of coloum) {
-        let charName = `${eval("String.fromCharCode(" + i + ")")}`;
-        topLast = `${prefix}${eval("String.fromCharCode(" + i + ")")}`;
-        summarySheet
-            .cell(`${prefix}${eval("String.fromCharCode(" + i + ")")}2`)
-            .value(data.label);
-        if (charName === last) {
-            i = "A".charCodeAt(0);
-            prefix = topFirst;
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let currentChar = 0;
+
+    columns.forEach((data, index) => {
+        const colLetter = alphabet[currentChar];
+        summarySheet.cell(`${colLetter}2`).value(data.label);
+        summarySheet.column(colLetter).width(20);
+
+        if (index % 26 === 25) {
+            currentChar = 0;
+            summarySheet.cell(`${alphabet[currentChar]}1`).value(headerName)
+                .style({
+                    bold: true,
+                    horizontalAlignment: "center",
+                    fontFamily: "Arial",
+                    fontSize: 12,
+                    verticalAlignment: "center",
+                    borderColor: "black",
+                    borderStyle: "thin"
+                });
         } else {
-            i = i + 1;
+            currentChar++;
         }
-        summarySheet.column(`${eval("String.fromCharCode(" + i + ")")}`).width(20);
-    }
-    // if(headerName !== "undefined" || headerName !== "") {
-    summarySheet
-        .range(`${topFirst}1:${topLast}1`)
-        .merged(true)
-        .value(headerName)
+    });
+
+    summarySheet.range('A1:Z1').merged(true).value(headerName)
         .style({
             bold: true,
             horizontalAlignment: "center",
@@ -378,37 +223,34 @@ const createHeader = async (summarySheet, coloum, headerName = "Report") => {
             fontSize: 12,
             verticalAlignment: "center",
             borderColor: "black",
-            borderStyle: "thin",
+            borderStyle: "thin"
         });
-    // }
-    summarySheet.range(`${topFirst}2:${topLast}2`).style({
+    summarySheet.range('A2:Z2').style({
         horizontalAlignment: "center",
         fontFamily: "Arial",
         fontSize: 10,
         verticalAlignment: "center",
         borderColor: "black",
-        borderStyle: "thin",
+        borderStyle: "thin"
     });
+
     return summarySheet;
 };
 
 const validator = async (getData, res, checkData) => {
-    let tReturnVal = null;
-    const v = new Validator(getData, checkData);
-    let matched = await v.check();
-
-    if (matched) {
-        tReturnVal = v;
-    } else {
-        var resObj = this.responseJsonStructure(400, false, {
-            error: "PARAMETER_ISSUE",
-            list: v.errors || "SERVER_INTERNAL_ERROR",
-        });
-        console.log("resObj", resObj);
-        res.send(400, resObj);
+    const validation = await checkQueryParams(getData, checkData);
+    if (validation.error) {
+        const response = {
+            statusCode: 400,
+            success: false,
+            msg: validation.error,
+            err: validation.list
+        };
+        console.log("response", response);
+        res.status(400).json(response);
+        return null;
     }
-
-    return tReturnVal;
+    return validation;
 };
 
 module.exports = {
@@ -425,5 +267,5 @@ module.exports = {
     createHeader,
     getStringArray,
     validator,
-    addAuditLogs,
+    addAuditLogs
 };

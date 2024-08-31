@@ -1,99 +1,72 @@
 const Util = require("../helper/util");
-const deviceMongoCollection = "MQTTFlag";
-const dotenv = require("dotenv");
 const moment = require("moment");
 
-const updateFlag = async (tData, userInfo = {}) => {
-    if(userInfo && userInfo.accesslevel && userInfo.accesslevel > 1) {
-        return {
-            statusCode: 404,
-            success: false,
-            msg: "NOT ENOUGH PERMISSIONS TO PERFORM THIS OPERATION.",
-            err: "",
-        };
-    }
+const deviceMongoCollection = "MQTTFlag";
 
-    const result = await Util.mongo.findOne(deviceMongoCollection, {});
+// Helper function for standard responses
+const createResponse = (statusCode, success, msg, status = [], err = "") => ({
+    statusCode,
+    success,
+    msg,
+    status,
+    err
+});
+
+// Helper function for permission checking
+const checkPermissions = (userInfo) => {
+    if (userInfo && userInfo.accesslevel && userInfo.accesslevel > 1) {
+        return createResponse(403, false, "NOT ENOUGH PERMISSIONS TO PERFORM THIS OPERATION.");
+    }
+    return null;
+};
+
+// Update Flag
+const updateFlag = async (tData, userInfo = {}) => {
+    const permissionError = checkPermissions(userInfo);
+    if (permissionError) return permissionError;
 
     try {
+        const result = await Util.mongo.findOne(deviceMongoCollection, {});
+        
         if (result) {
-            let updateObj = {
+            const updateObj = {
                 ...result,
                 created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
-                modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
+                modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+                ...tData
             };
 
-            let resultAdd = await Util.mongo.updateOne(
+            const updateResult = await Util.mongo.updateOne(
                 deviceMongoCollection,
-                {_id: result._id},
-                {$set: {...updateObj, ...tData}}
+                { _id: result._id },
+                { $set: updateObj }
             );
-            if (resultAdd) {
-                await Util.addAuditLogs(
-                    deviceMongoCollection,
-                    userInfo,
-                    JSON.stringify(resultAdd)
-                );
 
-                return {
-                    statusCode: 200,
-                    success: true,
-                    msg: "MQTT Flag Success",
-                    status: resultAdd,
-                };
-            } else {
-                return {
-                    statusCode: 404,
-                    success: false,
-                    msg: "MQTT Flag Error",
-                    status: [],
-                };
+            if (updateResult) {
+                await Util.addAuditLogs(deviceMongoCollection, userInfo, JSON.stringify(updateResult));
+                return createResponse(200, true, "MQTT Flag Success", updateResult);
             }
         }
+
+        return createResponse(404, false, "MQTT Flag Error");
     } catch (error) {
-        return {
-            statusCode: 500,
-            success: false,
-            msg: "MQTT Flag Error",
-            status: [],
-            err: error,
-        };
+        return createResponse(500, false, "MQTT Flag Error", [], error);
     }
 };
 
+// Get Data
 const getData = async (tData, userInfo) => {
     try {
-        let filter = {};
-
-        let result = await Util.mongo.findAll(
-            deviceMongoCollection,
-            filter
-        );
+        const filter = {}; // Assuming filter might be added later
+        const result = await Util.mongo.findAll(deviceMongoCollection, filter);
 
         if (result) {
-            return {
-                statusCode: 200,
-                success: true,
-                msg: "MQTT Flags get Successfull",
-                status: result,
-                totalSize: result.length,
-            };
+            return createResponse(200, true, "MQTT Flags get Successful", result, { totalSize: result.length });
         } else {
-            return {
-                statusCode: 404,
-                success: false,
-                msg: "MQTT Flags get Failed",
-                status: [],
-            };
+            return createResponse(404, false, "MQTT Flags get Failed");
         }
     } catch (error) {
-        return {
-            statusCode: 500,
-            success: false,
-            msg: "MQTT Flags get Error",
-            status: [],
-            err: error,
-        };
+        return createResponse(500, false, "MQTT Flags get Error", [], error);
     }
 };
 

@@ -1,100 +1,19 @@
 const dotenv = require('dotenv');
-require('dotenv').config(); 
-const moment = require("moment");
+dotenv.config();
+const moment = require('moment');
 const Util = require("../helper/util");
 const workerHelper = require("../helper/mainWorkerHelper");
 const deviceMongoCollection = "MQTTMaintainence";
 const { sendEmail } = require("../common/mqttMail");
 
-const geMaintainenceData = async (collectionName, query) => {
-    // const query = { userName: userName };
-    const result = await Util.mongo.findOne(collectionName, query);
-
-    return result;
+// Helper function to get maintenance data
+const getMaintainenceData = async (collectionName, query) => {
+    return await Util.mongo.findOne(collectionName, query);
 };
 
-const downloadMaintainenceRequest = async (tData, userInfo = {}) => {
-    let finalURL = "";
-
-    let coloum = [ "modified_time", "devices", "engineerName", "engineerContact", "startTime", "endTime", "status"];
-    try {
-        let filter = {};
-        
-        if( tData && tData.startTime ) {
-            filter.startTime = { "$gte": moment(tData.startTime).format("YYYY-MM-DD HH:mm:ss") };
-        }
-
-        if( tData && tData.endTime ) {
-            filter.endTime = { "$lte": moment(tData.endTime).format("YYYY-MM-DD HH:mm:ss") };
-        }
-
-        if( tData && tData.status ) {
-            filter.status = tData.status;
-        }
-
-        if( tData && tData.devices ) {
-            filter.devices =  { $in: tData.devices };
-        }
-
-        let sort = {
-            modified_time: 1,
-        }
-
-        let finalJson = await Util.mongo.findAllSort(
-            deviceMongoCollection,
-            filter,
-            {},
-            sort
-        );
-
-        if( finalJson && finalJson.length > 0 ) {
-            const workerData = {
-                tData: finalJson,
-                column: coloum,
-                fileName: "MaintainenceLogReport",
-            };
-    
-            const dataFromWorker = await workerHelper.mainWorkerThreadCall(
-                workerData,
-                tData.type || "csv"
-            );
-            if (dataFromWorker.statusCode === 200) {
-                finalURL = dataFromWorker.status;
-            }
-        } else {
-            return {
-                success: false,
-                statusCode: 404,
-                message: "No data found to generate report.",
-            };
-        }
-    } catch (e) {
-        console.log("error", e);
-    }
-
-    return {
-        success: true,
-        statusCode: 200,
-        download: `${process.env.HOSTNAME}${finalURL}`,
-    };
-};
-
-const submitMaintainenceRequest = async (tData, userInfo = {}) => {
-    // Required and sanity checks
-    let tCheck = await Util.checkQueryParams(tData, {
-        id: "required|string"
-    });
-
-    if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
-        return {
-            statusCode: 404,
-            success: false,
-            msg: "PARAMETER_ISSUE",
-            err: tCheck,
-        };
-    }
-
-    if(userInfo && userInfo.accesslevel && userInfo.accesslevel > 2) {
+// Helper function to check user permissions
+const checkPermissions = (userInfo) => {
+    if (userInfo && userInfo.accesslevel && userInfo.accesslevel > 2) {
         return {
             statusCode: 404,
             success: false,
@@ -102,277 +21,210 @@ const submitMaintainenceRequest = async (tData, userInfo = {}) => {
             err: "",
         };
     }
+    return null;
+};
 
-    const request = await geMaintainenceData(deviceMongoCollection, {_id: tData.id});
+// Helper function to check parameters
+const checkParams = async (tData, expectedParams) => {
+    let tCheck = await Util.checkQueryParams(tData, expectedParams);
+    if (tCheck && tCheck.error && tCheck.error === "PARAMETER_ISSUE") {
+        return {
+            statusCode: 404,
+            success: false,
+            msg: "PARAMETER_ISSUE",
+            err: tCheck,
+        };
+    }
+    return null;
+};
 
-    if (request) {
-        if (!(moment().isBetween(moment(request.startTime), moment(request.endTime)))) {
-            return {
-                statusCode: 404,
-                success: false,
-                msg: "APPROVAL DATE AND TIME EXPIRED. KINDLY UPDATE YOUR REQUEST.",
-                err: "",
+// Download maintenance request
+const downloadMaintainenceRequest = async (tData, userInfo = {}) => {
+    let finalURL = "";
+    const columns = ["modified_time", "devices", "engineerName", "engineerContact", "startTime", "endTime", "status"];
+
+    try {
+        const filter = {
+            ...(tData.startTime && { startTime: { "$gte": moment(tData.startTime).format("YYYY-MM-DD HH:mm:ss") } }),
+            ...(tData.endTime && { endTime: { "$lte": moment(tData.endTime).format("YYYY-MM-DD HH:mm:ss") } }),
+            ...(tData.status && { status: tData.status }),
+            ...(tData.devices && { devices: { $in: tData.devices } }),
+        };
+
+        const sort = { modified_time: 1 };
+        const data = await Util.mongo.findAllSort(deviceMongoCollection, filter, {}, sort);
+
+        if (data && data.length > 0) {
+            const workerData = {
+                tData: data,
+                column: columns,
+                fileName: "MaintainenceLogReport",
             };
+
+            const result = await workerHelper.mainWorkerThreadCall(workerData, tData.type || "csv");
+
+            if (result.statusCode === 200) {
+                finalURL = result.status;
+            } else {
+                return { success: false, statusCode: result.statusCode, message: result.message };
+            }
+        } else {
+            return { success: false, statusCode: 404, message: "No data found to generate report." };
         }
+    } catch (error) {
+        console.error("Error in downloadMaintainenceRequest:", error);
+        return { success: false, statusCode: 500, message: "Error generating report.", err: error };
+    }
 
-        if(["Approved", "Rejected"].includes(request.status)) {
-            return {
-                statusCode: 404,
-                success: false,
-                msg: "MAINTAINENCE FORM ALREADY SUBMITTED. KINDLY CREATE NEW REQUEST.",
-                err: "",
-            };
+    return { success: true, statusCode: 200, download: `${process.env.HOSTNAME}${finalURL}` };
+};
+
+// Submit maintenance request
+const submitMaintainenceRequest = async (tData, userInfo = {}) => {
+    const paramCheck = await checkParams(tData, { id: "required|string" });
+    if (paramCheck) return paramCheck;
+
+    const permissionCheck = checkPermissions(userInfo);
+    if (permissionCheck) return permissionCheck;
+
+    const request = await getMaintainenceData(deviceMongoCollection, { _id: tData.id });
+    if (request) {
+        if (!moment().isBetween(moment(request.startTime), moment(request.endTime))) {
+            return { statusCode: 404, success: false, msg: "APPROVAL DATE AND TIME EXPIRED. KINDLY UPDATE YOUR REQUEST." };
+        }
+        if (["Approved", "Rejected"].includes(request.status)) {
+            return { statusCode: 404, success: false, msg: "MAINTAINENCE FORM ALREADY SUBMITTED. KINDLY CREATE NEW REQUEST." };
         }
     }
 
-    let updateObj = {
+    const updateObj = {
         $set: {
             _id: tData.id,
-            status: Boolean(tData.isApproved) ? "Approved" : "Rejected",
+            status: tData.isApproved ? "Approved" : "Rejected",
             isEditable: false,
-            modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
+            modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
         },
     };
-    try {
-        let result = await Util.mongo.updateOne(
-            deviceMongoCollection,
-            { _id: tData.id },
-            updateObj
-        );
-        if (result) {
-            await Util.addAuditLogs(
-                deviceMongoCollection,
-                userInfo,
-                JSON.stringify(result)
-            );
 
-            return {
-                statusCode: 200,
-                success: true,
-                msg: "MQTTMaintainence Config Success",
-                status: result,
-            };
+    try {
+        const result = await Util.mongo.updateOne(deviceMongoCollection, { _id: tData.id }, updateObj);
+        if (result) {
+            await Util.addAuditLogs(deviceMongoCollection, userInfo, JSON.stringify(result));
+            return { statusCode: 200, success: true, msg: "MQTTMaintainence Config Success", status: result };
         } else {
-            return {
-                statusCode: 404,
-                success: false,
-                msg: "MQTTMaintainence Config Error",
-                status: [],
-            };
+            return { statusCode: 404, success: false, msg: "MQTTMaintainence Config Error", status: [] };
         }
     } catch (error) {
-        return {
-            statusCode: 500,
-            success: false,
-            msg: "MQTTMaintainence Config Error",
-            status: [],
-            err: error,
-        };
+        return { statusCode: 500, success: false, msg: "MQTTMaintainence Config Error", status: [], err: error };
     }
 };
 
+// Create maintenance request
 const createMaintainenceRequest = async (tData, userInfo = {}) => {
-    let tCheck = await Util.checkQueryParams(tData, {
+    const paramCheck = await checkParams(tData, {
         id: "required|string",
         devices: "required|array",
         engineerName: "required|string",
         engineerContact: "required|string",
         startTime: "required|string",
-        endTime: "required|string"
+        endTime: "required|string",
     });
+    if (paramCheck) return paramCheck;
 
-    if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
-        return {
-            statusCode: 404,
-            success: false,
-            msg: "PARAMETER_ISSUE",
-            err: tCheck,
-        };
-    }
+    const permissionCheck = checkPermissions(userInfo);
+    if (permissionCheck) return permissionCheck;
 
-    if(userInfo && userInfo.accesslevel && userInfo.accesslevel > 2) {
-        return {
-            statusCode: 404,
-            success: false,
-            msg: "NOT ENOUGH PERMISSIONS TO PERFORM THIS OPERATION.",
-            err: "",
-        };
-    }
-    
+    const createObj = {
+        _id: tData.id,
+        devices: tData.devices,
+        maintainenceType: tData.maintainenceType,
+        engineerName: tData.engineerName,
+        engineerContact: tData.engineerContact,
+        startTime: moment(tData.startTime).format("YYYY-MM-DD HH:mm:ss"),
+        endTime: moment(tData.endTime).format("YYYY-MM-DD HH:mm:ss"),
+        status: "Pending",
+        isEditable: true,
+        created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+        modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+    };
+
     try {
-        let createObj = {
-            _id: tData.id,
-            devices: tData.devices,
-            maintainenceType: tData.maintainenceType,
-            engineerName: tData.engineerName,
-            engineerContact: tData.engineerContact,
-            startTime: moment(tData.startTime).format("YYYY-MM-DD HH:mm:ss"),
-            endTime: moment(tData.endTime).format("YYYY-MM-DD HH:mm:ss"),
-            status: "Pending",
-            isEditable: true,
-            created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
-            modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
-        };
-
-        let result = await Util.mongo.insertOne(
-            deviceMongoCollection,
-            createObj
-        );
-
+        const result = await Util.mongo.insertOne(deviceMongoCollection, createObj);
         if (result) {
-            let getFlagData = await geMaintainenceData("MQTTFlag", {});
-            for (let i = 0; i < tData.devices.length; i++) {
-                let deviceData = await geMaintainenceData("MQTTDevice", {_id: tData.devices[i]});
+            const getFlagData = await getMaintainenceData("MQTTFlag", {});
+            for (const deviceId of tData.devices) {
+                const deviceData = await getMaintainenceData("MQTTDevice", { _id: deviceId });
                 if (deviceData) {
-                    let sendEmailResponse = await sendEmail(getFlagData.superUserMails, 
-                        { DeviceName: deviceData.deviceName, 
-                            DeviceId: deviceData.deviceId, 
-                            Action: "Maintainence Request Raised.", 
-                            MacId: deviceData.mqttMacId, 
-                            TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss")
-                        }, getFlagData
-                    );
-                    sendEmailResponse = JSON.parse(JSON.stringify(sendEmailResponse));
-        
-                    let mailResponse = {
-                        ...sendEmailResponse,
-                        status: sendEmailResponse.rejected.length > 0 ? "failed" : "success"
-                    }
-        
+                    const emailResponse = await sendEmail(getFlagData.superUserMails, {
+                        DeviceName: deviceData.deviceName,
+                        DeviceId: deviceData.deviceId,
+                        Action: "Maintainence Request Raised.",
+                        MacId: deviceData.mqttMacId,
+                        TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss"),
+                    }, getFlagData);
+
+                    const mailResponse = {
+                        ...emailResponse,
+                        status: emailResponse.rejected.length > 0 ? "failed" : "success",
+                    };
+
                     await Util.mongo.insertOne("MQTTNotify", mailResponse);
                 }
             }
 
-            await Util.addAuditLogs(
-                deviceMongoCollection,
-                userInfo,
-                JSON.stringify(result)
-            );
-            return {
-                statusCode: 200,
-                success: true,
-                msg: "MQTTMaintainence Created Successfull",
-                status: result,
-            };
+            await Util.addAuditLogs(deviceMongoCollection, userInfo, JSON.stringify(result));
+            return { statusCode: 200, success: true, msg: "MQTTMaintainence Created Successfully", status: result };
         } else {
-            return {
-                statusCode: 404,
-                success: false,
-                msg: "MQTTMaintainence Create Failed",
-                status: [],
-            };
+            return { statusCode: 404, success: false, msg: "MQTTMaintainence Create Failed", status: [] };
         }
     } catch (error) {
-        console.log("error", error);
-        return {
-            statusCode: 500,
-            success: false,
-            msg: "MQTTMaintainence Create Error",
-            status: [],
-            err: error,
-        };
+        console.error("Error in createMaintainenceRequest:", error);
+        return { statusCode: 500, success: false, msg: "MQTTMaintainence Create Error", status: [], err: error };
     }
 };
 
+// Get maintenance request
 const getMaintainenceRequest = async (tData, userInfo = {}) => {
-    let tCheck = await Util.checkQueryParams(tData, {
-        skip: "numeric",
-        limit: "numeric",
-    });
+    const paramCheck = await checkParams(tData, { skip: "numeric", limit: "numeric" });
+    if (paramCheck) return paramCheck;
 
-    if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
-        return {
-            statusCode: 404,
-            success: false,
-            msg: "PARAMETER_ISSUE",
-            err: tCheck,
-        };
-    }
     try {
-        let filter = {};
+        const filter = {
+            ...(tData.devices && { devices: { $in: tData.devices } }),
+            ...(tData.status && { status: tData.status }),
+            ...(tData.startTime && { startTime: { "$gte": moment(tData.startTime).format("YYYY-MM-DD HH:mm:ss") } }),
+            ...(tData.endTime && { endTime: { "$lte": moment(tData.endTime).format("YYYY-MM-DD HH:mm:ss") } }),
+        };
 
-        if( tData && tData.devices ) {
-            filter.devices =  { $in: tData.devices };
-        }
+        const result = await Util.mongo.findAndPaginate(deviceMongoCollection, filter, {}, tData.skip, tData.limit);
+        const sanitizedData = await Util.snatizeFromMongo(result);
 
-        if( tData && tData.status ) {
-            filter.status = tData.status;
-        }
-
-        if( tData && tData.startTime ) {
-            filter.startTime = { "$gte": moment(tData.startTime).format("YYYY-MM-DD HH:mm:ss") };
-        }
-
-        if( tData && tData.endTime ) {
-            filter.endTime = { "$lte": moment(tData.endTime).format("YYYY-MM-DD HH:mm:ss") };
-        }
-
-        let result = await Util.mongo.findAndPaginate(
-            deviceMongoCollection,
-            filter,
-            {},
-            tData.skip,
-            tData.limit
-        );
-        let snatizedData = await Util.snatizeFromMongo(result);
-
-        if (snatizedData) {
-            return {
-                statusCode: 200,
-                success: true,
-                msg: "MQTTMaintainence get Successfull",
-                status: snatizedData[0].totalData,
-                totalSize: snatizedData[0].totalSize,
-            };
+        if (sanitizedData) {
+            return { statusCode: 200, success: true, msg: "MQTTMaintainence Get Successful", status: sanitizedData[0].totalData, totalSize: sanitizedData[0].totalSize };
         } else {
-            return {
-                statusCode: 404,
-                success: false,
-                msg: "MQTTMaintainence get Failed",
-                status: [],
-            };
+            return { statusCode: 404, success: false, msg: "MQTTMaintainence Get Failed", status: [] };
         }
     } catch (error) {
-        return {
-            statusCode: 500,
-            success: false,
-            msg: "MQTTMaintainence get Error",
-            status: [],
-            err: error,
-        };
+        return { statusCode: 500, success: false, msg: "MQTTMaintainence Get Error", status: [], err: error };
     }
 };
 
+// Update maintenance request
 const updateMaintainenceRequest = async (tData, userInfo = {}) => {
-    // Required and sanity checks
-    let tCheck = await Util.checkQueryParams(tData, {
+    const paramCheck = await checkParams(tData, {
         id: "required|string",
         devices: "required|array",
         engineerName: "required|string",
         engineerContact: "required|string",
         startTime: "required|string",
-        endTime: "required|string"
+        endTime: "required|string",
     });
+    if (paramCheck) return paramCheck;
 
-    if (tCheck && tCheck.error && tCheck.error == "PARAMETER_ISSUE") {
-        return {
-            statusCode: 404,
-            success: false,
-            msg: "PARAMETER_ISSUE",
-            err: tCheck,
-        };
-    }
+    const permissionCheck = checkPermissions(userInfo);
+    if (permissionCheck) return permissionCheck;
 
-    if(userInfo && userInfo.accesslevel && userInfo.accesslevel > 2) {
-        return {
-            statusCode: 404,
-            success: false,
-            msg: "NOT ENOUGH PERMISSIONS TO PERFORM THIS OPERATION.",
-            err: "",
-        };
-    }
-
-    let updateObj = {
+    const updateObj = {
         $set: {
             _id: tData.id,
             devices: tData.devices,
@@ -382,74 +234,48 @@ const updateMaintainenceRequest = async (tData, userInfo = {}) => {
             startTime: moment(tData.startTime).format("YYYY-MM-DD HH:mm:ss"),
             endTime: moment(tData.endTime).format("YYYY-MM-DD HH:mm:ss"),
             status: "Pending",
-            modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
-        }
+            modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+        },
     };
+
     try {
-        let getExistingMaintainence = await geMaintainenceData(deviceMongoCollection, {_id: tData.id, status: "Pending"});
-        
-        if (getExistingMaintainence && getExistingMaintainence._id) {
-            let result = await Util.mongo.updateOne(deviceMongoCollection, {_id: tData.id}, updateObj);
+        const existingRequest = await getMaintainenceData(deviceMongoCollection, { _id: tData.id, status: "Pending" });
+
+        if (existingRequest) {
+            const result = await Util.mongo.updateOne(deviceMongoCollection, { _id: tData.id }, updateObj);
             if (result) {
-                let getFlagData = await geMaintainenceData("MQTTFlag", {});
-                for (let i = 0; i < tData.devices.length; i++) {
-                    let deviceData = await geMaintainenceData("MQTTDevice", {_id: tData.devices[i]});
+                const getFlagData = await getMaintainenceData("MQTTFlag", {});
+                for (const deviceId of tData.devices) {
+                    const deviceData = await getMaintainenceData("MQTTDevice", { _id: deviceId });
                     if (deviceData) {
-                        let sendEmailResponse = await sendEmail(getFlagData.superUserMails, 
-                            { DeviceName: deviceData.deviceName, 
-                                DeviceId: deviceData.deviceId, 
-                                Action: "Maintainence Request Updated.", 
-                                MacId: deviceData.mqttMacId, 
-                                TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss")
-                            }, getFlagData
-                        );
-                        sendEmailResponse = JSON.parse(JSON.stringify(sendEmailResponse));
-            
-                        let mailResponse = {
-                            ...sendEmailResponse,
-                            status: sendEmailResponse.rejected.length > 0 ? "failed" : "success"
-                        }
-            
+                        const emailResponse = await sendEmail(getFlagData.superUserMails, {
+                            DeviceName: deviceData.deviceName,
+                            DeviceId: deviceData.deviceId,
+                            Action: "Maintainence Request Updated.",
+                            MacId: deviceData.mqttMacId,
+                            TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss"),
+                        }, getFlagData);
+
+                        const mailResponse = {
+                            ...emailResponse,
+                            status: emailResponse.rejected.length > 0 ? "failed" : "success",
+                        };
+
                         await Util.mongo.insertOne("MQTTNotify", mailResponse);
                     }
                 }
 
-                await Util.addAuditLogs(
-                    deviceMongoCollection,
-                    userInfo,
-                    JSON.stringify(result)
-                );
-    
-                return {
-                    statusCode: 200,
-                    success: true,
-                    msg: "MQTTMaintainence update Success",
-                    status: result,
-                };
+                await Util.addAuditLogs(deviceMongoCollection, userInfo, JSON.stringify(result));
+                return { statusCode: 200, success: true, msg: "MQTTMaintainence Update Successful", status: result };
             } else {
-                return {
-                    statusCode: 404,
-                    success: false,
-                    msg: "MQTTMaintainence Error",
-                    status: [],
-                };
+                return { statusCode: 404, success: false, msg: "MQTTMaintainence Update Failed", status: [] };
             }
         } else {
-            return {
-                statusCode: 404,
-                success: false,
-                msg: "MQTTMaintainence Not found or already approved.",
-                status: [],
-            };
+            return { statusCode: 404, success: false, msg: "MQTTMaintainence Not Found or Already Approved", status: [] };
         }
     } catch (error) {
-        return {
-            statusCode: 500,
-            success: false,
-            msg: "MQTTMaintainence Error",
-            status: [],
-            err: error,
-        };
+        console.error("Error in updateMaintainenceRequest:", error);
+        return { statusCode: 500, success: false, msg: "MQTTMaintainence Update Error", status: [], err: error };
     }
 };
 

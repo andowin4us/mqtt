@@ -26,9 +26,9 @@ const MQTTController = () => {
         const result = await MQTT.getAuditLog(req.body, req.user);
         return res.status(result.statusCode).json(result);
     };
-    const downloaAuditLog = async (req, res) => {
-        console.log('downloaAuditLog', req.body, req.user);
-        const result = await MQTT.downloaAuditLog(req.body, req.user);
+    const downloadAuditLog = async (req, res) => {
+        console.log('downloadAuditLog', req.body, req.user);
+        const result = await MQTT.downloadAuditLog(req.body, req.user);
         return res.status(result.statusCode).json(result);
     }
     return {
@@ -37,7 +37,7 @@ const MQTTController = () => {
         downloadLogger,
         downloadStateLogger,
         getAuditLog,
-        downloaAuditLog
+        downloadAuditLog
     };
 }
 
