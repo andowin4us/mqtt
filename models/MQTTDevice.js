@@ -259,10 +259,12 @@ const relayTriggerOnOrOffMQTTDevice = async (tData, userInfo = {}) => {
         const MQTT_URL = `mqtt://${device.mqttIP}:${device.mqttPort}`;
 
         if (tData && Boolean(tData.mqttRelayState) === true) {
-            await publishMessage(MQTT_URL, device.mqttUserName, device.mqttPassword, "ON");
+            let messageSend = "ON,"+device.deviceId;
+            await publishMessage(MQTT_URL, device.mqttUserName, device.mqttPassword, messageSend);
             await sendEmailToUsers({...device, message: "ON"});
         } else {
-            await publishMessage(MQTT_URL, device.mqttUserName, device.mqttPassword, "OFF");
+            let messageSend = "OFF,"+device.deviceId;
+            await publishMessage(MQTT_URL, device.mqttUserName, device.mqttPassword, messageSend);
             await sendEmailToUsers({...device, message: "OFF"});
         }
         await Util.mongo.updateOne(deviceMongoCollection, { _id: tData.id }, { $set: { "mqttStatusDetails.mqttRelayState": tData.relayState, 

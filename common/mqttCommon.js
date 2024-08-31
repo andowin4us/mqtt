@@ -108,7 +108,8 @@ async function handleHeartbeat(data, result, getFlagData) {
 
     if (getFlagData.isRelayTimer && duration > parseInt(getFlagData.heartBeatTimer, 10)) {
         const MQTT_URL = `mqtt://${result.mqttIP}:${result.mqttPort}`;
-        await publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword, 'ON');
+        let messageSend = "ON,"+data.device_id;
+        await publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword, messageSend);
     }
 
     return true;
@@ -143,7 +144,8 @@ async function handleOtherLogs(data, result, getFlagData) {
             await mongoInsert({ status: 'InActive', modified_time: moment().format('YYYY-MM-DD HH:mm:ss') }, {}, 'MQTTDevice', 'update');
             const MQTT_URL = `mqtt://${result.mqttIP}:${result.mqttPort}`;
             data.relay_state = 'ON';
-            await publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword, 'ON');
+            let messageSend = "ON,"+data.device_id;
+            await publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword, messageSend);
 
             await sendEmail(getFlagData.superUserMails, {
                 DeviceName: data.device_name,
