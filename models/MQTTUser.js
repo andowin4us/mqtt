@@ -287,7 +287,7 @@ const login = async (tData, res) => {
 
     if ((email || userName) && password) {
         try {
-            const query = email ? { email } : { email: userName };
+            const query = email ? { email } : { userName };
             const user = await findDuplicate(query);
 
             if (!user) {
