@@ -108,7 +108,7 @@ async function checkDeviceStatus() {
                 const updateStatus = async (status, mqttRelayState) => {
                     console.log(`Updating device ${device.deviceName} to ${status}`);
                     const MQTT_URL = `mqtt://${device.mqttIP}:${device.mqttPort}`;
-                    let messageSend = "ON,"+device.device_id;
+                    let messageSend = "ON,"+device.deviceId;
                     await publishMessage(MQTT_URL, device.mqttUserName, device.mqttPassword, messageSend);
                     await collection.updateOne({ _id: device._id }, {
                         $set: {
