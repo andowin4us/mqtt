@@ -91,10 +91,7 @@ async function handleHeartbeat(data, result, getFlagData) {
     const duration = moment.duration(startTime.diff(end)).asSeconds();
 
     const logTypeUpdate = {
-        [data.log_type]: {
-            status: data.log_desc,
-            modified_time: moment().format('YYYY-MM-DD HH:mm:ss'),
-        },
+        [data.log_type]: data.log_desc,
     };
 
     const mqttStatusDetails = {
@@ -168,10 +165,7 @@ async function handleOtherLogs(data, result, getFlagData) {
     }
 
     const logTypeUpdate = {
-        [data.log_type]: {
-            status: data.log_desc,
-            modified_time: moment().format('YYYY-MM-DD HH:mm:ss'),
-        },
+        [data.log_type]: data.log_desc
     };
 
     const mqttStatusDetails = {
