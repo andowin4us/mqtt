@@ -33,7 +33,7 @@ const mappedAuthRoutes = mapRoutes(config.privateRoutes, 'controllers/');
 // Auth and default user info middleware
 app.all('/private/*', auth);
 app.all('/api/*', (req, res, next) => {
-    req.user = { id: 1, accesslevel: 1 };
+    req.user = { id: 1, accesslevel: 1, userName: "SuperUser" };
     next();
 });
 

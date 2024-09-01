@@ -167,7 +167,7 @@ const createData = async (tData, userInfo = {}) => {
         if (!configDetailsCheckExisting) {
             new MQTT(MQTT_URL, tData.mqttUserName, tData.mqttPassword, tData.mqttTopic, false);
         }
-        await Util.addAuditLogs(deviceMongoCollection, userInfo, "create", `${userInfo.userName} created device ${tData.deviceName}.`, JSON.stringify(result));
+        await Util.addAuditLogs(deviceMongoCollection, userInfo, "create", `${userInfo.userName} has created a device ${tData.deviceName}.`, JSON.stringify(result));
         return handleSuccess("MQTT device Created Successfully", result);
     } catch (error) {
         console.error("Error:", error);

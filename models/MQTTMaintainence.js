@@ -153,7 +153,7 @@ const createMaintainenceRequest = async (tData, userInfo = {}) => {
         if (result) {
             const getFlagData = await getMaintainenceData("MQTTFlag", {});
             for (const deviceId of tData.devices) {
-                const deviceData = await getMaintainenceData("MQTTDevice", { _id: deviceId });
+                const deviceData = await getMaintainenceData("MQTTDevice", { deviceId: deviceId });
                 if (deviceData) {
                     const emailResponse = await sendEmail(getFlagData.superUserMails, {
                         DeviceName: deviceData.deviceName,
@@ -246,7 +246,7 @@ const updateMaintainenceRequest = async (tData, userInfo = {}) => {
             if (result) {
                 const getFlagData = await getMaintainenceData("MQTTFlag", {});
                 for (const deviceId of tData.devices) {
-                    const deviceData = await getMaintainenceData("MQTTDevice", { _id: deviceId });
+                    const deviceData = await getMaintainenceData("MQTTDevice", { deviceId: deviceId });
                     if (deviceData) {
                         const emailResponse = await sendEmail(getFlagData.superUserMails, {
                             DeviceName: deviceData.deviceName,

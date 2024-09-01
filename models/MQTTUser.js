@@ -155,12 +155,12 @@ const createData = async (tData, userInfo = {}) => {
     if (permissionCheck) return permissionCheck;
 
     try {
-        const isDuplicate = await findDuplicate({ name: tData.name.toLowerCase(), _id: { $ne: tData.id } });
+        const isDuplicate = await findDuplicate({ name: tData.userName.toLowerCase(), _id: { $ne: tData.id } });
         if (isDuplicate) {
             return {
                 statusCode: 404,
                 success: false,
-                msg: "DUPLICATE NAME",
+                msg: "DUPLICATE USERNAME",
                 err: "",
             };
         }
