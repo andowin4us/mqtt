@@ -5,8 +5,6 @@ const { v4: uuidv4 } = require('uuid');
 const moment = require('moment');
 const { sendEmail } = require('../common/mqttMail');
 
-const MAX_RETRIES = 4;
-
 async function utilizeMqtt(message) {
     try {
         let data;
@@ -102,6 +100,7 @@ async function handleHeartbeat(data, result, getFlagData) {
     };
 
     await mongoInsert({ mqttStatusDetails, modified_time: moment().format('YYYY-MM-DD HH:mm:ss') }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
+    await mongoInsert({ $set : { mqttStatusDetails, modified_time: moment().format('YYYY-MM-DD HH:mm:ss') } }, { deviceId: data.device_id }, 'MQTTDevice', 'update', "remote");
 
     if (getFlagData.isRelayTimer && duration > parseInt(getFlagData.heartBeatTimer, 10)) {
         const MQTT_URL = `mqtt://${result.mqttIP}:${result.mqttPort}`;
@@ -139,6 +138,8 @@ async function handleOtherLogs(data, result, getFlagData) {
 
         if (!checkMaintainence) {
             await mongoInsert({ status: 'InActive', modified_time: moment().format('YYYY-MM-DD HH:mm:ss') }, {}, 'MQTTDevice', 'update');
+            await mongoInsert({ $set: {status: 'InActive', modified_time: moment().format('YYYY-MM-DD HH:mm:ss') } }, {}, 'MQTTDevice', 'update', "remote");
+
             const MQTT_URL = `mqtt://${result.mqttIP}:${result.mqttPort}`;
             data.relay_state = 'ON';
             let messageSend = "ON,"+data.device_id;
@@ -161,6 +162,16 @@ async function handleOtherLogs(data, result, getFlagData) {
                 modified_time: moment().format('YYYY-MM-DD HH:mm:ss'),
                 log: 'RELAY Turned ON',
             }, {}, 'MQTTAuditLog', 'create');
+
+            await mongoInsert({
+                moduleName: 'MQTTLogger',
+                operation: "trigger relay ON",
+                message: `Relay Timer breached has triggered the relay ON via the predefined timer of ${durationSeconds}`,
+                modified_user_id: 'SYSTEM',
+                modified_user_name: 'SYSTEM',
+                modified_time: moment().format('YYYY-MM-DD HH:mm:ss'),
+                log: 'RELAY Turned ON',
+            }, {}, 'MQTTAuditLog', 'create', "remote");
         }
     }
 
@@ -176,6 +187,7 @@ async function handleOtherLogs(data, result, getFlagData) {
     };
 
     await mongoInsert({ mqttStatusDetails }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
+    await mongoInsert({ $set: { mqttStatusDetails } }, { deviceId: data.device_id }, 'MQTTDevice', 'update', "remote");
 
     data._id = uuidv4();
     data.modified_time = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -183,42 +195,92 @@ async function handleOtherLogs(data, result, getFlagData) {
     data.timestamp = moment(new Date(data.timestamp)).format('YYYY-MM-DD HH:mm:ss');
 
     await mongoInsert(data, {}, 'MQTTLogger', 'create');
+    await mongoInsert(data, {}, 'MQTTLogger', 'create', "remote");
 
     return true;
 }
 
-async function mongoInsert(data, filter, collectionName, type) {
-    const client = await MongoClient.connect(connection.mongo.url, { useNewUrlParser: true }).catch(err => {
-        console.error(err);
-        return null;
-    });
-
-    if (!client) return null;
-
-    const db = client.db(connection.mongo.database);
-    const collection = db.collection(collectionName);
+async function mongoInsert(data, filter, collectionName, type, host = "local") {
+    let localClient, remoteClient;
+    let localDb, remoteDb;
+    let results = {};
 
     try {
-        switch (type) {
-            case 'find':
-                return await collection.findOne(filter);
-            case 'create':
-                return await collection.insertOne(data);
-            case 'update':
-                if (data.log_type === 'receipeUpdate') {
-                    return await collection.updateOne(filter, { $set: data });
-                }
-                return await collection.updateOne(filter, { $set: data }, { upsert: true });
-            default:
-                throw new Error(`Unknown operation type: ${type}`);
-        }
-    } catch (err) {
-        console.error(err);
-    } finally {
-        client.close();
-    }
+        // Connect to the local MongoDB
+        localClient = await connectToMongo(connection.mongo.url);
+        localDb = localClient.db(connection.mongo.database);
 
-    return null;
+        // If remote host is specified, connect to the remote MongoDB
+        if (host === "remote") {
+            // Retrieve remote MongoDB credentials
+            const flagData = await localDb.collection('MQTTFlag').findOne({});
+            if (!flagData) throw new Error('Failed to retrieve flag data for remote MongoDB credentials.');
+
+            if (flagData.useRemoteMongo) {
+                const remoteMongoUrl =0 `mongodb+srv://${flagData.REMOTE_MONGO_USERNAME}:${flagData.REMOTE_MONGO_PASSWORD}@${flagData.REMOTE_MONGO_HOST}/?retryWrites=true&w=majority`;
+                remoteClient = await connectToMongo(remoteMongoUrl);
+                remoteDb = remoteClient.db(connection.mongo.database);
+            }
+        }
+
+        // Perform operation on local MongoDB
+        if (host === "local" && localClient) {
+            const localCollection = localDb.collection(collectionName);
+            switch (type) {
+                case 'find':
+                    results = await localCollection.findOne(filter);
+                    break;
+                case 'create':
+                    results = await localCollection.insertOne(data);
+                    break;
+                case 'update':
+                    results = await localCollection.updateOne(filter, { $set: data }, { upsert: true });
+                    break;
+                default:
+                    throw new Error(`Unknown operation type: ${type}`);
+            }
+        }
+
+        // Perform operation on remote MongoDB if applicable
+        if (host === "remote" && remoteClient) {
+            const remoteCollection = remoteDb.collection(collectionName);
+            switch (type) {
+                case 'find':
+                    results.remote = await remoteCollection.findOne(filter);
+                    break;
+                case 'create':
+                    results.remote = await remoteCollection.insertOne(data);
+                    break;
+                case 'update':
+                    results.remote = await remoteCollection.updateOne(filter, data, { upsert: true });
+                    break;
+                case 'remove':
+                    results.remote = await remoteCollection.deleteOne(filter);
+                    break;
+            }
+        }
+
+        return results;
+    } catch (err) {
+        console.error('MongoDB operation error:', err);
+        return null;
+    } finally {
+        // Ensure connections are properly closed
+        if (localClient) await localClient.close();
+        if (remoteClient) await remoteClient.close();
+    }
+}
+
+// Utility function to connect to MongoDB
+async function connectToMongo(url) {
+    let client;
+    try {
+        client = await MongoClient.connect(url, { useNewUrlParser: true, useUnifiedTopology: true });
+        return client;
+    } catch (err) {
+        console.error('MongoDB connection error:', err);
+        return null;
+    }
 }
 
 async function publishMessage(MQTT_URL, userName, password, message) {
@@ -245,4 +307,5 @@ async function publishMessage(MQTT_URL, userName, password, message) {
 module.exports = {
     utilizeMqtt,
     publishMessage,
+    mongoInsert
 };

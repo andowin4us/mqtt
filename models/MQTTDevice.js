@@ -265,12 +265,13 @@ const relayTriggerOnOrOffMQTTDevice = async (tData, userInfo = {}) => {
             await publishMessage(MQTT_URL, device.mqttUserName, device.mqttPassword, messageSend);
             await sendEmailToUsers({...device, message: "OFF"});
         }
-        await Util.mongo.updateOne(deviceMongoCollection, { _id: tData.id }, { $set: { "mqttStatusDetails.mqttRelayState": tData.relayState, 
+        let result = await Util.mongo.updateOne(deviceMongoCollection, { _id: tData.id }, { $set: { "mqttStatusDetails.mqttRelayState": tData.relayState, 
             status: Boolean(tData.mqttRelayState) === true ? "InActive" : "Active" } });
 
         await Util.addAuditLogs(deviceMongoCollection, userInfo, `trigger relay ${Boolean(tData.mqttRelayState) === true ? "ON" : "OFF"}`, `${userInfo.userName} has triggered the relay ${Boolean(tData.mqttRelayState) === true ? "ON" : "OFF"} via the Toggle Button.`, JSON.stringify(result));
         return handleSuccess("MQTT device Relay Triggered Successfully", {});
     } catch (error) {
+        console.log("error", error);
         return handleError("MQTT device Relay Trigger Error", error);
     }
 };

@@ -40,7 +40,10 @@ async function seedData() {
             SMTP_SERVER: 'smtp.migadu.com',
             SMTP_SENDING_EMAIL: 'test@gccglobetech.com',
             SMTP_SENDING_PASSWORD: 'Gofortest@321',
-            SMTP_PORT: 465
+            SMTP_PORT: 465,
+            REMOTE_MONGO_HOST: "",
+            REMOTE_MONGO_USERNAME: "",
+            REMOTE_MONGO_PASSWORD: "",
         };
 
         const userData = {
@@ -65,9 +68,13 @@ async function seedData() {
 // Start MQTT clients for devices
 async function startDevices() {
     const collection = db.collection('MQTTDevice');
-    const devices = await collection.find({}).toArray();
+    let devices = await collection.find({}).toArray();
 
     console.log('Devices found: ', devices.length);
+    
+    devices = devices.filter((obj, index) => {
+        return index === devices.findIndex(o => obj.mqttIP === o.mqttIP);
+    });
     
     devices.forEach((device, index) => {
         console.log(`Device ${index} is ${device.deviceName}. Initiating event reception.`);
