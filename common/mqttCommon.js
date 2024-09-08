@@ -105,6 +105,13 @@ async function handleHeartbeat(data, result, getFlagData) {
     if (getFlagData.isRelayTimer && duration > parseInt(getFlagData.heartBeatTimer, 10)) {
         const MQTT_URL = `mqtt://${result.mqttIP}:${result.mqttPort}`;
         let messageSend = "ON,"+data.device_id;
+        await sendEmail(getFlagData.superUserMails, {
+            DeviceName: data.device_name,
+            DeviceId: data.device_id,
+            Action: `Relay triggered ON for device ${data.device_name}`,
+            MacId: data.mac_id,
+            TimeofActivity: moment().format('YYYY-MM-DD HH:mm:ss'),
+        }, getFlagData);
         await publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword, messageSend);
     }
 
