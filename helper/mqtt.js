@@ -24,6 +24,8 @@ class MQTTConnector {
         this.closeConnCheck = closeConnCheck;
         this.resultDevice = resultDevice;
         this.createObj = createObj;
+        this.messageQueue = [];
+        this.isProcessingQueue = false; // Track if processing is in progress
 
         this.initialize();
     }
@@ -75,15 +77,35 @@ class MQTTConnector {
     async onMessage(topic, message, packet) {
         console.log('Topic=' + topic);
 
-        if (this.resultDevice && this.createObj && this.createObj.length > 0) {
-            let response = await this.sendMessage(this.createObj.sendingTopic, this.resultDevice, this.createObj, packet);
-            this.createObj = null;
-            return response;
+        // Add message to the queue
+        this.messageQueue.push({ topic, message, packet });
+
+        // Process the queue if not already processing
+        if (!this.isProcessingQueue) {
+            this.processQueue();
+        }
+    }
+
+    async processQueue() {
+        this.isProcessingQueue = true;
+
+        while (this.messageQueue.length > 0) {
+            const { topic, message, packet } = this.messageQueue.shift();
+            try {
+                if (this.resultDevice && this.createObj && this.createObj.length > 0) {
+                    let response = await this.sendMessage(this.createObj.sendingTopic, this.resultDevice, this.createObj, packet);
+                    this.createObj = null;
+                    console.log(response ? "Message sent successfully." : "Message sending failed.");
+                } else {
+                    let processMessage = await utilizeMqtt(message);
+                    console.log(processMessage ? "Message Process Success." : "Message Process Failed.");
+                }
+            } catch (err) {
+                console.error('Error processing message:', err);
+            }
         }
 
-        let processMessage = await utilizeMqtt(message);
-        console.log(processMessage ? "Message Process Success." : "Message Process Failed.");
-        return processMessage;
+        this.isProcessingQueue = false;
     }
 
     async sendMessage(topic, device, message, packet) {
