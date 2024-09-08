@@ -155,12 +155,22 @@ const createData = async (tData, userInfo = {}) => {
     if (permissionCheck) return permissionCheck;
 
     try {
-        const isDuplicate = await findDuplicate({ name: tData.userName.toLowerCase(), _id: { $ne: tData.id } });
+        const isDuplicate = await findDuplicate({ userName: tData.userName.toLowerCase()});
         if (isDuplicate) {
             return {
                 statusCode: 404,
                 success: false,
                 msg: "DUPLICATE USERNAME",
+                err: "",
+            };
+        }
+
+        const isDuplicateEmail = await findDuplicate({ email: tData.email.toLowerCase()});
+        if (isDuplicateEmail) {
+            return {
+                statusCode: 404,
+                success: false,
+                msg: "DUPLICATE EMAIL",
                 err: "",
             };
         }
@@ -215,6 +225,8 @@ const getData = async (tData, userInfo) => {
             ...(tData.userName && { userName: tData.userName }),
             ...(tData.name && { name: tData.name }),
             ...(tData.status && { status: tData.status }),
+            ...(tData.email && { status: tData.email }),
+            ...(tData.accesslevel && { accesslevel: tData.accesslevel === "Admin" ? 2 : tData.accesslevel === "Supervisor" ? 3 : 1 })
         };
 
         const result = await Util.mongo.findAndPaginate(deviceMongoCollection, filter, {}, tData.skip, tData.limit);
