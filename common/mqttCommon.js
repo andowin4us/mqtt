@@ -224,7 +224,7 @@ async function mongoInsert(data, filter, collectionName, type, host = "local") {
             if (!flagData) throw new Error('Failed to retrieve flag data for remote MongoDB credentials.');
 
             if (flagData.useRemoteMongo) {
-                const remoteMongoUrl =0 `mongodb+srv://${flagData.REMOTE_MONGO_USERNAME}:${flagData.REMOTE_MONGO_PASSWORD}@${flagData.REMOTE_MONGO_HOST}/?retryWrites=true&w=majority`;
+                const remoteMongoUrl = `mongodb+srv://${flagData.REMOTE_MONGO_USERNAME}:${flagData.REMOTE_MONGO_PASSWORD}@${flagData.REMOTE_MONGO_HOST}/?retryWrites=true&w=majority`;
                 remoteClient = await connectToMongo(remoteMongoUrl);
                 remoteDb = remoteClient.db(connection.mongo.database);
             }
