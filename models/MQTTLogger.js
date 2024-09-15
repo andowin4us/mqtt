@@ -25,7 +25,8 @@ const buildFilter = (tData, userInfo) => {
     }
 
     if (tData) {
-        const { device_id, device_name, log_type, log_desc, log_line_count, battery_level, mac_id, state } = tData;
+        const { device_id, device_name, log_type, log_desc, log_line_count, 
+            battery_level, mac_id, state, startDate, endDate } = tData;
 
         if (device_id) filter.device_id = device_id;
         if (device_name) filter.device_name = device_name;
@@ -35,6 +36,7 @@ const buildFilter = (tData, userInfo) => {
         if (battery_level) filter.battery_level = battery_level;
         if (mac_id) filter.mac_id = mac_id;
         if (state) filter.state = state;
+        if (startDate || endDate) filter.modified_time = startDate && endDate ? { $gte: startDate, $lte: endDate } : startDate ? { $gte: startDate} : { $lte: endDate };
     }
 
     return filter;
@@ -130,7 +132,7 @@ const downloadLogs = async (tData, userInfo, filter, columns, fileName) => {
 const downloadLogger = async (tData, userInfo) => {
     try {
         const filter = buildFilter(tData, userInfo);
-        const columns = ["timestamp", "device_id", "device_name", "mac_id", "log_type", "log_desc", "log_line_count", "battery_level"];
+        const columns = ["timestamp", "device_id", "device_name", "log_type", "log_desc", "log_line_count", "battery_level"];
         await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded logger report.`, "success", JSON.stringify(result));
         return downloadLogs(tData, userInfo, filter, columns, "ActivityLogReport");
     }  catch (e) {
@@ -143,7 +145,7 @@ const downloadLogger = async (tData, userInfo) => {
 const downloadStateLogger = async (tData, userInfo) => {
     try {
         const filter = buildFilter(tData, userInfo);
-        const columns = ["timestamp", "device_id", "device_name", "mac_id", "log_type", "log_desc", "state", "battery_level"];
+        const columns = ["timestamp", "device_id", "device_name", "log_type", "log_desc", "battery_level"];
         await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded state report.`, "success", JSON.stringify(result));
         return downloadLogs(tData, userInfo, filter, columns, "StateLogReport");
     } catch (e) {
@@ -164,7 +166,13 @@ const getAuditLog = async (tData, userInfo) => {
     }
 
     try {
-        const filter = tData?.moduleName ? { moduleName: tData.moduleName } : {};
+        const filter = {
+            ...((tData.startDate || tData.endDate) && { modified_time : tData.startDate && tData.endDate ? { $gte: tData.startDate, $lte: tData.endDate } : tData.startDate ? { $gte: tData.startDate} : { $lte: tData.endDate }}),
+            ...(tData.userName && { modified_user_name: tData.userName }),
+            ...(tData.moduleName && { moduleName: tData.moduleName }),
+            ...(tData.operation && { operation: tData.operation }),
+            ...(tData.status && { status: tData.status })
+        };
         const result = await Util.mongo.findAndPaginate("MQTTAuditLog", filter, {}, tData.skip, tData.limit);
         const sanitizedData = await Util.snatizeFromMongo(result);
 
@@ -182,7 +190,7 @@ const getAuditLog = async (tData, userInfo) => {
 const downloadAuditLog = async (tData, userInfo) => {
     try {
         const filter = tData?.moduleName ? { moduleName: tData.moduleName } : {};
-        const columns = ["moduleName", "operation", "message", "modified_user_name", "modified_time"];
+        const columns = ["modified_time", "modified_user_name", "role", "moduleName", "operation", "status", "message"];
         await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded audit log report.`, "success", JSON.stringify(result));
         return downloadLogs(tData, userInfo, filter, columns, "AuditLogReport");
     } catch (e) {

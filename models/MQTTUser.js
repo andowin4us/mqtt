@@ -229,8 +229,8 @@ const getData = async (tData, userInfo) => {
             ...(tData.userName && { userName: tData.userName }),
             ...(tData.name && { name: tData.name }),
             ...(tData.status && { status: tData.status }),
-            ...(tData.email && { status: tData.email }),
-            ...(tData.accesslevel && { accesslevel: tData.accesslevel === "Admin" ? 2 : tData.accesslevel === "Supervisor" ? 3 : 1 })
+            ...(tData.email && { email: tData.email }),
+            ...(tData.accessLevel && { accesslevel: tData.accessLevel })
         };
 
         const result = await Util.mongo.findAndPaginate(deviceMongoCollection, filter, {}, tData.skip, tData.limit);
