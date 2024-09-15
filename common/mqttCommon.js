@@ -111,7 +111,7 @@ async function handleHeartbeat(data, result, getFlagData) {
             Action: `Relay triggered ON for device ${data.device_name}`,
             MacId: data.mac_id,
             TimeofActivity: moment().format('YYYY-MM-DD HH:mm:ss'),
-        }, getFlagData);
+        }, getFlagData, getFlagData.ccUsers, getFlagData.bccUsers);
         await publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword, messageSend);
     }
 
@@ -137,7 +137,7 @@ async function handleOtherLogs(data, result, getFlagData) {
             Action: `${data.log_type} ${data.log_desc}`,
             MacId: data.mac_id,
             TimeofActivity: moment().format('YYYY-MM-DD HH:mm:ss'),
-        }, getFlagData);
+        }, getFlagData, getFlagData.ccUsers, getFlagData.bccUsers);
     }
 
     if (data.log_type === 'DOOR' && data.log_desc === 'OPENED') {
@@ -158,11 +158,11 @@ async function handleOtherLogs(data, result, getFlagData) {
                 Action: `Relay triggered ON for device ${data.device_name}`,
                 MacId: data.mac_id,
                 TimeofActivity: moment().format('YYYY-MM-DD HH:mm:ss'),
-            }, getFlagData);
+            }, getFlagData, getFlagData.ccUsers, getFlagData.bccUsers);
 
             await mongoInsert({
                 moduleName: 'MQTTLogger',
-                operation: "trigger relay ON",
+                operation: "Relay ON",
                 message: `Relay Timer breached has triggered the relay ON via the predefined timer of ${durationSeconds}`,
                 modified_user_id: 'SYSTEM',
                 modified_user_name: 'SYSTEM',
@@ -172,7 +172,7 @@ async function handleOtherLogs(data, result, getFlagData) {
 
             await mongoInsert({
                 moduleName: 'MQTTLogger',
-                operation: "trigger relay ON",
+                operation: "Relay ON",
                 message: `Relay Timer breached has triggered the relay ON via the predefined timer of ${durationSeconds}`,
                 modified_user_id: 'SYSTEM',
                 modified_user_name: 'SYSTEM',

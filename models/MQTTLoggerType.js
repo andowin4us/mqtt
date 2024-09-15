@@ -2,6 +2,7 @@ const Util = require("../helper/util");
 const deviceMongoCollection = "MQTTLoggerType";
 const dotenv = require("dotenv");
 const moment = require("moment");
+const MODULE_NAME = "LOGGERTYPE";
 
 // Helper function to check permissions
 const hasPermission = (userInfo) => {
@@ -30,8 +31,8 @@ const isDuplicate = async (logType, deviceId) => {
 };
 
 // Helper function to handle audit logs
-const handleAuditLogs = async (userInfo, result, operation, message) => {
-    await Util.addAuditLogs(deviceMongoCollection, userInfo, operation, message, JSON.stringify(result));
+const handleAuditLogs = async (userInfo, result, operation, status, message) => {
+    await Util.addAuditLogs(MODULE_NAME, userInfo, operation, message, status, JSON.stringify(result));
 };
 
 // Main CRUD functions
@@ -53,7 +54,7 @@ const deleteData = async (tData, userInfo = {}) => {
         if (configDetails && configDetails.logType) {
             const result = await Util.mongo.remove(deviceMongoCollection, { _id: tData.id });
             if (result) {
-                await handleAuditLogs(userInfo, result, "delete", `${userInfo.userName} deleted log type ${configDetails.logType}.`);
+                await handleAuditLogs(userInfo, result, "delete", "success", `${userInfo.userName} delete log type.`);
                 return {
                     statusCode: 200,
                     success: true,
@@ -69,6 +70,7 @@ const deleteData = async (tData, userInfo = {}) => {
             status: [],
         };
     } catch (error) {
+        await handleAuditLogs(userInfo, result, "delete", "failure", `${userInfo.userName} delete log type.`);
         return {
             statusCode: 500,
             success: false,
@@ -112,7 +114,7 @@ const updateData = async (tData, userInfo = {}) => {
 
         const result = await Util.mongo.updateOne(deviceMongoCollection, { _id: tData.id }, updateObj);
         if (result) {
-            await handleAuditLogs(userInfo, result);
+            await handleAuditLogs(userInfo, result, "update", "success", `${userInfo.userName} update log type.`);
             return {
                 statusCode: 200,
                 success: true,
@@ -127,6 +129,7 @@ const updateData = async (tData, userInfo = {}) => {
             status: [],
         };
     } catch (error) {
+        await handleAuditLogs(userInfo, result, "update", "failure", `${userInfo.userName} update log type.`);
         return {
             statusCode: 500,
             success: false,
@@ -170,7 +173,7 @@ const createData = async (tData, userInfo = {}) => {
 
         const result = await Util.mongo.insertOne(deviceMongoCollection, createObj);
         if (result) {
-            await handleAuditLogs(userInfo, result);
+            await handleAuditLogs(userInfo, result, "create", "success", `${userInfo.userName} create log type.`);
             return {
                 statusCode: 200,
                 success: true,
@@ -185,6 +188,7 @@ const createData = async (tData, userInfo = {}) => {
             status: [],
         };
     } catch (error) {
+        await handleAuditLogs(userInfo, result, "create", "failed", `${userInfo.userName} create log type.`);
         return {
             statusCode: 500,
             success: false,

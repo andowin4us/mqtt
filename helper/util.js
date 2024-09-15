@@ -26,12 +26,13 @@ const snatizeFromMongo = async (result) => {
     return result;
 };
 
-const addAuditLogs = async (moduleName, userInfo, operation, message, result) => {
+const addAuditLogs = async (moduleName, userInfo, operation, message, response, result) => {
     const logEntry = {
         moduleName,
         modified_user_id: userInfo.id || 0,
         operation: operation,
         message: message,
+        status: response,
         modified_user_name: userInfo.userName || "test",
         modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
         log: result

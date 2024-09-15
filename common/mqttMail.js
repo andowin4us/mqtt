@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Email sending function
-async function sendEmail(recipient, deviceInfo, emailConfig) {
+async function sendEmail(recipient, deviceInfo, emailConfig, ccUsers, bccUsers) {
     const smtpServer = emailConfig.SMTP_SERVER;
     const port = parseInt(emailConfig.SMTP_PORT);
     const senderEmail = emailConfig.SMTP_SENDING_EMAIL;
@@ -65,6 +65,8 @@ async function sendEmail(recipient, deviceInfo, emailConfig) {
         to: recipient,
         subject: subject,
         html: body,
+        cc: ccUsers,
+        bcc: bccUsers,
         attachments: [{
             filename: 'stock.jpg',
             // path: imagePath,

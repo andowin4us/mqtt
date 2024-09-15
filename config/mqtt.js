@@ -36,7 +36,9 @@ async function seedData() {
             instanceExpired: false,
             logLineLimit: 240000,
             useRemoteMongo: false,
-            superUserMails: 'ag14683@gmail.com, andowin4us@gmail.com',
+            superUserMails: 'test@gmail.com',
+            ccUsers: '',
+            bccUsers: '',
             SMTP_SERVER: 'smtp.migadu.com',
             SMTP_SENDING_EMAIL: 'test@gccglobetech.com',
             SMTP_SENDING_PASSWORD: 'Gofortest@321',
@@ -126,7 +128,7 @@ async function checkDeviceStatus() {
                     });
                     await collectionAudit.insertOne({
                         moduleName: 'MQTTDevice',
-                        operation: "trigger relay ON",
+                        operation: "Relay ON",
                         message: `Relay Timer breached has triggered the relay ON via the predefined timer of ${durationSeconds}`,
                         modified_user_id: 'SYSTEM',
                         modified_user_name: 'SYSTEM',

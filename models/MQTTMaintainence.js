@@ -4,6 +4,7 @@ const moment = require('moment');
 const Util = require("../helper/util");
 const workerHelper = require("../helper/mainWorkerHelper");
 const deviceMongoCollection = "MQTTMaintainence";
+const MODULE_NAME = "Maintainence";
 const { sendEmail } = require("../common/mqttMail");
 
 // Helper function to get maintenance data
@@ -109,12 +110,14 @@ const submitMaintainenceRequest = async (tData, userInfo = {}) => {
     try {
         const result = await Util.mongo.updateOne(deviceMongoCollection, { _id: tData.id }, updateObj);
         if (result) {
-            await Util.addAuditLogs(deviceMongoCollection, userInfo, `${tData.isApproved ? "Approve" : "Reject"}`, `${userInfo.userName} has ${tData.isApproved ? "Approved" : "Rejected"} Device Maintenance Request.`, JSON.stringify(result));
+            await Util.addAuditLogs(MODULE_NAME, userInfo, `${tData.isApproved ? "Approve" : "Reject"}`, `${userInfo.userName} has ${tData.isApproved ? "Approved" : "Rejected"} Device Maintenance Request.`, "success", JSON.stringify(result));
             return { statusCode: 200, success: true, msg: "MQTTMaintainence Config Success", status: result };
         } else {
+            await Util.addAuditLogs(MODULE_NAME, userInfo, `${tData.isApproved ? "Approve" : "Reject"}`, `${userInfo.userName} has ${tData.isApproved ? "Approved" : "Rejected"} Device Maintenance Request.`, "failure", JSON.stringify(result));
             return { statusCode: 404, success: false, msg: "MQTTMaintainence Config Error", status: [] };
         }
     } catch (error) {
+        await Util.addAuditLogs(MODULE_NAME, userInfo, `${tData.isApproved ? "Approve" : "Reject"}`, `${userInfo.userName} has ${tData.isApproved ? "Approved" : "Rejected"} Device Maintenance Request.`, "error", error);
         return { statusCode: 500, success: false, msg: "MQTTMaintainence Config Error", status: [], err: error };
     }
 };
@@ -161,7 +164,7 @@ const createMaintainenceRequest = async (tData, userInfo = {}) => {
                         Action: "Maintainence Request Raised.",
                         MacId: deviceData.mqttMacId,
                         TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss"),
-                    }, getFlagData);
+                    }, getFlagData, getFlagData.ccUsers, getFlagData.bccUsers);
 
                     const mailResponse = {
                         ...emailResponse,
@@ -172,13 +175,14 @@ const createMaintainenceRequest = async (tData, userInfo = {}) => {
                 }
             }
 
-            await Util.addAuditLogs(deviceMongoCollection, userInfo, "create", `${userInfo.userName} has created Device Maintenance Request.`, JSON.stringify(result));
+            await Util.addAuditLogs(MODULE_NAME, userInfo, "create", `${userInfo.userName} has created Device Maintenance Request.`, "success", JSON.stringify(result));
             return { statusCode: 200, success: true, msg: "MQTTMaintainence Created Successfully", status: result };
         } else {
+            await Util.addAuditLogs(MODULE_NAME, userInfo, "create", `${userInfo.userName} has created Device Maintenance Request.`, "failure", JSON.stringify(result));
             return { statusCode: 404, success: false, msg: "MQTTMaintainence Create Failed", status: [] };
         }
     } catch (error) {
-        console.error("Error in createMaintainenceRequest:", error);
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "create", `${userInfo.userName} has created Device Maintenance Request.`, "error", error);
         return { statusCode: 500, success: false, msg: "MQTTMaintainence Create Error", status: [], err: error };
     }
 };
@@ -254,7 +258,7 @@ const updateMaintainenceRequest = async (tData, userInfo = {}) => {
                             Action: "Maintainence Request Updated.",
                             MacId: deviceData.mqttMacId,
                             TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss"),
-                        }, getFlagData);
+                        }, getFlagData, getFlagData.ccUsers, getFlagData.bccUsers);
 
                         const mailResponse = {
                             ...emailResponse,
@@ -265,16 +269,17 @@ const updateMaintainenceRequest = async (tData, userInfo = {}) => {
                     }
                 }
 
-                await Util.addAuditLogs(deviceMongoCollection, userInfo, "update", `${userInfo.userName} has updated Device Maintenance Request.`, JSON.stringify(result));
+                await Util.addAuditLogs(MODULE_NAME, userInfo, "update", `${userInfo.userName} has updated Device Maintenance Request.`, "success", JSON.stringify(result));
                 return { statusCode: 200, success: true, msg: "MQTTMaintainence Update Successful", status: result };
             } else {
+                await Util.addAuditLogs(MODULE_NAME, userInfo, "update", `${userInfo.userName} has updated Device Maintenance Request.`, "failure", JSON.stringify(result));
                 return { statusCode: 404, success: false, msg: "MQTTMaintainence Update Failed", status: [] };
             }
         } else {
             return { statusCode: 404, success: false, msg: "MQTTMaintainence Not Found or Already Approved", status: [] };
         }
     } catch (error) {
-        console.error("Error in updateMaintainenceRequest:", error);
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "update", `${userInfo.userName} has updated Device Maintenance Request.`, "error", error);
         return { statusCode: 500, success: false, msg: "MQTTMaintainence Update Error", status: [], err: error };
     }
 };

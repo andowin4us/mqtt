@@ -1,6 +1,7 @@
 const dotenv = require('dotenv');
 const Util = require('../helper/util');
 const workerHelper = require("../helper/mainWorkerHelper");
+const MODULE_NAME = "REPORTS";
 
 dotenv.config(); // Load .env file only once
 
@@ -127,18 +128,28 @@ const downloadLogs = async (tData, userInfo, filter, columns, fileName) => {
 
 // Download Logger
 const downloadLogger = async (tData, userInfo) => {
-    const filter = buildFilter(tData, userInfo);
-    const columns = ["timestamp", "device_id", "device_name", "mac_id", "log_type", "log_desc", "log_line_count", "battery_level"];
-    await Util.addAuditLogs("MQTTLogger", userInfo, "download", `${userInfo.userName} has downloaded logger report.`, JSON.stringify(result));
-    return downloadLogs(tData, userInfo, filter, columns, "ActivityLogReport");
+    try {
+        const filter = buildFilter(tData, userInfo);
+        const columns = ["timestamp", "device_id", "device_name", "mac_id", "log_type", "log_desc", "log_line_count", "battery_level"];
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded logger report.`, "success", JSON.stringify(result));
+        return downloadLogs(tData, userInfo, filter, columns, "ActivityLogReport");
+    }  catch (e) {
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded logger report.`, "failure", JSON.stringify(result));
+        return createResponse(404, false, "No data found to generate report.");
+    }
 };
 
 // Download State Logger
 const downloadStateLogger = async (tData, userInfo) => {
-    const filter = buildFilter(tData, userInfo);
-    const columns = ["timestamp", "device_id", "device_name", "mac_id", "log_type", "log_desc", "state", "battery_level"];
-    await Util.addAuditLogs("MQTTLogger", userInfo, "download", `${userInfo.userName} has downloaded state report.`, JSON.stringify(result));
-    return downloadLogs(tData, userInfo, filter, columns, "StateLogReport");
+    try {
+        const filter = buildFilter(tData, userInfo);
+        const columns = ["timestamp", "device_id", "device_name", "mac_id", "log_type", "log_desc", "state", "battery_level"];
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded state report.`, "success", JSON.stringify(result));
+        return downloadLogs(tData, userInfo, filter, columns, "StateLogReport");
+    } catch (e) {
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded state report.`, "failure", JSON.stringify(result));
+        return createResponse(404, false, "No data found to generate report.");
+    }
 };
 
 // Fetch Audit Log
@@ -169,10 +180,15 @@ const getAuditLog = async (tData, userInfo) => {
 
 // Download Audit Log
 const downloadAuditLog = async (tData, userInfo) => {
-    const filter = tData?.moduleName ? { moduleName: tData.moduleName } : {};
-    const columns = ["moduleName", "operation", "message", "modified_user_name", "modified_time"];
-    await Util.addAuditLogs("MQTTLogger", userInfo, "download", `${userInfo.userName} has downloaded audit log report.`, JSON.stringify(result));
-    return downloadLogs(tData, userInfo, filter, columns, "AuditLogReport");
+    try {
+        const filter = tData?.moduleName ? { moduleName: tData.moduleName } : {};
+        const columns = ["moduleName", "operation", "message", "modified_user_name", "modified_time"];
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded audit log report.`, "success", JSON.stringify(result));
+        return downloadLogs(tData, userInfo, filter, columns, "AuditLogReport");
+    } catch (e) {
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded audit log report.`, "failure", JSON.stringify(result));
+        return createResponse(404, false, "No data found to generate report.");
+    }
 };
 
 module.exports = {

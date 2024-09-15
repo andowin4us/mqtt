@@ -1,5 +1,6 @@
 const Util = require("../helper/util");
 const deviceMongoCollection = "MQTTUser";
+const MODULE_NAME = "User";
 const md5Service = require('../services/md5.service');
 const authService = require('../services/auth.service');
 const moment = require("moment");
@@ -55,7 +56,7 @@ const deleteData = async (tData, userInfo = {}) => {
 
         const result = await Util.mongo.remove(deviceMongoCollection, { _id: tData.id });
         if (result) {
-            await Util.addAuditLogs(deviceMongoCollection, userInfo, "delete", `${userInfo.userName} has deleted a user.`, JSON.stringify(result));
+            await Util.addAuditLogs(MODULE_NAME, userInfo, "delete", `${userInfo.userName} has deleted a user.`, "success", JSON.stringify(result));
             return {
                 statusCode: 200,
                 success: true,
@@ -71,6 +72,7 @@ const deleteData = async (tData, userInfo = {}) => {
             status: [],
         };
     } catch (error) {
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "delete", `${userInfo.userName} has deleted a user.`, "failure", JSON.stringify(result));
         return {
             statusCode: 500,
             success: false,
@@ -114,7 +116,7 @@ const updateData = async (tData, userInfo = {}) => {
 
         const result = await Util.mongo.updateOne(deviceMongoCollection, { _id: tData.id }, updateObj);
         if (result) {
-            await Util.addAuditLogs(deviceMongoCollection, userInfo, "update", `${userInfo.userName} has updated a user.`, JSON.stringify(result));
+            await Util.addAuditLogs(MODULE_NAME, userInfo, "update", `${userInfo.userName} has updated a user.`, "success", JSON.stringify(result));
             return {
                 statusCode: 200,
                 success: true,
@@ -130,6 +132,7 @@ const updateData = async (tData, userInfo = {}) => {
             status: [],
         };
     } catch (error) {
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "update", `${userInfo.userName} has updated a user.`, "failure", JSON.stringify(result));
         return {
             statusCode: 500,
             success: false,
@@ -205,6 +208,7 @@ const createData = async (tData, userInfo = {}) => {
             status: [],
         };
     } catch (error) {
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "create", `${userInfo.userName} has created a new user.`, "failure", JSON.stringify(result));
         return {
             statusCode: 500,
             success: false,
@@ -320,7 +324,6 @@ const login = async (tData, res) => {
 
             return res.status(401).json({ msg: 'Unauthorized' });
         } catch (err) {
-            console.error(err);
             return res.status(500).json({ msg: 'Internal Server Error' });
         }
     }

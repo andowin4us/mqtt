@@ -1,5 +1,6 @@
 const Util = require("../helper/util");
 const deviceMongoCollection = "MQTTDevice";
+const MODULE_NAME = "DEVICE";
 const dotenv = require("dotenv");
 const MQTT = require('../helper/mqtt');
 const moment = require("moment");
@@ -62,9 +63,10 @@ const deleteData = async (tData, userInfo = {}) => {
             new MQTT(MQTT_URL, configDetails.mqttUserName, configDetails.mqttPassword, configDetails.mqttTopic, true);
         }
 
-        await Util.addAuditLogs(deviceMongoCollection, userInfo, "delete", `${userInfo.userName} deleted device ${configDetails.deviceName}.`, JSON.stringify(result));
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "delete", `${userInfo.userName} deleted device ${configDetails.deviceName}.`, "success", JSON.stringify(result));
         return handleSuccess("MQTT device Deleted Successfully", result);
     } catch (error) {
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "delete", `${userInfo.userName} deleted device ${configDetails.deviceName}.`, "failure", JSON.stringify(result));
         return handleError("MQTT device Deletion Error", error);
     }
 };
@@ -108,9 +110,10 @@ const updateData = async (tData, userInfo = {}) => {
         const result = await Util.mongo.updateOne(deviceMongoCollection, { _id: tData.id }, updateObj);
         if (!result) return handleError("MQTT device Config Error");
 
-        await Util.addAuditLogs(deviceMongoCollection, userInfo, "update", `${userInfo.userName} updated device ${tData.deviceName}.`, JSON.stringify(result));
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "update", `${userInfo.userName} updated device ${tData.deviceName}.`, "success", JSON.stringify(result));
         return handleSuccess("MQTT device Config Successful", result);
     } catch (error) {
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "update", `${userInfo.userName} updated device ${tData.deviceName}.`, "failure", JSON.stringify(result));
         return handleError("MQTT device Config Error", error);
     }
 };
@@ -167,10 +170,10 @@ const createData = async (tData, userInfo = {}) => {
         if (!configDetailsCheckExisting) {
             new MQTT(MQTT_URL, tData.mqttUserName, tData.mqttPassword, tData.mqttTopic, false);
         }
-        await Util.addAuditLogs(deviceMongoCollection, userInfo, "create", `${userInfo.userName} has created a device ${tData.deviceName}.`, JSON.stringify(result));
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "create", `${userInfo.userName} has created a device ${tData.deviceName}.`, "success", JSON.stringify(result));
         return handleSuccess("MQTT device Created Successfully", result);
     } catch (error) {
-        console.error("Error:", error);
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "create", `${userInfo.userName} has created a device ${tData.deviceName}.`, "failure", JSON.stringify(result));
         return handleError("MQTT device Creation Error", error);
     }
 };
@@ -236,9 +239,10 @@ const assignMQTTDevice = async (tData, userInfo = {}) => {
         const result = await Util.mongo.updateOne(deviceMongoCollection, { deviceId: tData.deviceId }, updateObj);
         if (!result) return handleError("MQTT device Assignment Failed");
 
-        await Util.addAuditLogs(deviceMongoCollection, userInfo, "mapping", `${userInfo.userName} mapped device to Supervisor User.`, JSON.stringify(result));
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "mapping", `${userInfo.userName} mapped device to Supervisor User.`, "success", JSON.stringify(result));
         return handleSuccess("MQTT device Assigned Successfully", result);
     } catch (error) {
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "mapping", `${userInfo.userName} mapped device to Supervisor User.`, "failure", JSON.stringify(result));
         return handleError("MQTT device Assignment Error", error);
     }
 };
@@ -268,10 +272,10 @@ const relayTriggerOnOrOffMQTTDevice = async (tData, userInfo = {}) => {
         let result = await Util.mongo.updateOne(deviceMongoCollection, { _id: tData.id }, { $set: { "mqttStatusDetails.mqttRelayState": tData.relayState, 
             status: Boolean(tData.mqttRelayState) === true ? "InActive" : "Active" } });
 
-        await Util.addAuditLogs(deviceMongoCollection, userInfo, `trigger relay ${Boolean(tData.mqttRelayState) === true ? "ON" : "OFF"}`, `${userInfo.userName} has triggered the relay ${Boolean(tData.mqttRelayState) === true ? "ON" : "OFF"} via the Toggle Button.`, JSON.stringify(result));
+        await Util.addAuditLogs(MODULE_NAME, userInfo, `Relay ${Boolean(tData.mqttRelayState) === true ? "ON" : "OFF"}`, `${userInfo.userName} has triggered the relay ${Boolean(tData.mqttRelayState) === true ? "ON" : "OFF"} via the Toggle Button.`, "success", JSON.stringify(result));
         return handleSuccess("MQTT device Relay Triggered Successfully", {});
     } catch (error) {
-        console.log("error", error);
+        await Util.addAuditLogs(MODULE_NAME, userInfo, `Relay ${Boolean(tData.mqttRelayState) === true ? "ON" : "OFF"}`, `${userInfo.userName} has triggered the relay ${Boolean(tData.mqttRelayState) === true ? "ON" : "OFF"} via the Toggle Button.`, "failure", JSON.stringify(result));
         return handleError("MQTT device Relay Trigger Error", error);
     }
 };
@@ -305,7 +309,7 @@ const sendEmailToUsers = async (tData) => {
             Action: `Relay triggered ${tData.message} for device ${tData.deviceName}`, 
             MacId: tData.mqttMacId, 
             TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss")
-        }, getFlagData);
+        }, getFlagData, getFlagData.ccUsers, getFlagData.bccUsers);
 
         return handleSuccess("Email Sent Successfully", {});
     } catch (error) {
