@@ -45,22 +45,26 @@ async function processLogs(logs) {
 async function processMessage(data) {
     console.log('Processing message for device', data.device_id);
 
-    const result = await mongoInsert(data, { deviceId: data.device_id }, 'MQTTDevice', 'find');
-    const getFlagData = await mongoInsert(data, {}, 'MQTTFlag', 'find');
-
-    if (!result || !data.device_id || data.device_id !== result.deviceId) {
-        return handleInvalidDeviceData(data);
+    if (data.device_id) {
+        const result = await mongoInsert(data, { deviceId: data.device_id }, 'MQTTDevice', 'find');
+        const getFlagData = await mongoInsert(data, {}, 'MQTTFlag', 'find');
+    
+        if (!result || !data.device_id || data.device_id !== result.deviceId) {
+            return handleInvalidDeviceData(data);
+        }
+    
+        if (data.mac_id && data.mac_id !== result.mqttMacId) {
+            return handleInvalidMacId(data);
+        }
+    
+        if (data.log_type === 'Heartbeat') {
+            return await handleHeartbeat(data, result, getFlagData);
+        }
+    
+        return await handleOtherLogs(data, result, getFlagData);
+    } else {
+        console.log("No Device Data present in log event.");
     }
-
-    if (data.mac_id && data.mac_id !== result.mqttMacId) {
-        return handleInvalidMacId(data);
-    }
-
-    if (data.log_type === 'Heartbeat') {
-        return await handleHeartbeat(data, result, getFlagData);
-    }
-
-    return await handleOtherLogs(data, result, getFlagData);
 }
 
 async function handleInvalidDeviceData(data) {

@@ -125,7 +125,7 @@ const downloadLogs = async (tData, userInfo, filter, columns, fileName) => {
         console.error("Error", e);
     }
 
-    return createResponse(200, true, "Download successful", [], { download: `${process.env.HOSTNAME}${finalURL}` });
+    return {success: true, statusCode: 200, download: `${process.env.HOSTNAME}${finalURL}`, message: "Report Download Successfull."};
 };
 
 // Download Logger
@@ -133,10 +133,10 @@ const downloadLogger = async (tData, userInfo) => {
     try {
         const filter = buildFilter(tData, userInfo);
         const columns = ["timestamp", "device_id", "device_name", "log_type", "log_desc", "log_line_count", "battery_level"];
-        await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded logger report.`, "success", JSON.stringify(result));
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded logger report.`, "success", JSON.stringify({}));
         return downloadLogs(tData, userInfo, filter, columns, "ActivityLogReport");
     }  catch (e) {
-        await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded logger report.`, "failure", JSON.stringify(result));
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded logger report.`, "failure", JSON.stringify({}));
         return createResponse(404, false, "No data found to generate report.");
     }
 };
@@ -146,10 +146,10 @@ const downloadStateLogger = async (tData, userInfo) => {
     try {
         const filter = buildFilter(tData, userInfo);
         const columns = ["timestamp", "device_id", "device_name", "log_type", "log_desc", "battery_level"];
-        await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded state report.`, "success", JSON.stringify(result));
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded state report.`, "success", JSON.stringify({}));
         return downloadLogs(tData, userInfo, filter, columns, "StateLogReport");
     } catch (e) {
-        await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded state report.`, "failure", JSON.stringify(result));
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded state report.`, "failure", JSON.stringify({}));
         return createResponse(404, false, "No data found to generate report.");
     }
 };
@@ -189,12 +189,19 @@ const getAuditLog = async (tData, userInfo) => {
 // Download Audit Log
 const downloadAuditLog = async (tData, userInfo) => {
     try {
-        const filter = tData?.moduleName ? { moduleName: tData.moduleName } : {};
+        const filter = {
+            ...((tData.startDate || tData.endDate) && { modified_time : tData.startDate && tData.endDate ? { $gte: tData.startDate, $lte: tData.endDate } : tData.startDate ? { $gte: tData.startDate} : { $lte: tData.endDate }}),
+            ...(tData.userName && { modified_user_name: tData.userName }),
+            ...(tData.moduleName && { moduleName: tData.moduleName }),
+            ...(tData.operation && { operation: tData.operation }),
+            ...(tData.status && { status: tData.status })
+        };
+
         const columns = ["modified_time", "modified_user_name", "role", "moduleName", "operation", "status", "message"];
-        await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded audit log report.`, "success", JSON.stringify(result));
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded audit log report.`, "success", JSON.stringify({}));
         return downloadLogs(tData, userInfo, filter, columns, "AuditLogReport");
     } catch (e) {
-        await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded audit log report.`, "failure", JSON.stringify(result));
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded audit log report.`, "failure", JSON.stringify({}));
         return createResponse(404, false, "No data found to generate report.");
     }
 };
