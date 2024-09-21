@@ -127,11 +127,13 @@ async function checkDeviceStatus() {
                         }
                     });
                     await collectionAudit.insertOne({
-                        moduleName: 'MQTTDevice',
+                        moduleName: 'DEVICE',
                         operation: "Relay ON",
                         message: `Relay Timer breached has triggered the relay ON via the predefined timer of ${durationSeconds}`,
-                        modified_user_id: 'SYSTEM',
+                        modified_user_id: 1,
                         modified_user_name: 'SYSTEM',
+                        role: "SuperUser",
+                        status: "success",
                         modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss'),
                         log: JSON.stringify({ ...device, status, modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss') })
                     });
@@ -148,9 +150,13 @@ async function checkDeviceStatus() {
                         $set: { instanceExpired: true, modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss') }
                     });
                     await collectionAudit.insertOne({
-                        moduleName: 'MQTTFlag',
-                        modified_user_id: 'SYSTEM',
+                        moduleName: 'DEVICE_CONFIG',
+                        operation: "update",
+                        message: `SYSTEM updated the Device Congfigurations.`,
+                        modified_user_id: 1,
                         modified_user_name: 'SYSTEM',
+                        role: "SuperUser",
+                        status: "success",
                         modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss'),
                         log: JSON.stringify({ ...instanceData, instanceExpired: true, modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss') })
                     });

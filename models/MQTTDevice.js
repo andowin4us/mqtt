@@ -156,7 +156,6 @@ const createData = async (tData, userInfo = {}) => {
             mqttMacId: tData.mqttMacId,
             status: "Active",
             mqttPort: tData.mqttPort,
-            mqttExtraReceipe: tData.mqttExtraReceipe || {},
             mqttStatusDetails: { mqttRelayState: false },
             created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
@@ -260,7 +259,7 @@ const relayTriggerOnOrOffMQTTDevice = async (tData, userInfo = {}) => {
 
         const MQTT_URL = `mqtt://${device.mqttIP}:${device.mqttPort}`;
 
-        if (tData && Boolean(tData.mqttRelayState) === true) {
+        if (tData && tData.mqttRelayState) {
             let messageSend = "ON,"+device.deviceId;
             await publishMessage(MQTT_URL, device.mqttUserName, device.mqttPassword, messageSend);
             await sendEmailToUsers({...device, message: "ON"});
@@ -270,12 +269,12 @@ const relayTriggerOnOrOffMQTTDevice = async (tData, userInfo = {}) => {
             await sendEmailToUsers({...device, message: "OFF"});
         }
         let result = await Util.mongo.updateOne(deviceMongoCollection, { _id: tData.id }, { $set: { "mqttStatusDetails.mqttRelayState": tData.mqttRelayState, 
-            status: Boolean(tData.mqttRelayState) === true ? "InActive" : "Active" } });
+            status: tData.mqttRelayState ? "InActive" : "Active" } });
 
-        await Util.addAuditLogs(MODULE_NAME, userInfo, `Relay ${Boolean(tData.mqttRelayState) === true ? "ON" : "OFF"}`, `${userInfo.userName} has triggered the relay ${Boolean(tData.mqttRelayState) === true ? "ON" : "OFF"} via the Toggle Button.`, "success", JSON.stringify(result));
+        await Util.addAuditLogs(MODULE_NAME, userInfo, `Relay ${tData.mqttRelayState ? "ON" : "OFF"}`, `${userInfo.userName} has triggered the relay ${tData.mqttRelayState ? "ON" : "OFF"} via the Toggle Button.`, "success", JSON.stringify(result));
         return handleSuccess("MQTT device Relay Triggered Successfully", {});
     } catch (error) {
-        await Util.addAuditLogs(MODULE_NAME, userInfo, `Relay ${Boolean(tData.mqttRelayState) === true ? "ON" : "OFF"}`, `${userInfo.userName} has triggered the relay ${Boolean(tData.mqttRelayState) === true ? "ON" : "OFF"} via the Toggle Button.`, "failure", JSON.stringify(result));
+        await Util.addAuditLogs(MODULE_NAME, userInfo, `Relay ${tData.mqttRelayState ? "ON" : "OFF"}`, `${userInfo.userName} has triggered the relay ${tData.mqttRelayState ? "ON" : "OFF"} via the Toggle Button.`, "failure", JSON.stringify(result));
         return handleError("MQTT device Relay Trigger Error", error);
     }
 };
