@@ -286,7 +286,7 @@ async function mongoInsert(data, filter, collectionName, type, host = "local") {
 async function connectToMongo(url) {
     let client;
     try {
-        client = await MongoClient.connect(url, { useNewUrlParser: true, useUnifiedTopology: true });
+        client = await MongoClient.connect(url, { });
         return client;
     } catch (err) {
         console.error('MongoDB connection error:', err);

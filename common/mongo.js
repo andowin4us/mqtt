@@ -26,17 +26,12 @@ class MongoConnector {
 
 	async startMongoDB() {
 		try {
-			const client = await MongoClient.connect(this.url, {
-				useNewUrlParser: true,
-				useUnifiedTopology: true,
-			});
+			const client = await MongoClient.connect(this.url, {});
 
 			console.log(`MongoDB Connected To ${this.url}/${this.database}`);
 
 			this.isConnected = true;
 			this.db = client.db(this.database);
-			this.db.on('close', this.onClose);
-			this.db.on('reconnect', this.onReconnect);
 
 		} catch (err) {
 			console.error("MongoDB Connection Error", err);
@@ -44,14 +39,6 @@ class MongoConnector {
 			this.db = null;
 			setTimeout(() => this.startMongoDB(), RECONNECTION_TIMEOUT);
 		}
-	}
-
-	onClose = () => {
-		console.log(`MongoDB connection was closed ${this.url}`);
-	}
-
-	onReconnect = () => {
-		console.log(`MongoDB reconnected ${this.url}`);
 	}
 }
 

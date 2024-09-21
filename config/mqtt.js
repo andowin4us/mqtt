@@ -16,7 +16,7 @@ let dbRemote;
 // Initialize MongoDB client
 async function initializeMongo() {
     if (!client) {
-        client = await MongoClient.connect(connection.mongo.url, { useNewUrlParser: true });
+        client = await MongoClient.connect(connection.mongo.url, { });
         db = client.db(connection.mongo.database);
     }
 }
@@ -24,7 +24,7 @@ async function initializeMongo() {
 async function initializeRemoteMongo(flagData) {
     if (!clientRemote) {
         const remoteMongoUrl = `mongodb+srv://${flagData.REMOTE_MONGO_USERNAME}:${flagData.REMOTE_MONGO_PASSWORD}@${flagData.REMOTE_MONGO_HOST}/?retryWrites=true&w=majority`;
-        clientRemote = await MongoClient.connect(remoteMongoUrl, { useNewUrlParser: true });
+        clientRemote = await MongoClient.connect(remoteMongoUrl, { });
         dbRemote = client.db("mqtt");
     }
 }
