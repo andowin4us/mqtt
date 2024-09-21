@@ -10,11 +10,22 @@ const md5Service = require('../services/md5.service');
 let client;
 let db;
 
+let clientRemote;
+let dbRemote;
+
 // Initialize MongoDB client
 async function initializeMongo() {
     if (!client) {
         client = await MongoClient.connect(connection.mongo.url, { useNewUrlParser: true });
         db = client.db(connection.mongo.database);
+    }
+}
+
+async function initializeRemoteMongo(flagData) {
+    if (!clientRemote) {
+        const remoteMongoUrl = `mongodb+srv://${flagData.REMOTE_MONGO_USERNAME}:${flagData.REMOTE_MONGO_PASSWORD}@${flagData.REMOTE_MONGO_HOST}/?retryWrites=true&w=majority`;
+        clientRemote = await MongoClient.connect(remoteMongoUrl, { useNewUrlParser: true });
+        dbRemote = client.db("mqtt");
     }
 }
 
@@ -137,6 +148,23 @@ async function checkDeviceStatus() {
                         modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss'),
                         log: JSON.stringify({ ...device, status, modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss') })
                     });
+
+                    // initialinze and connect remote mongo
+                    if (instanceData.useRemoteMongo) {
+                        await initializeRemoteMongo(instanceData);
+                        const collectionAuditRemote = dbRemote.collection('MQTTAuditLog');
+                        await collectionAuditRemote.insertOne({
+                            moduleName: 'DEVICE',
+                            operation: "Relay ON",
+                            message: `Relay Timer breached has triggered the relay ON via the predefined timer of ${durationSeconds}`,
+                            modified_user_id: 1,
+                            modified_user_name: 'SYSTEM',
+                            role: "SuperUser",
+                            status: "success",
+                            modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss'),
+                            log: JSON.stringify({ ...device, status, modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss') })
+                        });
+                    }
                 };
 
                 if (instanceData.isRelayTimer && 
@@ -160,6 +188,23 @@ async function checkDeviceStatus() {
                         modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss'),
                         log: JSON.stringify({ ...instanceData, instanceExpired: true, modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss') })
                     });
+
+                     // initialinze and connect remote mongo
+                     if (instanceData.useRemoteMongo) {
+                        await initializeRemoteMongo(instanceData);
+                        const collectionAuditRemote = dbRemote.collection('MQTTAuditLog');
+                        await collectionAuditRemote.insertOne({
+                            moduleName: 'DEVICE_CONFIG',
+                            operation: "update",
+                            message: `SYSTEM updated the Device Congfigurations.`,
+                            modified_user_id: 1,
+                            modified_user_name: 'SYSTEM',
+                            role: "SuperUser",
+                            status: "success",
+                            modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss'),
+                            log: JSON.stringify({ ...instanceData, instanceExpired: true, modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss') })
+                        });
+                    }
                 }
             }));
         }
