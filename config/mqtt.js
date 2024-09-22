@@ -7,16 +7,12 @@ const { publishMessage } = require('../common/mqttCommon');
 const { getUuid } = require('../helper/util');
 const md5Service = require('../services/md5.service');
 
-let client;
-let db;
-
-let clientRemote;
-let dbRemote;
+let client, db, clientRemote, dbRemote;
 
 // Initialize MongoDB client
 async function initializeMongo() {
     if (!client) {
-        client = await MongoClient.connect(connection.mongo.url, { });
+        client = await MongoClient.connect(connection.mongo.url, {});
         db = client.db(connection.mongo.database);
     }
 }
@@ -24,8 +20,8 @@ async function initializeMongo() {
 async function initializeRemoteMongo(flagData) {
     if (!clientRemote) {
         const remoteMongoUrl = `mongodb+srv://${flagData.REMOTE_MONGO_USERNAME}:${flagData.REMOTE_MONGO_PASSWORD}@${flagData.REMOTE_MONGO_HOST}/?retryWrites=true&w=majority`;
-        clientRemote = await MongoClient.connect(remoteMongoUrl, { });
-        dbRemote = client.db("mqtt");
+        clientRemote = await MongoClient.connect(remoteMongoUrl, {});
+        dbRemote = clientRemote.db("mqtt");
     }
 }
 
@@ -33,12 +29,10 @@ async function initializeRemoteMongo(flagData) {
 async function seedData() {
     const collectionInstance = db.collection('MQTTFlag');
     const collectionUser = db.collection('MQTTUser');
-    
+
     const instanceData = await collectionInstance.findOne({});
-    
     if (!instanceData) {
         console.log('No seeding data found. Inserting default data.');
-
         const flagsData = {
             _id: getUuid(),
             instanceExpiry: moment().add(1, 'years').format('YYYY-MM-DD HH:mm:ss'),
@@ -64,7 +58,7 @@ async function seedData() {
             name: 'Test1',
             userName: 'test1',
             status: 'Active',
-            password: md5Service().password({password: 'test1234'}),
+            password: md5Service().password({ password: 'test1234' }),
             accesslevel: 1,
             email: 'super@logsense.com',
             created_time: moment().format('YYYY-MM-DD HH:mm:ss'),
@@ -81,19 +75,18 @@ async function seedData() {
 // Start MQTT clients for devices
 async function startDevices() {
     const collection = db.collection('MQTTDevice');
-    let devices = await collection.find({}).toArray();
+    const devices = await collection.distinct('mqttIP');
 
     console.log('Devices found: ', devices.length);
-    
-    devices = devices.filter((obj, index) => {
-        return index === devices.findIndex(o => obj.mqttIP === o.mqttIP);
-    });
-    
-    devices.forEach((device, index) => {
-        console.log(`Device ${index} is ${device.deviceName}. Initiating event reception.`);
-        const MQTT_URL = `mqtt://${device.mqttIP}:${device.mqttPort}`;
-        new MQTT(MQTT_URL, device.mqttUserName, device.mqttPassword, device.mqttTopic, false);
-    });
+
+    for (const mqttIP of devices) {
+        const device = await collection.findOne({ mqttIP });
+        if (device) {
+            console.log(`Device ${device.deviceName}. Initiating event reception.`);
+            const MQTT_URL = `mqtt://${device.mqttIP}:${device.mqttPort}`;
+            new MQTT(MQTT_URL, device.mqttUserName, device.mqttPassword, device.mqttTopic, false);
+        }
+    }
 }
 
 // Initialize the system
@@ -107,6 +100,21 @@ async function invokeInitialization() {
     }
 }
 
+// Common function to log audit entries
+async function logAudit(collection, data) {
+    await collection.insertOne({
+        moduleName: data.moduleName,
+        operation: data.operation,
+        message: data.message,
+        modified_user_id: 1,
+        modified_user_name: 'SYSTEM',
+        role: "SuperUser",
+        status: "success",
+        modified_time: moment().format('YYYY-MM-DD HH:mm:ss'),
+        log: JSON.stringify(data.log)
+    });
+}
+
 // Check and update device statuses
 async function checkDeviceStatus() {
     try {
@@ -115,9 +123,8 @@ async function checkDeviceStatus() {
         const collectionInstance = db.collection('MQTTFlag');
         const devices = await collection.find({ status: 'Active' }).toArray();
         const instanceData = await collectionInstance.findOne({});
-
         const currentTime = moment();
-        
+
         if (devices.length > 0) {
             await Promise.all(devices.map(async (device) => {
                 console.log(`Checking status for device ${device.deviceName}`);
@@ -125,84 +132,31 @@ async function checkDeviceStatus() {
                 const instanceExpiry = moment(instanceData.instanceExpiry);
                 const durationSeconds = moment.duration(currentTime.diff(deviceTime)).asSeconds();
 
-                const updateStatus = async (status, mqttRelayState) => {
-                    console.log(`Updating device ${device.deviceName} to ${status}`);
-                    const MQTT_URL = `mqtt://${device.mqttIP}:${device.mqttPort}`;
-                    let messageSend = "ON,"+device.deviceId;
-                    await publishMessage(MQTT_URL, device.mqttUserName, device.mqttPassword, messageSend);
-                    await collection.updateOne({ _id: device._id }, {
-                        $set: {
-                            status,
-                            mqttStatusDetails: { ...device.mqttStatusDetails, mqttRelayState },
-                            modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss')
-                        }
-                    });
-                    await collectionAudit.insertOne({
-                        moduleName: 'DEVICE',
-                        operation: "Relay ON",
-                        message: `Relay Timer breached has triggered the relay ON via the predefined timer of ${durationSeconds}`,
-                        modified_user_id: 1,
-                        modified_user_name: 'SYSTEM',
-                        role: "SuperUser",
-                        status: "success",
-                        modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss'),
-                        log: JSON.stringify({ ...device, status, modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss') })
-                    });
+                const mqttRelayState = device.mqttStatusDetails.mqttRelayState;
 
-                    // initialinze and connect remote mongo
+                if (instanceData.isRelayTimer && 
+                    ((device.status === 'InActive' && !mqttRelayState) || (durationSeconds > instanceData.heartBeatTimer))) {
+                    await updateDeviceStatus(device, 'InActive', true, durationSeconds);
+                }
+
+                if (currentTime.isAfter(instanceExpiry)) {
+                    console.log(`Instance expired for ${device.deviceName}`);
+                    await collectionInstance.updateOne({ _id: instanceData._id }, { $set: { instanceExpired: true, modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss') } });
+                    await logAudit(collectionAudit, {
+                        moduleName: 'DEVICE_CONFIG',
+                        operation: "update",
+                        message: `SYSTEM updated the Device Configurations.`,
+                        log: { ...instanceData, instanceExpired: true, modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss') }
+                    });
+                    
                     if (instanceData.useRemoteMongo) {
                         await initializeRemoteMongo(instanceData);
                         const collectionAuditRemote = dbRemote.collection('MQTTAuditLog');
-                        await collectionAuditRemote.insertOne({
-                            moduleName: 'DEVICE',
-                            operation: "Relay ON",
-                            message: `Relay Timer breached has triggered the relay ON via the predefined timer of ${durationSeconds}`,
-                            modified_user_id: 1,
-                            modified_user_name: 'SYSTEM',
-                            role: "SuperUser",
-                            status: "success",
-                            modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss'),
-                            log: JSON.stringify({ ...device, status, modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss') })
-                        });
-                    }
-                };
-
-                if (instanceData.isRelayTimer && 
-                    ((device.status === 'InActive' && !device.mqttStatusDetails.mqttRelayState) || (durationSeconds > instanceData.heartBeatTimer))) {
-                    await updateStatus('InActive', true);
-                }
- 
-                if (currentTime.isAfter(instanceExpiry)) {
-                    console.log(`Instance expired for ${device.deviceName}`);
-                    await collectionInstance.updateOne({ _id: instanceData._id }, {
-                        $set: { instanceExpired: true, modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss') }
-                    });
-                    await collectionAudit.insertOne({
-                        moduleName: 'DEVICE_CONFIG',
-                        operation: "update",
-                        message: `SYSTEM updated the Device Congfigurations.`,
-                        modified_user_id: 1,
-                        modified_user_name: 'SYSTEM',
-                        role: "SuperUser",
-                        status: "success",
-                        modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss'),
-                        log: JSON.stringify({ ...instanceData, instanceExpired: true, modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss') })
-                    });
-
-                     // initialinze and connect remote mongo
-                     if (instanceData.useRemoteMongo) {
-                        await initializeRemoteMongo(instanceData);
-                        const collectionAuditRemote = dbRemote.collection('MQTTAuditLog');
-                        await collectionAuditRemote.insertOne({
+                        await logAudit(collectionAuditRemote, {
                             moduleName: 'DEVICE_CONFIG',
                             operation: "update",
-                            message: `SYSTEM updated the Device Congfigurations.`,
-                            modified_user_id: 1,
-                            modified_user_name: 'SYSTEM',
-                            role: "SuperUser",
-                            status: "success",
-                            modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss'),
-                            log: JSON.stringify({ ...instanceData, instanceExpired: true, modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss') })
+                            message: `SYSTEM updated the Device Configurations.`,
+                            log: { ...instanceData, instanceExpired: true, modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss') }
                         });
                     }
                 }
@@ -211,6 +165,47 @@ async function checkDeviceStatus() {
     } catch (err) {
         console.error('Device status check error:', err);
     }
+}
+
+// Update device status
+async function updateDeviceStatus(device, status, mqttRelayState, durationSeconds) {
+    console.log(`Updating device ${device.deviceName} to ${status}`);
+    const MQTT_URL = `mqtt://${device.mqttIP}:${device.mqttPort}`;
+    let messageSend = "ON," + device.deviceId;
+    await publishMessage(MQTT_URL, device.mqttUserName, device.mqttPassword, messageSend);
+
+    const collection = db.collection('MQTTDevice');
+    await collection.updateOne({ _id: device._id }, {
+        $set: {
+            status,
+            mqttStatusDetails: { ...device.mqttStatusDetails, mqttRelayState },
+            modified_time: moment().format('YYYY-MM-DD HH:mm:ss')
+        }
+    });
+
+    await logAudit(db.collection('MQTTAuditLog'), {
+        moduleName: 'DEVICE',
+        operation: "Relay ON",
+        message: `Relay Timer breached has triggered the relay ON via the predefined timer of ${durationSeconds}`,
+        log: { ...device, status, modified_time: moment().format('YYYY-MM-DD HH:mm:ss') }
+    });
+
+    // Handle remote Mongo logging
+    if (await isRemoteMongoEnabled(device)) {
+        await initializeRemoteMongo(instanceData);
+        const collectionAuditRemote = dbRemote.collection('MQTTAuditLog');
+        await logAudit(collectionAuditRemote, {
+            moduleName: 'DEVICE',
+            operation: "Relay ON",
+            message: `Relay Timer breached has triggered the relay ON via the predefined timer of ${durationSeconds}`,
+            log: { ...device, status, modified_time: moment().format('YYYY-MM-DD HH:mm:ss') }
+        });
+    }
+}
+
+// Check if remote Mongo is enabled
+async function isRemoteMongoEnabled(instanceData) {
+    return instanceData.useRemoteMongo;
 }
 
 // Schedule the device status handler
