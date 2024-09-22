@@ -3,6 +3,7 @@ const MQTTStatisticsPrivate = {
     "POST /getDeviceData": "MQTTStatisticsController.getDeviceData",
     "POST /getDeviceReceipeCount": "MQTTStatisticsController.getDeviceReceipeCount",
     "POST /getDashboardDetails": "MQTTStatisticsController.getDashboardDetails",
+    "POST /getDashboardBatteryDetails": "MQTTStatisticsController.getDashboardBatteryDetails",
 };
 const MQTTStatisticsPublic = MQTTStatisticsPrivate;
 

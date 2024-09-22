@@ -21,11 +21,17 @@ const MQTTStatisticsController = () => {
         const result = await MQTT.getDashboardDetails(req.body, req.user);
         return res.status(result.statusCode).json(result);
     };
+    const getDashboardBatteryDetails = async (req, res) => {
+        console.log('getDashboardBatteryDetails ', req.body, req.user);
+        const result = await MQTT.getDashboardBatteryDetails(req.body, req.user);
+        return res.status(result.statusCode).json(result);
+    };
     return {
         getDeviceLogCount,
         getDeviceData,
         getDeviceReceipeCount,
-        getDashboardDetails
+        getDashboardDetails,
+        getDashboardBatteryDetails
     };
 }
 

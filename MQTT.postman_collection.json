@@ -554,7 +554,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"userName\": \"cm14683@gmail.com\",\r\n    \"password\": \"test1234\"\r\n}",
+							"raw": "{\r\n    \"userName\": \"test1\",\r\n    \"password\": \"test1234\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1345,6 +1345,29 @@
 							"path": [
 								"api",
 								"getDashboardDetails"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getDashboardBatteryDetails",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/getDashboardBatteryDetails",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"getDashboardBatteryDetails"
 							]
 						}
 					},

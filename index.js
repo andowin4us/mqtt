@@ -52,7 +52,7 @@ app.get('/', (req, res) => {
 // Resource monitoring setup
 const CPU_THRESHOLD = 80; // CPU usage percentage
 const MEMORY_THRESHOLD = 80; // Memory usage percentage
-const CHECK_INTERVAL = 10000; // Check every 10 seconds
+const CHECK_INTERVAL = 1000 * 5 * 60; // Check every 60 seconds
 
 // Function to check system resource usage
 function checkResourceUsage() {
