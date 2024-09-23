@@ -468,10 +468,6 @@ const getDashboardDetails = async (tData, userInfo = {}) => {
 
 const getDashboardBatteryDetails = async (tData, userInfo = {}) => {
     try {
-        let responseData = {
-            deviceBatteryData: {}
-        };
-
         let taggedDevices = [];
 
         if (userInfo.accesslevel === 3) {
@@ -484,49 +480,71 @@ const getDashboardBatteryDetails = async (tData, userInfo = {}) => {
         }
 
         const loggerFilter = userInfo.accesslevel < 3 ? {} : { device_id: { $in: taggedDevices } }; // Use assigned devices if access level is 3
+        const allDays = [
+            { day: 1, name: "Sunday" },
+            { day: 2, name: "Monday" },
+            { day: 3, name: "Tuesday" },
+            { day: 4, name: "Wednesday" },
+            { day: 5, name: "Thursday" },
+            { day: 6, name: "Friday" },
+            { day: 7, name: "Saturday" }
+        ];        
+
+        const today = new Date();
+        const dayOfWeek = today.getDay();
+        const startOfWeek = new Date(today.setDate(today.getDate() - dayOfWeek));
+        const endOfWeek = new Date(today.setDate(today.getDate() + (7 - dayOfWeek)));
+
+        const startOfWeekStr = startOfWeek.toISOString().slice(0, 10); // Get YYYY-MM-DD format
+        const endOfWeekStr = endOfWeek.toISOString().slice(0, 10); // Get YYYY-MM-DD format
 
         const loggerAggregation = [
             { $match: loggerFilter },
             {
                 $match: {
                     timestamp: {
-                        $gte: new Date(new Date().setDate(new Date().getDate() - new Date().getDay())), // Start of the week
-                        $lt: new Date(new Date().setDate(new Date().getDate() + (7 - new Date().getDay()))) // End of the week
+                        $gte: startOfWeekStr.trim(), // Start of the week
+                        $lte: endOfWeekStr.trim() // End of the week
                     }
                 }
             },
             {
                 $project: {
-                    day: { $dayOfWeek: { $dateFromString: { dateString: "$timestamp" } } }, // Get the day of the week
-                    battery_level: { $toInt: { $substr: ["$battery_level", 0, -1] } } // Convert battery level to integer
+                    day: { $dayOfWeek: { $dateFromString: { dateString: "$timestamp" } } },
+                    battery_level: {
+                        $toDouble: {
+                            $trim: {
+                                input: { $replaceOne: { input: "$battery_level", find: "%", replacement: "" } }
+                            }
+                        }
+                    }
                 }
             },
             {
                 $group: {
-                    _id: "$day", // Group by day of the week
-                    average_battery: { $avg: "$battery_level" } // Calculate average battery level
+                    _id: "$day",
+                    average_battery: { $avg: "$battery_level" }
                 }
             },
             {
-                $sort: { _id: 1 } // Sort by day of the week (1 = Sunday, 2 = Monday, etc.)
-            },
-            {
-                $project: {
-                    _id: 0,
-                    day: "$_id",
-                    average_battery: 1
-                }
+                $sort: { _id: 1 } // Sort by day of the week
             }
         ];
 
-        const resultLogger = await Util.mongo.aggregateData("MQTTMaintainence", loggerAggregation);
-        responseData.deviceBatteryData = resultLogger[0];
+        const resultLogger = await Util.mongo.aggregateData("MQTTLogger", loggerAggregation);
+        const finalResults = allDays.map(day => {
+            const result = resultLogger.find(r => r._id === day.day);
+            return {
+                day: day.name,
+                average_battery: result ? result.average_battery : 0 // Default to 0 if not found
+            };
+        });
 
         return {
             statusCode: 200,
             success: true,
             msg: 'MQTT Dashboard Battery retrieved successfully',
-            data: responseData, // Return all counts in a single object
+            data: finalResults, // Return all counts in a single object
             err: {},
         };
 
@@ -534,7 +552,103 @@ const getDashboardBatteryDetails = async (tData, userInfo = {}) => {
         return {
             statusCode: 500,
             success: false,
-            msg: 'MQTT Error',
+            msg: 'MQTT Dashboard Battery Error',
+            err: error.message,
+        };
+    }
+};
+
+const getDashboardStateDetails = async (tData, userInfo = {}) => {
+    try {
+        let taggedDevices = [];
+
+        if (userInfo.accesslevel === 3) {
+            const resultDevice = await Util.mongo.find("MQTTDevice", {userId: userInfo.id});
+            if (resultDevice.length > 0) {
+                for (let device of resultDevice) {
+                    taggedDevices.push(device.deviceId);
+                }
+            }
+        }
+
+        const loggerFilter = userInfo.accesslevel < 3 ? {} : { device_id: { $in: taggedDevices } }; // Use assigned devices if access level is 3
+        const today = new Date();
+        const startOfDay = new Date(today.setHours(0, 0, 0, 0)); // Start of the day
+        const endOfDay = new Date(today.setHours(23, 59, 59, 999)); // End of the day
+        const startOfDayStr = startOfDay.toISOString().slice(0, 10); // Get YYYY-MM-DD format
+        const endOfDayStr = endOfDay.toISOString().slice(0, 10); // Get YYYY-MM-DD format
+
+        console.log(startOfDayStr,endOfDayStr )
+        const loggerAggregation = [
+            { $match: loggerFilter },
+            {
+                $match: {
+                    timestamp: {
+                        $gte: startOfDayStr.trim(),
+                        $lte: endOfDayStr.trim()
+                    },
+                    log_type: "STATE",
+                    log_desc: { $in: ["IDLE", "RUNNING"] }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        device_id: "$device_id",
+                        log_desc: "$log_desc"
+                    },
+                    total_time: {
+                        $sum: {
+                            $subtract: [
+                                // Assuming each entry has start and end timestamps
+                                "$end_time", // Replace with actual field name if available
+                                "$start_time" // Replace with actual field name if available
+                            ]
+                        }
+                    },
+                    count: { $sum: 1 } // Count of entries for averaging
+                }
+            },
+            {
+                $group: {
+                    _id: "$_id.device_id",
+                    avg_idle_time: {
+                        $avg: {
+                            $cond: [{ $eq: ["$_id.log_desc", "IDLE"] }, "$total_time", 0]
+                        }
+                    },
+                    avg_running_time: {
+                        $avg: {
+                            $cond: [{ $eq: ["$_id.log_desc", "RUNNING"] }, "$total_time", 0]
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    device_id: "$_id",
+                    avg_idle_time: { $divide: ["$avg_idle_time", 1000 * 60] }, // Convert milliseconds to minutes
+                    avg_running_time: { $divide: ["$avg_running_time", 1000 * 60] } // Convert milliseconds to minutes
+                }
+            }
+        ];
+
+        const resultLogger = await Util.mongo.aggregateData("MQTTLogger", loggerAggregation);
+
+        return {
+            statusCode: 200,
+            success: true,
+            msg: 'MQTT Dashboard State retrieved successfully',
+            data: resultLogger,
+            err: {},
+        };
+
+    } catch (error) {
+        return {
+            statusCode: 500,
+            success: false,
+            msg: 'MQTT Dashboard State Error',
             err: error.message,
         };
     }
@@ -546,5 +660,6 @@ module.exports = {
     getDeviceData,
     getDeviceReceipeCount,
     getDashboardDetails,
-    getDashboardBatteryDetails
+    getDashboardBatteryDetails,
+    getDashboardStateDetails
 };
