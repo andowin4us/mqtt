@@ -1372,6 +1372,29 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "getDashboardStateDetails",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/getDashboardStateDetails",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"getDashboardStateDetails"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		}
