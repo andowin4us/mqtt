@@ -1,3 +1,4 @@
+const moment = require('moment');
 const Util = require('../helper/util');
 const collectionName = "MQTTLogger";
 const recipeCollectionName = "MQTTDeviceReceipe";
@@ -561,6 +562,7 @@ const getDashboardBatteryDetails = async (tData, userInfo = {}) => {
 const getDashboardStateDetails = async (tData, userInfo = {}) => {
     try {
         let taggedDevices = [];
+        let resultDevice = [];
 
         if (userInfo.accesslevel === 3) {
             const resultDevice = await Util.mongo.find("MQTTDevice", {userId: userInfo.id});
@@ -569,57 +571,60 @@ const getDashboardStateDetails = async (tData, userInfo = {}) => {
                     taggedDevices.push(device.deviceId);
                 }
             }
+        } else {
+            resultDevice = await Util.mongo.find("MQTTDevice", {});
         }
 
         const loggerFilter = userInfo.accesslevel < 3 ? {} : { device_id: { $in: taggedDevices } }; // Use assigned devices if access level is 3
-        const today = new Date();
-        const startOfDay = new Date(today.setHours(0, 0, 0, 0)); // Start of the day
-        const endOfDay = new Date(today.setHours(23, 59, 59, 999)); // End of the day
-        const startOfDayStr = startOfDay.toISOString().slice(0, 10); // Get YYYY-MM-DD format
-        const endOfDayStr = endOfDay.toISOString().slice(0, 10); // Get YYYY-MM-DD format
-
-        console.log(startOfDayStr,endOfDayStr )
+        const targetDateStr = moment().format('YYYY-MM-DD'); // Desired date in YYYY-MM-DD format
+        const startOfDayStr = `${targetDateStr} 00:00:00`; // Start of the day
+        const endOfDayStr = `${targetDateStr} 23:59:59`; // End of the day
+        
         const loggerAggregation = [
-            { $match: loggerFilter },
             {
                 $match: {
                     timestamp: {
-                        $gte: startOfDayStr.trim(),
-                        $lte: endOfDayStr.trim()
+                        $gte: startOfDayStr,
+                        $lte: endOfDayStr
                     },
                     log_type: "STATE",
                     log_desc: { $in: ["IDLE", "RUNNING"] }
                 }
             },
             {
-                $group: {
-                    _id: {
-                        device_id: "$device_id",
-                        log_desc: "$log_desc"
-                    },
-                    total_time: {
-                        $sum: {
-                            $subtract: [
-                                // Assuming each entry has start and end timestamps
-                                "$end_time", // Replace with actual field name if available
-                                "$start_time" // Replace with actual field name if available
-                            ]
-                        }
-                    },
-                    count: { $sum: 1 } // Count of entries for averaging
-                }
+                $sort: { timestamp: 1 } // Sort by timestamp
             },
             {
                 $group: {
-                    _id: "$_id.device_id",
-                    avg_idle_time: {
-                        $avg: {
-                            $cond: [{ $eq: ["$_id.log_desc", "IDLE"] }, "$total_time", 0]
+                    _id: "$device_id",
+                    states: { $push: { log_desc: "$log_desc", timestamp: { $dateFromString: { dateString: "$timestamp" } } } }
+                }
+            },
+            {
+                $project: {
+                    device_id: "$_id",
+                    total_idle_time: {
+                        $sum: {
+                            $cond: [
+                                { $eq: [{ $arrayElemAt: ["$states.log_desc", 0] }, "IDLE"] },
+                                { $subtract: [
+                                    { $arrayElemAt: ["$states.timestamp", 1] },
+                                    { $arrayElemAt: ["$states.timestamp", 0] }
+                                ]},
+                                0
+                            ]
                         }
                     },
-                    avg_running_time: {
-                        $avg: {
-                            $cond: [{ $eq: ["$_id.log_desc", "RUNNING"] }, "$total_time", 0]
+                    total_running_time: {
+                        $sum: {
+                            $cond: [
+                                { $eq: [{ $arrayElemAt: ["$states.log_desc", 0] }, "RUNNING"] },
+                                { $subtract: [
+                                    { $arrayElemAt: ["$states.timestamp", 1] },
+                                    { $arrayElemAt: ["$states.timestamp", 0] }
+                                ]},
+                                0
+                            ]
                         }
                     }
                 }
@@ -627,9 +632,9 @@ const getDashboardStateDetails = async (tData, userInfo = {}) => {
             {
                 $project: {
                     _id: 0,
-                    device_id: "$_id",
-                    avg_idle_time: { $divide: ["$avg_idle_time", 1000 * 60] }, // Convert milliseconds to minutes
-                    avg_running_time: { $divide: ["$avg_running_time", 1000 * 60] } // Convert milliseconds to minutes
+                    device_id: 1,
+                    total_idle_time: { $ifNull: [{ $divide: ["$total_idle_time", 1000] }, 0] },
+                    total_running_time: { $ifNull: [{ $divide: ["$total_running_time", 1000] }, 0] }
                 }
             }
         ];
