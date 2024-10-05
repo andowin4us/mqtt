@@ -73,7 +73,7 @@ const mongoPool = {
         return Mongo.db.collection(collection).find(filter, { projection }).skip(skip).limit(limit).toArray();
     },
     async findAndPaginate(collection, filter = {}, projection = {}, skip = 0, limit = 200000) {
-        const dataParams = [{ $match: filter }, { $skip: skip }, { $limit: limit }];
+        const dataParams = [{ $match: filter }, { $skip: skip }, { $limit: limit }, { $sort: { modified_time: -1 } }];
         if (Object.keys(projection).length) {
             dataParams.push({ $project: projection });
         }

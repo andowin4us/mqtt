@@ -6,3 +6,18 @@
 MQTT_URL.
 
 3. Once values are added in env file, start the project "npm.start".
+
+4. PM2 config command
+
+pm2 install pm2-logrotate
+
+# max log size is 1GB
+pm2 set pm2-logrotate:max_size 1G
+
+# compress logs when rotated (optional)
+pm2 set pm2-logrotate:compress true
+
+# force rotate every hours
+pm2 set pm2-logrotate:rotateInterval '0 * * * *'
+
+pm2 save
