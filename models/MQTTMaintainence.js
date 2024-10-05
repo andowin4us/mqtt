@@ -93,7 +93,7 @@ const submitMaintainenceRequest = async (tData, userInfo = {}) => {
         // if (!moment().isBetween(moment(request.startTime), moment(request.endTime))) {
         //     return { statusCode: 404, success: false, msg: "APPROVAL DATE AND TIME EXPIRED. KINDLY UPDATE YOUR REQUEST." };
         // }
-        if (["Approved", "Rejected"].includes(request.status)) {
+        if (["Approved", "Rejected", "Auto_Rejected"].includes(request.status)) {
             return { statusCode: 404, success: false, msg: "MAINTAINENCE FORM ALREADY SUBMITTED. KINDLY CREATE NEW REQUEST." };
         }
     }

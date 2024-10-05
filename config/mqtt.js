@@ -121,8 +121,11 @@ async function checkDeviceStatus() {
         const collection = db.collection('MQTTDevice');
         const collectionAudit = db.collection('MQTTAuditLog');
         const collectionInstance = db.collection('MQTTFlag');
+        const collectionMaintainence = db.collection('MQTTMaintainence');
+
         const devices = await collection.find({ status: 'Active' }).toArray();
         const instanceData = await collectionInstance.findOne({});
+        const maintainences = await collectionMaintainence.find({ status: 'Pending' }).toArray();
         const currentTime = moment();
 
         if (devices.length > 0) {
@@ -159,6 +162,20 @@ async function checkDeviceStatus() {
                             log: { ...instanceData, instanceExpired: true, modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss') }
                         });
                     }
+                }
+            }));
+        } else if(maintainences.length > 0) {
+            await Promise.all(maintainences.map(async (maintainence) => {
+                const maintainenceEndTime = moment(maintainence.endTime);
+
+                if (currentTime.isAfter(maintainenceEndTime)) {
+                    await collectionMaintainence.updateOne({ _id: maintainence._id }, { $set: { status: "Auto_Rejected", isEditable: false, modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss') } });
+                    await logAudit(collectionAudit, {
+                        moduleName: 'Maintainence',
+                        operation: "update",
+                        message: `SYSTEM updated the Maintainence Request.`,
+                        log: { ...maintainence, status: "Auto_Rejected", isEditable: false, modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss') }
+                    });
                 }
             }));
         }

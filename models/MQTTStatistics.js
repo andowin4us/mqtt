@@ -407,7 +407,7 @@ const getDashboardDetails = async (tData, userInfo = {}) => {
             { $match: maintainenceFilter },
             {
                 $match: {
-                    status: { $in: ["Pending", "Approved", "Rejected"] }
+                    status: { $in: ["Pending", "Approved", "Rejected", "Auto_Rejected"] }
                 }
             },
             {
@@ -425,7 +425,7 @@ const getDashboardDetails = async (tData, userInfo = {}) => {
                     },
                     rejectedCount: {
                         $sum: {
-                            $cond: [{ $eq: ["$status", "Rejected"] }, 1, 0]
+                            $cond: [{ $in: ["$status", ["Rejected", "Auto_Rejected"]] }, 1, 0]
                         }
                     },
                     totalCount: { $sum: 1 } // Total count of all matched documents
