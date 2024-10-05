@@ -137,8 +137,13 @@ const createMaintainenceRequest = async (tData, userInfo = {}) => {
     const permissionCheck = checkPermissions(userInfo);
     if (permissionCheck) return permissionCheck;
 
+    const currentTime = moment();
+
+    if (currentTime.isAfter(tData.startTime)) {
+        return { statusCode: 404, success: false, msg: "START DATE CANNOT BE LESS THAN CURRENT DATE." };
+    }
     if (moment(tData.startTime).isAfter(moment(tData.endTime))) {
-        return { statusCode: 404, success: false, msg: "START DATE CANNOT BE GREATER THAN END DATE. KINDLY UPDATE YOUR REQUEST." };
+        return { statusCode: 404, success: false, msg: "START DATE CANNOT BE GREATER THAN END DATE." };
     }
 
     const createObj = {
@@ -172,7 +177,7 @@ const createMaintainenceRequest = async (tData, userInfo = {}) => {
 
                     const mailResponse = {
                         ...emailResponse,
-                        status: emailResponse.rejected.length > 0 ? "failed" : "success",
+                        status: emailResponse?.rejected?.length > 0 ? "failed" : "success",
                     };
 
                     await Util.mongo.insertOne("MQTTNotify", mailResponse);
