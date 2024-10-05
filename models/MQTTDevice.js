@@ -96,7 +96,7 @@ const updateData = async (tData, userInfo = {}) => {
             mqttIP: tData.mqttIP,
             mqttUserName: tData.mqttUserName,
             mqttPassword: tData.mqttPassword,
-            mqttTopic: tData.mqttTopic,
+            mqttTopic: tData.mqttTopic[0].split(","),
             mqttUrl: MQTT_URL,
             mqttMacId: tData.mqttMacId,
             status: tData.status,
