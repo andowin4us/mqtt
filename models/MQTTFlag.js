@@ -50,7 +50,7 @@ const updateFlag = async (tData, userInfo = {}) => {
 
         return createResponse(404, false, "MQTT Flag Error");
     } catch (error) {
-        await Util.addAuditLogs(MODULE_NAME, userInfo, "update", `${userInfo.userName} updated the Device Congfigurations.`, "failure", JSON.stringify(updateResult));
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "update", `${userInfo.userName} updated the Device Congfigurations.`, "failure", {});
         return createResponse(500, false, "MQTT Flag Error", [], error);
     }
 };

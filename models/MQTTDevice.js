@@ -66,7 +66,7 @@ const deleteData = async (tData, userInfo = {}) => {
         await Util.addAuditLogs(MODULE_NAME, userInfo, "delete", `${userInfo.userName} deleted device ${configDetails.deviceName}.`, "success", JSON.stringify(result));
         return handleSuccess("MQTT device Deleted Successfully", result);
     } catch (error) {
-        await Util.addAuditLogs(MODULE_NAME, userInfo, "delete", `${userInfo.userName} deleted device.`, "failure", JSON.stringify(result));
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "delete", `${userInfo.userName} deleted device.`, "failure", {});
         return handleError("MQTT device Deletion Error", error);
     }
 };
@@ -96,7 +96,7 @@ const updateData = async (tData, userInfo = {}) => {
             mqttIP: tData.mqttIP,
             mqttUserName: tData.mqttUserName,
             mqttPassword: tData.mqttPassword,
-            mqttTopic: tData.mqttTopic.split(","),
+            mqttTopic: tData.mqttTopic,
             mqttUrl: MQTT_URL,
             mqttMacId: tData.mqttMacId,
             status: tData.status,
@@ -113,7 +113,7 @@ const updateData = async (tData, userInfo = {}) => {
         await Util.addAuditLogs(MODULE_NAME, userInfo, "update", `${userInfo.userName} updated device ${tData.deviceName}.`, "success", JSON.stringify(result));
         return handleSuccess("MQTT device Config Successful", result);
     } catch (error) {
-        await Util.addAuditLogs(MODULE_NAME, userInfo, "update", `${userInfo.userName} updated device ${tData.deviceName}.`, "failure", JSON.stringify(result));
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "update", `${userInfo.userName} updated device ${tData.deviceName}.`, "failure", {});
         return handleError("MQTT device Config Error", error);
     }
 };
@@ -151,7 +151,7 @@ const createData = async (tData, userInfo = {}) => {
             mqttIP: tData.mqttIP,
             mqttUserName: tData.mqttUserName,
             mqttPassword: tData.mqttPassword,
-            mqttTopic: tData.mqttTopic.split(","),
+            mqttTopic: tData.mqttTopic[0].split(","),
             mqttUrl: MQTT_URL,
             mqttMacId: tData.mqttMacId,
             status: "Active",
@@ -172,7 +172,7 @@ const createData = async (tData, userInfo = {}) => {
         await Util.addAuditLogs(MODULE_NAME, userInfo, "create", `${userInfo.userName} has created a device ${tData.deviceName}.`, "success", JSON.stringify(result));
         return handleSuccess("MQTT device Created Successfully", result);
     } catch (error) {
-        await Util.addAuditLogs(MODULE_NAME, userInfo, "create", `${userInfo.userName} has created a device ${tData.deviceName}.`, "failure", JSON.stringify(result));
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "create", `${userInfo.userName} has created a device ${tData.deviceName}.`, "failure", {});
         return handleError("MQTT device Creation Error", error);
     }
 };
@@ -274,7 +274,7 @@ const relayTriggerOnOrOffMQTTDevice = async (tData, userInfo = {}) => {
         await Util.addAuditLogs(MODULE_NAME, userInfo, `Relay ${tData.mqttRelayState ? "ON" : "OFF"}`, `${userInfo.userName} has triggered the relay ${tData.mqttRelayState ? "ON" : "OFF"} via the Toggle Button.`, "success", JSON.stringify(result));
         return handleSuccess("MQTT device Relay Triggered Successfully", {});
     } catch (error) {
-        await Util.addAuditLogs(MODULE_NAME, userInfo, `Relay ${tData.mqttRelayState ? "ON" : "OFF"}`, `${userInfo.userName} has triggered the relay ${tData.mqttRelayState ? "ON" : "OFF"} via the Toggle Button.`, "failure", JSON.stringify(result));
+        await Util.addAuditLogs(MODULE_NAME, userInfo, `Relay ${tData.mqttRelayState ? "ON" : "OFF"}`, `${userInfo.userName} has triggered the relay ${tData.mqttRelayState ? "ON" : "OFF"} via the Toggle Button.`, "failure", {});
         return handleError("MQTT device Relay Trigger Error", error);
     }
 };

@@ -72,7 +72,7 @@ const deleteData = async (tData, userInfo = {}) => {
             status: [],
         };
     } catch (error) {
-        await Util.addAuditLogs(MODULE_NAME, userInfo, "delete", `${userInfo.userName} has deleted a user.`, "failure", JSON.stringify(result));
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "delete", `${userInfo.userName} has deleted a user.`, "failure", JSON.stringify({}));
         return {
             statusCode: 500,
             success: false,
@@ -132,7 +132,7 @@ const updateData = async (tData, userInfo = {}) => {
             status: [],
         };
     } catch (error) {
-        await Util.addAuditLogs(MODULE_NAME, userInfo, "update", `${userInfo.userName} has updated a user.`, "failure", JSON.stringify(result));
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "update", `${userInfo.userName} has updated a user.`, "failure", JSON.stringify({}));
         return {
             statusCode: 500,
             success: false,
@@ -208,7 +208,7 @@ const createData = async (tData, userInfo = {}) => {
             status: [],
         };
     } catch (error) {
-        await Util.addAuditLogs(MODULE_NAME, userInfo, "create", `${userInfo.userName} has created a new user.`, "failure", JSON.stringify(result));
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "create", `${userInfo.userName} has created a new user.`, "failure", JSON.stringify({}));
         return {
             statusCode: 500,
             success: false,
@@ -420,7 +420,6 @@ const logout = async (tData, res) => {
 
             return res.status(401).json({ msg: 'Unauthorized' });
         } catch (err) {
-            console.error(err);
             return res.status(500).json({ msg: 'Internal Server Error' });
         }
     }
