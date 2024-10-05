@@ -66,7 +66,7 @@ const deleteData = async (tData, userInfo = {}) => {
         await Util.addAuditLogs(MODULE_NAME, userInfo, "delete", `${userInfo.userName} deleted device ${configDetails.deviceName}.`, "success", JSON.stringify(result));
         return handleSuccess("MQTT device Deleted Successfully", result);
     } catch (error) {
-        await Util.addAuditLogs(MODULE_NAME, userInfo, "delete", `${userInfo.userName} deleted device ${configDetails.deviceName}.`, "failure", JSON.stringify(result));
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "delete", `${userInfo.userName} deleted device.`, "failure", JSON.stringify(result));
         return handleError("MQTT device Deletion Error", error);
     }
 };
