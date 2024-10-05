@@ -55,8 +55,7 @@ const fetchLogs = async (tData, userInfo, filter, collection) => {
         }
 
         const sort = {
-            log_line_count: 1,
-            modified_time: 1,
+            timestamp: -1
         };
 
         const result = await Util.mongo.findPaginateAndSort(
