@@ -36,7 +36,7 @@ const buildFilter = (tData, userInfo) => {
         if (battery_level) filter.battery_level = battery_level;
         if (mac_id) filter.mac_id = mac_id;
         if (state) filter.state = state;
-        if (startDate || endDate) filter.modified_time = startDate && endDate ? { $gte: startDate, $lte: endDate } : startDate ? { $gte: startDate} : { $lte: endDate };
+        if (startDate || endDate) filter.timestamp = startDate && endDate ? { $gte: startDate, $lte: endDate } : startDate ? { $gte: startDate} : { $lte: endDate };
     }
 
     return filter;
