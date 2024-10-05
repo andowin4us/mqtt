@@ -137,7 +137,7 @@ const createMaintainenceRequest = async (tData, userInfo = {}) => {
     const permissionCheck = checkPermissions(userInfo);
     if (permissionCheck) return permissionCheck;
 
-    if (moment().isAfter(moment(request.startTime), moment(request.endTime))) {
+    if (moment().isAfter(moment(tData.startTime), moment(tData.endTime))) {
         return { statusCode: 404, success: false, msg: "START DATE CANNOT BE GREATER THAN END DATE. KINDLY UPDATE YOUR REQUEST." };
     }
 
