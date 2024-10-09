@@ -56,6 +56,11 @@ async function processMessage(data) {
             return handleInvalidMacId(data);
         }
     
+        if (!result.mqttTopic.includes(data.log_type)) {
+            console.log("Invalid Log Type.");
+            return false;
+        }
+
         if (data.log_type === 'Heartbeat') {
             return await handleHeartbeat(data, result, getFlagData);
         }

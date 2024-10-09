@@ -134,8 +134,8 @@ const createMaintainenceRequest = async (tData, userInfo = {}) => {
     });
     if (paramCheck) return paramCheck;
 
-    const permissionCheck = checkPermissions(userInfo);
-    if (permissionCheck) return permissionCheck;
+    // const permissionCheck = checkPermissions(userInfo);
+    // if (permissionCheck) return permissionCheck;
 
     const currentTime = moment();
 
@@ -234,8 +234,8 @@ const updateMaintainenceRequest = async (tData, userInfo = {}) => {
     });
     if (paramCheck) return paramCheck;
 
-    const permissionCheck = checkPermissions(userInfo);
-    if (permissionCheck) return permissionCheck;
+    // const permissionCheck = checkPermissions(userInfo);
+    // if (permissionCheck) return permissionCheck;
 
     const updateObj = {
         $set: {
