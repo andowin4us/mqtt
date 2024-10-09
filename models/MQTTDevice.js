@@ -39,7 +39,12 @@ const handleSuccess = (msg, result) => ({
 });
 
 const duplicate = async (deviceName, id) => {
-    const query = { deviceName, _id: { $ne: id } };
+    const query = {
+        $or: [
+            { deviceId: deviceId },
+            { deviceName: deviceName }
+        ]
+    };
     const result = await Util.mongo.findOne(deviceMongoCollection, query);
     return Boolean(result);
 };
@@ -134,11 +139,11 @@ const createData = async (tData, userInfo = {}) => {
     if (userInfo.accesslevel > 1) return handlePermissionIssue();
 
     try {
-        if (await duplicate(tData.deviceName, tData.id)) {
+        if (await duplicate(tData.deviceName, tData.deviceId)) {
             return {
                 statusCode: 400,
                 success: false,
-                msg: "DUPLICATE NAME",
+                msg: "DUPLICATE DEVICE NAME OR ID",
                 err: "",
             };
         }

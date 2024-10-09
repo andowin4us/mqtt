@@ -127,7 +127,7 @@ const mongoPool = {
     },
     async updateOne(collection, filter, updateData) {
         await mongoInsert(updateData, filter, collection, 'update', "remote");
-        return Mongo.db.collection(collection).updateOne(filter, updateData, { upsert: true });
+        return Mongo.db.collection(collection).updateOne(filter, updateData);
     },
     async updateMany(collection, filter, updateData) {
         return Mongo.db.collection(collection).updateMany(filter, updateData, { upsert: true });

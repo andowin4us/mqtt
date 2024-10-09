@@ -54,6 +54,15 @@ const deleteData = async (tData, userInfo = {}) => {
             };
         }
 
+        if (userInfo.accesslevel > configDetails.accesslevel) {
+            return {
+                statusCode: 404,
+                success: false,
+                msg: "NOT ENOUGH PERMISSIONS TO PERFORM THIS OPERATION.",
+                status: [],
+            };
+        }
+
         const result = await Util.mongo.remove(deviceMongoCollection, { _id: tData.id });
         if (result) {
             await Util.addAuditLogs(MODULE_NAME, userInfo, "delete", `${userInfo.userName} has deleted a user.`, "success", JSON.stringify(result));

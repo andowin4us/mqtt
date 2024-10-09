@@ -43,9 +43,8 @@ async function processLogs(logs) {
 }
 
 async function processMessage(data) {
-    console.log('Processing message for device', data.device_id);
-
-    if (data.device_id) {
+    if (data && data.device_id) {
+        console.log('Processing message for device', data.device_id);
         const result = await mongoInsert(data, { deviceId: data.device_id }, 'MQTTDevice', 'find');
         const getFlagData = await mongoInsert(data, {}, 'MQTTFlag', 'find');
     
@@ -64,6 +63,7 @@ async function processMessage(data) {
         return await handleOtherLogs(data, result, getFlagData);
     } else {
         console.log("No Device Data present in log event.");
+        return false;
     }
 }
 
@@ -245,7 +245,7 @@ async function mongoInsert(data, filter, collectionName, type, host = "local") {
                     results = await localCollection.insertOne(data);
                     break;
                 case 'update':
-                    results = await localCollection.updateOne(filter, { $set: data }, { upsert: true });
+                    results = await localCollection.updateOne(filter, { $set: data });
                     break;
                 default:
                     throw new Error(`Unknown operation type: ${type}`);
@@ -263,7 +263,7 @@ async function mongoInsert(data, filter, collectionName, type, host = "local") {
                     results.remote = await remoteCollection.insertOne(data);
                     break;
                 case 'update':
-                    results.remote = await remoteCollection.updateOne(filter, data, { upsert: true });
+                    results.remote = await remoteCollection.updateOne(filter, data);
                     break;
                 case 'remove':
                     results.remote = await remoteCollection.deleteOne(filter);

@@ -2,6 +2,7 @@ const Util = require("../helper/util");
 const moment = require("moment");
 const MODULE_NAME = "DEVICE_CONFIG";
 const deviceMongoCollection = "MQTTFlag";
+const { MongoClient } = require('mongodb');
 
 // Helper function for standard responses
 const createResponse = (statusCode, success, msg, status = [], err = "") => ({
@@ -42,6 +43,19 @@ const updateFlag = async (tData, userInfo = {}) => {
                 { $set: updateObj }
             );
 
+            if (result && result.useRemoteMongo === true) {
+                if (result.REMOTE_MONGO_HOST) {
+                    const remoteMongoUrl = `mongodb+srv://${result.REMOTE_MONGO_USERNAME}:${result.REMOTE_MONGO_PASSWORD}@${result.REMOTE_MONGO_HOST}/?retryWrites=true&w=majority`;
+                    let serverStatus = await checkMongoConnection(remoteMongoUrl)
+
+                    if (serverStatus === true) {
+                        await Util.addAuditLogs(MODULE_NAME, userInfo, "update", `Remote mongo connect success.`, "success", JSON.stringify(updateResult));
+                    } else {
+                        await Util.addAuditLogs(MODULE_NAME, userInfo, "update", `Remote mongo connect failed.`, "failure", JSON.stringify(updateResult));
+                    }
+                }
+            }
+
             if (updateResult) {
                 await Util.addAuditLogs(MODULE_NAME, userInfo, "update", `${userInfo.userName} updated the Device Congfigurations.`, "success", JSON.stringify(updateResult));
                 return createResponse(200, true, "MQTT Flag Success", updateResult);
@@ -70,6 +84,26 @@ const getData = async (tData, userInfo) => {
         return createResponse(500, false, "MQTT Flags get Error", [], error);
     }
 };
+
+async function checkMongoConnection(connectionUrl) {
+    const client = new MongoClient(connectionUrl);
+    let serverStatus = false;
+    try {
+        await client.connect();
+        const adminDb = client.db().admin();
+        serverStatus = await adminDb.ping();
+
+        if (serverStatus && serverStatus.ok === 1) {
+            serverStatus = true;
+        }
+    } catch (error) {
+        serverStatus = false;
+    } finally {
+        await client.close();
+    }
+
+    return serverStatus;
+}
 
 module.exports = {
     updateFlag,
