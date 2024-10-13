@@ -39,14 +39,14 @@ const buildFilter = (tData, userInfo) => {
         if (state) filter.state = state;
         if (startDate || endDate) { 
             filter.timestamp = startDate && endDate ? { 
-                $gte: moment(startDate).startOf('day').toDate(), 
-                $lte: moment(endDate).endOf('day').toDate()
+                $gte: moment(startDate).startOf('day').format('YYYY-MM-DD HH:mm:ss'), 
+                $lte: moment(endDate).endOf('day').format('YYYY-MM-DD HH:mm:ss')
             } 
             : startDate ? { 
-                $gte: moment(startDate).startOf('day').toDate() 
+                $gte: moment(startDate).startOf('day').format('YYYY-MM-DD HH:mm:ss') 
             } 
             : { 
-                $lte: moment(endDate).endOf('day').toDate() 
+                $lte: moment(endDate).endOf('day').format('YYYY-MM-DD HH:mm:ss') 
             };
         }
     }
