@@ -7,7 +7,7 @@ const MQTTUserController = () => {
         return res.status(result.statusCode).json(result);
     }
     const createUser = async (req, res) => {
-        console.log('createUser', req.body, req.User);
+        console.log('createUser', req.body, req.user);
         const result = await MQTTUser.createData(req.body, req.user);
         return res.status(result.statusCode).json(result);
     }
