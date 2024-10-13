@@ -43,31 +43,38 @@ async function processLogs(logs) {
 }
 
 async function processMessage(data) {
-    if (data && data.device_id) {
+    if (data && data.device_id && data.timestamp) {
         console.log('Processing message for device', data.device_id);
         const result = await mongoInsert(data, { deviceId: data.device_id }, 'MQTTDevice', 'find');
-        const getFlagData = await mongoInsert(data, {}, 'MQTTFlag', 'find');
+
+        //Accepting Events for active devices only.
+        if (result && result.status === "Active") {
+            const getFlagData = await mongoInsert(data, {}, 'MQTTFlag', 'find');
+        
+            if (!result || !data.device_id || data.device_id !== result.deviceId) {
+                return handleInvalidDeviceData(data);
+            }
+        
+            if (data.mac_id && data.mac_id !== result.mqttMacId) {
+                return handleInvalidMacId(data);
+            }
+        
+            if (!result.mqttTopic.includes(data.log_type)) {
+                console.log("Invalid Log Type.");
+                return false;
+            }
     
-        if (!result || !data.device_id || data.device_id !== result.deviceId) {
-            return handleInvalidDeviceData(data);
-        }
-    
-        if (data.mac_id && data.mac_id !== result.mqttMacId) {
-            return handleInvalidMacId(data);
-        }
-    
-        if (!result.mqttTopic.includes(data.log_type)) {
-            console.log("Invalid Log Type.");
+            if (data.log_type === 'Heartbeat') {
+                return await handleHeartbeat(data, result, getFlagData);
+            }
+        
+            return await handleOtherLogs(data, result, getFlagData);
+        } else {
+            console.log("Device status InActive.");
             return false;
         }
-
-        if (data.log_type === 'Heartbeat') {
-            return await handleHeartbeat(data, result, getFlagData);
-        }
-    
-        return await handleOtherLogs(data, result, getFlagData);
     } else {
-        console.log("No Device Data present in log event.");
+        console.log("No Device Data present or invalid Timestamp in the log event.");
         return false;
     }
 }

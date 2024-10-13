@@ -201,7 +201,7 @@ const createData = async (tData, userInfo = {}) => {
 
         const result = await Util.mongo.insertOne(deviceMongoCollection, createObj);
         if (result) {
-            await Util.addAuditLogs(deviceMongoCollection, userInfo, "create", `${userInfo.userName} has created a new user.`, JSON.stringify(result));
+            await Util.addAuditLogs(MODULE_NAME, userInfo, "create", `${userInfo.userName} has created a new user.`, "success", JSON.stringify(result));
             return {
                 statusCode: 200,
                 success: true,

@@ -42,7 +42,8 @@ const duplicate = async (deviceName, id) => {
     const query = {
         $or: [
             { deviceId: deviceId },
-            { deviceName: deviceName }
+            { deviceName: deviceName },
+            { mqttMacId: mqttMacId }
         ]
     };
     const result = await Util.mongo.findOne(deviceMongoCollection, query);
@@ -115,6 +116,11 @@ const updateData = async (tData, userInfo = {}) => {
         const result = await Util.mongo.updateOne(deviceMongoCollection, { _id: tData.id }, updateObj);
         if (!result) return handleError("MQTT device Config Error");
 
+        const configDetailsCheckExisting = await Util.mongo.findOne(deviceMongoCollection, { mqttIP: tData.mqttIP });
+
+        if (!configDetailsCheckExisting) {
+            new MQTT(MQTT_URL, tData.mqttUserName, tData.mqttPassword, tData.mqttTopic, false);
+        }
         await Util.addAuditLogs(MODULE_NAME, userInfo, "update", `${userInfo.userName} updated device ${tData.deviceName}.`, "success", JSON.stringify(result));
         return handleSuccess("MQTT device Config Successful", result);
     } catch (error) {
@@ -143,7 +149,7 @@ const createData = async (tData, userInfo = {}) => {
             return {
                 statusCode: 400,
                 success: false,
-                msg: "DUPLICATE DEVICE NAME OR ID",
+                msg: "DUPLICATE DEVICE NAME, MAC OR ID",
                 err: "",
             };
         }

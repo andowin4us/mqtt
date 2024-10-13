@@ -79,8 +79,8 @@ async function startDevices() {
 
     console.log('Devices found: ', devices.length);
 
-    for (const mqttIP of devices) {
-        const device = await collection.findOne({ mqttIP });
+    for (const {mqttIP, status} of devices) {
+        const device = await collection.findOne({ mqttIP, status: "Active" });
         if (device) {
             console.log(`Device ${device.deviceName}. Initiating event reception.`);
             const MQTT_URL = `mqtt://${device.mqttIP}:${device.mqttPort}`;

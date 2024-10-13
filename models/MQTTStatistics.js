@@ -313,7 +313,7 @@ const getDashboardDetails = async (tData, userInfo = {}) => {
             {
                 $match: {
                     log_type: "DOOR",
-                    log_desc: { $in: ["OPEN", "CLOSED"] }
+                    log_desc: { $in: ["OPENED", "CLOSED"] }
                 }
             },
             {
@@ -327,7 +327,7 @@ const getDashboardDetails = async (tData, userInfo = {}) => {
                     _id: null, // Grouping all together
                     openCount: {
                         $sum: {
-                            $cond: [{ $eq: ["$_id", "OPEN"] }, "$count", 0] // Count OPEN logs
+                            $cond: [{ $eq: ["$_id", "OPENED"] }, "$count", 0] // Count OPEN logs
                         }
                     },
                     closedCount: {
