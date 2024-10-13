@@ -325,6 +325,7 @@ const login = async (tData, res) => {
                     email: user.email,
                 };
                 const token = authService().issue(session);
+                await Util.addAuditLogs(MODULE_NAME, session, "login", `${userInfo.userName} has LoggedIn.`, JSON.stringify(session));
                 return res.status(200).json({ token, userData: session });
             }
 
@@ -339,14 +340,17 @@ const login = async (tData, res) => {
 
 const resetPassword = async (tData, userInfo = {}) => {
     const paramCheck = await checkParameters(tData, {
-        userName: "required|string",
         password: "required|string",
         newPassword: "required|string",
     });
     if (paramCheck) return paramCheck;
 
+    const { email, userName } = tData;
+
     try {
-        const user = await findDuplicate({ userName: tData.userName });
+        const query = email ? { email } : { userName };
+        const user = await findDuplicate(query);
+        // const user = await findDuplicate({ userName: tData.userName });
         if (!user) {
             return {
                 statusCode: 404,
@@ -360,7 +364,7 @@ const resetPassword = async (tData, userInfo = {}) => {
             return {
                 statusCode: 404,
                 success: false,
-                msg: "PASSWORD MISMATCH",
+                msg: "EXISTING PASSWORD MISMATCH",
                 err: paramCheck,
             };
         }
@@ -374,7 +378,7 @@ const resetPassword = async (tData, userInfo = {}) => {
 
         const result = await Util.mongo.updateOne(deviceMongoCollection, { _id: user._id }, updateObj);
         if (result) {
-            await Util.addAuditLogs(deviceMongoCollection, userInfo, "reset", `${userInfo.userName} has resetted his password.`, JSON.stringify(result));
+            await Util.addAuditLogs(MODULE_NAME, user, "reset", `${userInfo.userName} has resetted his password.`, JSON.stringify(result));
             return {
                 statusCode: 200,
                 success: true,
@@ -421,6 +425,7 @@ const logout = async (tData, res) => {
                     email: user.email,
                 };
                 const token = authService().issueLogout(session);
+                await Util.addAuditLogs(MODULE_NAME, session, "logout", `${userInfo.userName} has LoggedOut.`, JSON.stringify(session));
                 return res.status(200).json({ token });
             }
 
