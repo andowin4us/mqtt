@@ -20,7 +20,7 @@ const checkParameters = async (tData, requiredParams) => {
 };
 
 const checkPermissions = (userInfo, requiredLevel) => {
-    if (userInfo && userInfo.accesslevel && userInfo.accesslevel < requiredLevel) {
+    if (userInfo && userInfo.accesslevel && userInfo.accesslevel > requiredLevel) {
         return {
             statusCode: 404,
             success: false,
