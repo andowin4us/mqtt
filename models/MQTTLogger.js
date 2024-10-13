@@ -1,6 +1,7 @@
 const dotenv = require('dotenv');
 const Util = require('../helper/util');
 const workerHelper = require("../helper/mainWorkerHelper");
+const moment = require('moment');
 const MODULE_NAME = "REPORTS";
 
 dotenv.config(); // Load .env file only once
