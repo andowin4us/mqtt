@@ -54,6 +54,7 @@ const deleteData = async (tData, userInfo = {}) => {
             };
         }
 
+        console.log("userInfo.accesslevel > configDetails.accesslevel", userInfo.accesslevel , configDetails.accesslevel)
         if (userInfo.accesslevel > configDetails.accesslevel) {
             return {
                 statusCode: 404,
