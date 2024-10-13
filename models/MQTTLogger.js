@@ -38,11 +38,20 @@ const buildFilter = (tData, userInfo) => {
         if (mac_id) filter.mac_id = mac_id;
         if (state) filter.state = state;
         if (startDate || endDate) { 
-            filter.timestamp = startDate && endDate ? { $gte: moment(startDate).startOf('day').toDate(), $lte: moment(endDate).endOf('day').toDate() } 
-                                : startDate ? { $gte: moment(startDate).startOf('day').toDate()} : { $lte: moment(endDate).endOf('day').toDate() };
+            filter.timestamp = startDate && endDate ? { 
+                $gte: moment(startDate).startOf('day').toDate(), 
+                $lte: moment(endDate).endOf('day').toDate()
+            } 
+            : startDate ? { 
+                $gte: moment(startDate).startOf('day').toDate() 
+            } 
+            : { 
+                $lte: moment(endDate).endOf('day').toDate() 
+            };
         }
     }
 
+    console.log("filter", filter);
     return filter;
 };
 
