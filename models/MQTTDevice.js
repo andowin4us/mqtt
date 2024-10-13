@@ -38,7 +38,7 @@ const handleSuccess = (msg, result) => ({
     status: result,
 });
 
-const duplicate = async (deviceName, id) => {
+const duplicate = async (deviceName, deviceId, mqttMacId) => {
     const query = {
         $or: [
             { deviceId: deviceId },
@@ -145,7 +145,7 @@ const createData = async (tData, userInfo = {}) => {
     if (userInfo.accesslevel > 1) return handlePermissionIssue();
 
     try {
-        if (await duplicate(tData.deviceName, tData.deviceId)) {
+        if (await duplicate(tData.deviceName, tData.deviceId, tData.mqttMacId)) {
             return {
                 statusCode: 400,
                 success: false,
