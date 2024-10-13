@@ -40,9 +40,6 @@ const deleteData = async (tData, userInfo = {}) => {
     const paramCheck = await checkParameters(tData, { id: "required|string" });
     if (paramCheck) return paramCheck;
 
-    const permissionCheck = checkPermissions(userInfo, 3);
-    if (permissionCheck) return permissionCheck;
-
     try {
         const configDetails = await findDuplicate({ _id: tData.id });
         if (!configDetails || !configDetails.name) {
@@ -54,7 +51,6 @@ const deleteData = async (tData, userInfo = {}) => {
             };
         }
 
-        console.log("userInfo.accesslevel > configDetails.accesslevel", userInfo.accesslevel , configDetails.accesslevel)
         if (userInfo.accesslevel > configDetails.accesslevel) {
             return {
                 statusCode: 404,
