@@ -111,8 +111,8 @@ const downloadLogs = async (tData, userInfo, filter, columns, fileName, collecti
 
     try {
         const sort = {
-            log_line_count: 1,
-            modified_time: 1,
+            timestamp: -1,
+            modified_time: -1
         };
 
         const finalJson = await Util.mongo.findAllSort(collectionName, filter, {}, sort);
