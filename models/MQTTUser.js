@@ -325,10 +325,11 @@ const login = async (tData, res) => {
                     email: user.email,
                 };
                 const token = authService().issue(session);
-                await Util.addAuditLogs(MODULE_NAME, session, "login", `${user.userName} has LoggedIn.`, JSON.stringify(session));
+                await Util.addAuditLogs(MODULE_NAME, session, "login", `${user.userName} has LoggedIn.`, "success", JSON.stringify(session));
                 return res.status(200).json({ token, userData: session });
             }
 
+            await Util.addAuditLogs(MODULE_NAME, user, "login", `${user.userName} has LoggedIn.`, "failed", JSON.stringify({}));
             return res.status(401).json({ msg: 'Unauthorized' });
         } catch (err) {
             return res.status(500).json({ msg: 'Internal Server Error' });
@@ -378,7 +379,7 @@ const resetPassword = async (tData, userInfo = {}) => {
 
         const result = await Util.mongo.updateOne(deviceMongoCollection, { _id: user._id }, updateObj);
         if (result) {
-            await Util.addAuditLogs(MODULE_NAME, user, "reset", `${user.userName} has resetted his password.`, JSON.stringify(result));
+            await Util.addAuditLogs(MODULE_NAME, user, "reset", `${user.userName} has resetted his password.`, "success", JSON.stringify(result));
             return {
                 statusCode: 200,
                 success: true,
@@ -387,6 +388,7 @@ const resetPassword = async (tData, userInfo = {}) => {
             };
         }
 
+        await Util.addAuditLogs(MODULE_NAME, user, "reset", `${user.userName} has resetted his password.`, "failed", JSON.stringify({}));
         return {
             statusCode: 404,
             success: false,
