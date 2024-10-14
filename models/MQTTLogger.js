@@ -106,7 +106,7 @@ const getStateLogger = async (tData, userInfo) => {
 };
 
 // Generalized method to handle downloading logs
-const downloadLogs = async (tData, userInfo, filter, columns, fileName) => {
+const downloadLogs = async (tData, userInfo, filter, columns, fileName, collectionName) => {
     let finalURL = "";
 
     try {
@@ -146,7 +146,7 @@ const downloadLogger = async (tData, userInfo) => {
         const filter = buildFilter(tData, userInfo);
         const columns = ["timestamp", "device_id", "device_name", "log_type", "log_desc", "log_line_count", "battery_level"];
         await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded logger report.`, "success", JSON.stringify({}));
-        return downloadLogs(tData, userInfo, filter, columns, "ActivityLogReport");
+        return downloadLogs(tData, userInfo, filter, columns, "ActivityLogReport", collectionName);
     }  catch (e) {
         await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded logger report.`, "failure", JSON.stringify({}));
         return createResponse(404, false, "No data found to generate report.");
@@ -159,7 +159,7 @@ const downloadStateLogger = async (tData, userInfo) => {
         const filter = buildFilter(tData, userInfo);
         const columns = ["timestamp", "device_id", "device_name", "log_type", "log_desc", "battery_level"];
         await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded state report.`, "success", JSON.stringify({}));
-        return downloadLogs(tData, userInfo, filter, columns, "StateLogReport");
+        return downloadLogs(tData, userInfo, filter, columns, "StateLogReport", collectionName);
     } catch (e) {
         await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded state report.`, "failure", JSON.stringify({}));
         return createResponse(404, false, "No data found to generate report.");
@@ -211,7 +211,7 @@ const downloadAuditLog = async (tData, userInfo) => {
 
         const columns = ["modified_time", "modified_user_name", "role", "moduleName", "operation", "status", "message"];
         await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded audit log report.`, "success", JSON.stringify({}));
-        return downloadLogs(tData, userInfo, filter, columns, "AuditLogReport");
+        return downloadLogs(tData, userInfo, filter, columns, "AuditLogReport", "MQTTAuditLog");
     } catch (e) {
         await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded audit log report.`, "failure", JSON.stringify({}));
         return createResponse(404, false, "No data found to generate report.");
