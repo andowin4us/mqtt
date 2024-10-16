@@ -203,7 +203,7 @@ const getMaintainenceRequest = async (tData, userInfo = {}) => {
 
     try {
         if (userInfo && userInfo.accesslevel === 3) {
-            let devicesAssignedToSupervisor = await Util.mongo.findAll(deviceMongoCollection, {userId: userInfo.id}, {});
+            let devicesAssignedToSupervisor = await Util.mongo.findAll("MQTTDevice", {userId: userInfo.id}, {});
             let deviceIdList = [];
 
             for (device in devicesAssignedToSupervisor) {

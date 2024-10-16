@@ -18,18 +18,25 @@ const createResponse = (statusCode, success, msg, status = [], err = "") => ({
 });
 
 // Helper function to build filter from query parameters
-const buildFilter = (tData, userInfo) => {
+const buildFilter = async (tData, userInfo) => {
     let filter = {};
+    let deviceIdList = [];
 
     if (userInfo && userInfo.accesslevel === 3) {
-        filter.user_id = userInfo.id;
+        let devicesAssignedToSupervisor = await Util.mongo.findAll("MQTTDevice", {userId: userInfo.id}, {});
+        for (device in devicesAssignedToSupervisor) {
+            deviceIdList.push(device.deviceId);
+        }
     }
 
     if (tData) {
         const { device_id, device_name, log_type, log_desc, log_line_count, 
             battery_level, mac_id, state, startDate, endDate } = tData;
 
-        if (device_id) filter.device_id = device_id;
+        if (device_id) {
+            deviceIdList.push(device_id);
+        }
+        if (device_id) filter.device_id = { device_id: { $in: deviceIdList } };
         if (device_name) filter.device_name = device_name;
         if (log_type) filter.log_type = log_type.toUpperCase();
         if (log_desc) filter.log_desc = log_desc;
@@ -94,13 +101,13 @@ const fetchLogs = async (tData, userInfo, filter, collection) => {
 
 // Fetch Device Logger
 const getDeviceLogger = async (tData, userInfo) => {
-    const filter = buildFilter(tData, userInfo);
+    const filter = await buildFilter(tData, userInfo);
     return fetchLogs(tData, userInfo, filter, collectionName);
 };
 
 // Fetch State Logger
 const getStateLogger = async (tData, userInfo) => {
-    const filter = buildFilter(tData, userInfo);
+    const filter = await buildFilter(tData, userInfo);
     filter.$or = [{ log_type: "STATE" }, { log_type: "Status" }];
     return fetchLogs(tData, userInfo, filter, collectionName);
 };
@@ -143,7 +150,7 @@ const downloadLogs = async (tData, userInfo, filter, columns, fileName, collecti
 // Download Logger
 const downloadLogger = async (tData, userInfo) => {
     try {
-        const filter = buildFilter(tData, userInfo);
+        const filter = await buildFilter(tData, userInfo);
         const columns = ["timestamp", "device_id", "device_name", "log_type", "log_desc", "log_line_count", "battery_level"];
         await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded logger report.`, "success", JSON.stringify({}));
         return downloadLogs(tData, userInfo, filter, columns, "ActivityLogReport", collectionName);
@@ -156,7 +163,7 @@ const downloadLogger = async (tData, userInfo) => {
 // Download State Logger
 const downloadStateLogger = async (tData, userInfo) => {
     try {
-        const filter = buildFilter(tData, userInfo);
+        const filter = await buildFilter(tData, userInfo);
         const columns = ["timestamp", "device_id", "device_name", "log_type", "log_desc", "battery_level"];
         await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded state report.`, "success", JSON.stringify({}));
         return downloadLogs(tData, userInfo, filter, columns, "StateLogReport", collectionName);
