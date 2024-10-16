@@ -231,8 +231,8 @@ const getMaintainenceRequest = async (tData, userInfo = {}) => {
         const filter = {
             ...(tData.devices && { devices: { $in: deviceIdList } }),
             ...(tData.status && { status: tData.status }),
-            ...(tData.startTime && { startTime: { "$gte": moment(tData.startTime).format("YYYY-MM-DD HH:mm:ss") } }),
-            ...(tData.endTime && { endTime: { "$lte": moment(tData.endTime).format("YYYY-MM-DD HH:mm:ss") } }),
+            ...(tData.startTime && { startTime: { "$gte": moment.utc(tData.startTime).startOf('day').format('YYYY-MM-DD HH:mm:ss') } }),
+            ...(tData.endTime && { endTime: { "$lte": moment.utc(tData.endTime).endOf('day').format('YYYY-MM-DD HH:mm:ss') } }),
         };
 
         const result = await Util.mongo.findAndPaginate(deviceMongoCollection, filter, {}, tData.skip, tData.limit);
