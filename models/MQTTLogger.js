@@ -58,7 +58,7 @@ const buildFilter = async (tData, userInfo) => {
         }
     }
 
-    console.log("filter", filter);
+    console.log("filter", filter, deviceIdList);
     return filter;
 };
 
