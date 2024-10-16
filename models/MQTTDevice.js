@@ -246,7 +246,7 @@ const assignMQTTDevice = async (tData, userInfo = {}) => {
             }
         };
 
-        const result = await Util.mongo.updateOne(deviceMongoCollection, { deviceId: tData.deviceId }, updateObj);
+        const result = await Util.mongo.updateOne(deviceMongoCollection, { _id: tData.deviceId }, updateObj);
         if (!result) return handleError("MQTT device Assignment Failed");
 
         await Util.addAuditLogs(MODULE_NAME, userInfo, "mapping", `${userInfo.userName} mapped device to Supervisor User.`, "success", JSON.stringify(result));
