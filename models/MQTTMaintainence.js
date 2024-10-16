@@ -202,6 +202,17 @@ const getMaintainenceRequest = async (tData, userInfo = {}) => {
     if (paramCheck) return paramCheck;
 
     try {
+        if (userInfo && userInfo.accesslevel === 3) {
+            let devicesAssignedToSupervisor = await Util.mongo.findAll(deviceMongoCollection, {userId: userInfo.id}, {});
+            let deviceIdList = [];
+
+            for (device in devicesAssignedToSupervisor) {
+                deviceIdList.push(device.deviceId);
+            }
+
+            tData.devices = deviceIdList;
+        }
+
         const filter = {
             ...(tData.devices && { devices: { $in: tData.devices } }),
             ...(tData.status && { status: tData.status }),

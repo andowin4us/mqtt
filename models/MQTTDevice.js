@@ -199,7 +199,7 @@ const getData = async (tData, userInfo = {}) => {
     try {
         let filter = {};
         if( userInfo && userInfo.accesslevel && userInfo.accesslevel === 3 ) {
-            filter.userId = userInfo.userId;
+            filter.userId = userInfo.id;
             if (tData && tData.deviceId) {
                 filter.deviceId = tData.deviceId;
             }
