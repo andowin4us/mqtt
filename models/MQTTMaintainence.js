@@ -45,11 +45,24 @@ const downloadMaintainenceRequest = async (tData, userInfo = {}) => {
     const columns = ["modified_time", "devices", "engineerName", "engineerContact", "startTime", "endTime", "status"];
 
     try {
+        let deviceIdList = [];
+        if (userInfo && userInfo.accesslevel === 3) {
+            let devicesAssignedToSupervisor = await Util.mongo.findAll("MQTTDevice", {userId: userInfo.id}, {});
+
+            for (device of devicesAssignedToSupervisor) {
+                deviceIdList.push(device.deviceId);
+            }
+        }
+
+        if (tData.devices) {
+            deviceIdList.push(tData.devices);
+        }
+
         const filter = {
             ...(tData.startTime && { startTime: { "$gte": moment(tData.startTime).format("YYYY-MM-DD HH:mm:ss") } }),
             ...(tData.endTime && { endTime: { "$lte": moment(tData.endTime).format("YYYY-MM-DD HH:mm:ss") } }),
             ...(tData.status && { status: tData.status }),
-            ...(tData.devices && { devices: { $in: tData.devices } }),
+            ...(tData.devices && { devices: { $in: deviceIdList } }),
         };
 
         const sort = { modified_time: 1 };
@@ -202,19 +215,21 @@ const getMaintainenceRequest = async (tData, userInfo = {}) => {
     if (paramCheck) return paramCheck;
 
     try {
+        let deviceIdList = [];
         if (userInfo && userInfo.accesslevel === 3) {
             let devicesAssignedToSupervisor = await Util.mongo.findAll("MQTTDevice", {userId: userInfo.id}, {});
-            let deviceIdList = [];
 
             for (device of devicesAssignedToSupervisor) {
                 deviceIdList.push(device.deviceId);
             }
+        }
 
-            tData.devices = deviceIdList;
+        if (tData.devices) {
+            deviceIdList.push(tData.devices);
         }
 
         const filter = {
-            ...(tData.devices && { devices: { $in: tData.devices } }),
+            ...(tData.devices && { devices: { $in: deviceIdList } }),
             ...(tData.status && { status: tData.status }),
             ...(tData.startTime && { startTime: { "$gte": moment(tData.startTime).format("YYYY-MM-DD HH:mm:ss") } }),
             ...(tData.endTime && { endTime: { "$lte": moment(tData.endTime).format("YYYY-MM-DD HH:mm:ss") } }),
