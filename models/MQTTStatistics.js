@@ -258,10 +258,8 @@ const getDashboardDetails = async (tData, userInfo = {}) => {
 
         if (userInfo.accesslevel === 3) {
             const resultDevice = await Util.mongo.find("MQTTDevice", {userId: userInfo.id});
-            if (resultDevice.length > 0) {
-                for (let device of resultDevice) {
-                    taggedDevices.push(device.deviceId);
-                }
+            for (let device of resultDevice) {
+                taggedDevices.push(device.deviceId);
             }
         }
 

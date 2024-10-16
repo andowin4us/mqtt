@@ -46,18 +46,15 @@ const buildFilter = async (tData, userInfo) => {
         if (battery_level) filter.battery_level = battery_level;
         if (mac_id) filter.mac_id = mac_id;
         if (state) filter.state = state;
-        if (startDate || endDate) { 
-            filter.timestamp = startDate && endDate ? { 
-                $gte: moment.utc(startDate).startOf('day').format('YYYY-MM-DD HH:mm:ss'), 
-                $lte: moment.utc(endDate).endOf('day').format('YYYY-MM-DD HH:mm:ss')
-            } 
-            : startDate ? { 
-                $gte: moment.utc(startDate).startOf('day').format('YYYY-MM-DD HH:mm:ss') 
-            } 
-            : { 
-                $lte: moment.utc(endDate).endOf('day').format('YYYY-MM-DD HH:mm:ss') 
-            };
-        }
+        if (startDate || endDate) {
+            filter.timestamp = {};
+            if (startDate) {
+                filter.timestamp.$gte = moment.utc(startDate).startOf('day').format('YYYY-MM-DD HH:mm:ss');
+            }
+            if (endDate) {
+                filter.timestamp.$lte = moment.utc(endDate).endOf('day').format('YYYY-MM-DD HH:mm:ss');
+            }
+        }        
     }
 
     console.log("filter", filter);
