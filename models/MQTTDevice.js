@@ -216,6 +216,10 @@ const getData = async (tData, userInfo = {}) => {
             filter.status = tData.status;
         }
 
+        if (tData && tData.mqttMacId) {
+            filter.mqttMacId = tData.mqttMacId;
+        }
+
         const result = await Util.mongo.findAndPaginate(deviceMongoCollection, filter, {}, tData.skip, tData.limit);
         const sanitizedData = await Util.snatizeFromMongo(result);
 
