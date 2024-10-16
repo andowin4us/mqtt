@@ -27,6 +27,8 @@ const buildFilter = async (tData, userInfo) => {
         for (device of devicesAssignedToSupervisor) {
             deviceIdList.push(device.deviceId);
         }
+
+        filter.device_id = { $in: deviceIdList }
     }
 
     if (tData) {
@@ -35,8 +37,8 @@ const buildFilter = async (tData, userInfo) => {
 
         if (device_id) {
             deviceIdList.push(device_id);
-        }
-        if (device_id) filter.device_id = { $in: deviceIdList };
+            filter.device_id = { $in: deviceIdList }
+        };
         if (device_name) filter.device_name = device_name;
         if (log_type) filter.log_type = log_type.toUpperCase();
         if (log_desc) filter.log_desc = log_desc;
@@ -58,7 +60,7 @@ const buildFilter = async (tData, userInfo) => {
         }
     }
 
-    console.log("filter", filter, deviceIdList);
+    console.log("filter", filter);
     return filter;
 };
 
