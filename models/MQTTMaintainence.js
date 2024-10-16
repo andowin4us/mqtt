@@ -206,7 +206,7 @@ const getMaintainenceRequest = async (tData, userInfo = {}) => {
             let devicesAssignedToSupervisor = await Util.mongo.findAll("MQTTDevice", {userId: userInfo.id}, {});
             let deviceIdList = [];
 
-            for (device in devicesAssignedToSupervisor) {
+            for (device of devicesAssignedToSupervisor) {
                 deviceIdList.push(device.deviceId);
             }
 
