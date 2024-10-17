@@ -263,13 +263,13 @@ const assignMQTTDevice = async (tData, userInfo = {}) => {
 
 const relayTriggerOnOrOffMQTTDevice = async (tData, userInfo = {}) => {
     const validation = await Util.checkQueryParams(tData, {
-        id: "required|string"
+        deviceId: "required|string"
     });
 
     if (validation?.error === "PARAMETER_ISSUE") return handleParameterIssue(validation);
     if (userInfo.accesslevel > 1) return handlePermissionIssue();
     try {
-        const device = await Util.mongo.findOne(deviceMongoCollection, { _id: tData.id });
+        const device = await Util.mongo.findOne(deviceMongoCollection, { deviceId: tData.deviceId });
         if (!device) return handleError("MQTT device Not Found");
 
         const MQTT_URL = `mqtt://${device.mqttIP}:${device.mqttPort}`;

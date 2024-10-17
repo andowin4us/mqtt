@@ -186,7 +186,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"id\": \"122b1j2b12ug12gb1b2n1jk2njjbn\",\r\n    \"mqttRelayState\": false\r\n}",
+							"raw": "{\r\n    \"deviceId\": \"device_id\",\r\n    \"mqttRelayState\": false\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
