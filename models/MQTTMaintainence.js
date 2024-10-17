@@ -229,7 +229,7 @@ const getMaintainenceRequest = async (tData, userInfo = {}) => {
         }
 
         const filter = {
-            ...(tData.devices && { devices: { $in: deviceIdList } }),
+            ...{ devices: { $in: deviceIdList } },
             ...(tData.status && { status: tData.status }),
             ...(tData.startTime && { startTime: { "$gte": moment.utc(tData.startTime).startOf('day').format('YYYY-MM-DD HH:mm:ss') } }),
             ...(tData.endTime && { endTime: { "$lte": moment.utc(tData.endTime).endOf('day').format('YYYY-MM-DD HH:mm:ss') } }),
