@@ -215,21 +215,22 @@ const getMaintainenceRequest = async (tData, userInfo = {}) => {
     if (paramCheck) return paramCheck;
 
     try {
-        let deviceIdList = [];
+        let deviceIdList = [], filter = {};
         if (userInfo && userInfo.accesslevel === 3) {
             let devicesAssignedToSupervisor = await Util.mongo.findAll("MQTTDevice", {userId: userInfo.id}, {});
 
             for (device of devicesAssignedToSupervisor) {
                 deviceIdList.push(device.deviceId);
             }
+            filter.devices = { $in: deviceIdList };
         }
 
         if (tData.devices) {
             deviceIdList.push(tData.devices);
+            filter.devices = { $in: deviceIdList };
         }
 
-        const filter = {
-            ...{ devices: { $in: deviceIdList } },
+        filter = {
             ...(tData.status && { status: tData.status }),
             ...(tData.startTime && { startTime: { "$gte": moment.utc(tData.startTime).startOf('day').format('YYYY-MM-DD HH:mm:ss') } }),
             ...(tData.endTime && { endTime: { "$lte": moment.utc(tData.endTime).endOf('day').format('YYYY-MM-DD HH:mm:ss') } }),
