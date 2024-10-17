@@ -219,18 +219,23 @@ const getMaintainenceRequest = async (tData, userInfo = {}) => {
         if (userInfo && userInfo.accesslevel === 3) {
             let devicesAssignedToSupervisor = await Util.mongo.findAll("MQTTDevice", {userId: userInfo.id}, {});
 
+            if (devicesAssignedToSupervisor.length === 0) {
+                return { statusCode: 200, success: true, msg: "Maintainence Get Successful", status: [], totalSize: 0 };
+            }
+
             for (device of devicesAssignedToSupervisor) {
                 deviceIdList.push(device.deviceId);
             }
+
             filter.devices = { $in: deviceIdList };
         }
 
         if (tData.devices) {
             deviceIdList.push(tData.devices);
-            filter.devices = { $in: deviceIdList };
         }
 
         filter = {
+            ...(tData.devices && { devices: { $in: deviceIdList } }),
             ...(tData.status && { status: tData.status }),
             ...(tData.startTime && { startTime: { "$gte": moment.utc(tData.startTime).startOf('day').format('YYYY-MM-DD HH:mm:ss') } }),
             ...(tData.endTime && { endTime: { "$lte": moment.utc(tData.endTime).endOf('day').format('YYYY-MM-DD HH:mm:ss') } }),
