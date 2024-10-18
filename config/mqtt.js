@@ -138,7 +138,7 @@ async function checkDeviceStatus() {
                 const mqttRelayState = device.mqttStatusDetails.mqttRelayState;
 
                 if (instanceData.isRelayTimer && 
-                    ((device.status === 'InActive' && !mqttRelayState) || (durationSeconds > instanceData.heartBeatTimer))) {
+                    ((!mqttRelayState) || (durationSeconds > instanceData.heartBeatTimer))) {
                     await updateDeviceStatus(device, 'InActive', true, durationSeconds);
                 }
 
