@@ -257,7 +257,7 @@ const getDashboardDetails = async (tData, userInfo = {}) => {
         let taggedDevices = [];
 
         if (userInfo.accesslevel === 3) {
-            const resultDevice = await Util.mongo.find("MQTTDevice", {userId: userInfo.id});
+            const resultDevice = await Util.mongo.find("MQTTDevice", {userName: userInfo.userName});
             for (let device of resultDevice) {
                 taggedDevices.push(device.deviceId);
             }
@@ -470,7 +470,7 @@ const getDashboardBatteryDetails = async (tData, userInfo = {}) => {
         let taggedDevices = [];
 
         if (userInfo.accesslevel === 3) {
-            const resultDevice = await Util.mongo.find("MQTTDevice", {userId: userInfo.id});
+            const resultDevice = await Util.mongo.find("MQTTDevice", {userName: userInfo.userName});
             if (resultDevice.length > 0) {
                 for (let device of resultDevice) {
                     taggedDevices.push(device.deviceId);
@@ -492,8 +492,8 @@ const getDashboardBatteryDetails = async (tData, userInfo = {}) => {
         const today = new Date();
         const dayOfWeek = today.getDay();
         const startOfWeek = new Date(today.setDate(today.getDate() - dayOfWeek));
-        const endOfWeek = new Date(today.setDate(today.getDate() + (7 - dayOfWeek)));
-
+        const endOfWeek = new Date(today.setDate(startOfWeek.getDate() + 7));
+        
         const startOfWeekStr = startOfWeek.toISOString().slice(0, 10); // Get YYYY-MM-DD format
         const endOfWeekStr = endOfWeek.toISOString().slice(0, 10); // Get YYYY-MM-DD format
 
@@ -563,7 +563,7 @@ const getDashboardStateDetails = async (tData, userInfo = {}) => {
         let resultDevice = [];
 
         if (userInfo.accesslevel === 3) {
-            const resultDevice = await Util.mongo.find("MQTTDevice", {userId: userInfo.id});
+            const resultDevice = await Util.mongo.find("MQTTDevice", {userName: userInfo.userName});
             if (resultDevice.length > 0) {
                 for (let device of resultDevice) {
                     taggedDevices.push(device.deviceId);
@@ -657,6 +657,141 @@ const getDashboardStateDetails = async (tData, userInfo = {}) => {
     }
 };
 
+const getDashboardGraphDetails = async (tData, userInfo = {}) => {
+    try {
+        let taggedDevices = [];
+
+        if (userInfo.accesslevel === 3) {
+            const resultDevice = await Util.mongo.find("MQTTDevice", {userName: userInfo.userName});
+            if (resultDevice.length > 0) {
+                for (let device of resultDevice) {
+                    taggedDevices.push(device.deviceId);
+                }
+            }
+        }
+
+        const loggerFilter = userInfo.accesslevel < 3 ? {} : { device_id: { $in: taggedDevices } }; // Use assigned devices if access level is 3
+        const today = new Date();
+        const dayOfWeek = today.getDay();
+        const startOfWeek = new Date(today.setDate(today.getDate() - dayOfWeek));
+        const endOfWeek = new Date(today.setDate(startOfWeek.getDate() + 7));  
+        const startOfWeekStr = startOfWeek.toISOString().slice(0, 10); // Get YYYY-MM-DD format
+        const endOfWeekStr = endOfWeek.toISOString().slice(0, 10); // Get YYYY-MM-DD format
+        
+        const daysOfWeek = [
+            { day: 1, name: "Sunday" },
+            { day: 2, name: "Monday" },
+            { day: 3, name: "Tuesday" },
+            { day: 4, name: "Wednesday" },
+            { day: 5, name: "Thursday" },
+            { day: 6, name: "Friday" },
+            { day: 7, name: "Saturday" }
+        ];
+
+        const results = await Util.mongo.aggregateData("MQTTLogger", [
+            { $match: loggerFilter },
+            {
+                $match: {
+                    timestamp: {
+                        $gte: startOfWeekStr.trim(), // Start of the week
+                        $lte: endOfWeekStr.trim() // End of the week
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        log_type: "$log_type",
+                        day: { $dayOfWeek: { $dateFromString: { dateString: "$timestamp" } } },
+                    },
+                    count: { $sum: 1 },
+                    entries: { $push: "$$ROOT" } // Optional: Include the entire data in the output
+                }
+            },
+            {
+                $group: {
+                    _id: "$_id.day", // Group by day of the week
+                    log_types: {
+                        $push: {
+                            log_type: "$_id.log_type",
+                            count: "$count"
+                        }
+                    }
+                }
+            },
+            {
+                $sort: { "_id": 1 } // Sort by day of the week
+            },
+            {
+                $project: {
+                    day: "$_id", // Keep the day
+                    log_types: { $ifNull: ["$log_types", []] } // Ensure log_types is an array
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    daysData: { $push: { day: "$day", log_types: "$log_types" } }
+                }
+            },
+            {
+                $project: {
+                    data: {
+                        $map: {
+                            input: daysOfWeek,
+                            as: "day",
+                            in: {
+                                day: "$$day.name",
+                                log_types: {
+                                    $let: {
+                                        vars: {
+                                            found: {
+                                                $arrayElemAt: [
+                                                    {
+                                                        $filter: {
+                                                            input: "$daysData",
+                                                            as: "d",
+                                                            cond: { $eq: ["$$d.day", "$$day.day"] }
+                                                        }
+                                                    },
+                                                    0
+                                                ]
+                                            }
+                                        },
+                                        in: {
+                                            $cond: {
+                                                if: { $ifNull: ["$$found", false] },
+                                                then: "$$found.log_types",
+                                                else: [{ log_type: "Unknown", count: 0 }]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        ]);
+
+
+        return {
+            statusCode: 200,
+            success: true,
+            msg: 'MQTT Graph data retrieved successfully',
+            data: results[0].data,
+            err: {},
+        };
+
+    } catch (error) {
+        return {
+            statusCode: 500,
+            success: false,
+            msg: 'MQTT Graph data Error',
+            err: error.message,
+        };
+    }
+};
 
 module.exports = {
     getDeviceLogCount,
@@ -664,5 +799,6 @@ module.exports = {
     getDeviceReceipeCount,
     getDashboardDetails,
     getDashboardBatteryDetails,
-    getDashboardStateDetails
+    getDashboardStateDetails,
+    getDashboardGraphDetails,
 };

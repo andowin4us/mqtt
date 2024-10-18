@@ -101,21 +101,12 @@ const updateData = async (tData, userInfo = {}) => {
     if (permissionCheck) return permissionCheck;
 
     try {
-        const isDuplicate = await findDuplicate({ name: tData.name.toLowerCase(), _id: { $ne: tData.id } });
-        if (isDuplicate) {
-            return {
-                statusCode: 404,
-                success: false,
-                msg: "DUPLICATE NAME",
-                err: "",
-            };
-        }
-
         const updateObj = {
             $set: {
                 _id: tData.id,
-                name: tData.name.toLowerCase(),
+                name: tData.name,
                 status: tData.status,
+                password: md5Service().password(tData),
                 modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
             },
         };

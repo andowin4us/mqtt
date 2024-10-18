@@ -47,7 +47,7 @@ const downloadMaintainenceRequest = async (tData, userInfo = {}) => {
     try {
         let deviceIdList = [];
         if (userInfo && userInfo.accesslevel === 3) {
-            let devicesAssignedToSupervisor = await Util.mongo.findAll("MQTTDevice", {userId: userInfo.id}, {});
+            let devicesAssignedToSupervisor = await Util.mongo.findAll("MQTTDevice", {userName: userInfo.userName}, {});
 
             for (device of devicesAssignedToSupervisor) {
                 deviceIdList.push(device.deviceId);
@@ -217,7 +217,7 @@ const getMaintainenceRequest = async (tData, userInfo = {}) => {
     try {
         let deviceIdList = [], filter = {};
         if (userInfo && userInfo.accesslevel === 3) {
-            let devicesAssignedToSupervisor = await Util.mongo.findAll("MQTTDevice", {userId: userInfo.id}, {});
+            let devicesAssignedToSupervisor = await Util.mongo.findAll("MQTTDevice", {userName: userInfo.userName}, {});
 
             if (devicesAssignedToSupervisor.length === 0) {
                 return { statusCode: 200, success: true, msg: "Maintainence Get Successful", status: [], totalSize: 0 };

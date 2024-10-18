@@ -23,7 +23,7 @@ const buildFilter = async (tData, userInfo) => {
     let deviceIdList = [];
 
     if (userInfo && userInfo.accesslevel === 3) {
-        let devicesAssignedToSupervisor = await Util.mongo.findAll("MQTTDevice", {userId: userInfo.id}, {});
+        let devicesAssignedToSupervisor = await Util.mongo.findAll("MQTTDevice", {userName: userInfo.userName}, {});
         for (device of devicesAssignedToSupervisor) {
             deviceIdList.push(device.deviceId);
         }

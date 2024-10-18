@@ -201,7 +201,7 @@ const getData = async (tData, userInfo = {}) => {
     try {
         let filter = {};
         if( userInfo && userInfo.accesslevel && userInfo.accesslevel === 3 ) {
-            filter.userId = userInfo.id;
+            filter.userName = userInfo.userName;
             if (tData && tData.deviceId) {
                 filter.deviceId = tData.deviceId;
             }
@@ -245,9 +245,10 @@ const assignMQTTDevice = async (tData, userInfo = {}) => {
     if (userInfo.accesslevel > 2) return handlePermissionIssue();
 
     try {
+        const userDetails = await Util.mongo.findOne("MQTTUser", { _id: tData.userId });
         const updateObj = {
             $set: {
-                userId: tData.userId,
+                userName: userDetails.userName,
                 modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
             }
         };
