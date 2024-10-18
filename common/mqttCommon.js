@@ -52,10 +52,12 @@ async function processMessage(data) {
             const getFlagData = await mongoInsert(data, {}, 'MQTTFlag', 'find');
         
             if (!result || !data.device_id || data.device_id !== result.deviceId) {
+                console.log("Invalid Device Id.");
                 return handleInvalidDeviceData(data);
             }
         
             if (data.mac_id && data.mac_id !== result.mqttMacId) {
+                console.log("Invalid Mac Id.");
                 return handleInvalidMacId(data);
             }
         
@@ -139,6 +141,7 @@ async function handleOtherLogs(data, result, getFlagData) {
     const existing = await mongoInsert(data, { device_id: data.device_id, log_line_count: data.log_line_count }, 'MQTTLogger', 'find');
 
     if (!existingLogLimit && existing?._id) {
+        console.log("Record already exists.");
         return false;
     }
 
