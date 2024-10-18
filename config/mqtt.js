@@ -6,6 +6,7 @@ const moment = require('moment');
 const { publishMessage } = require('../common/mqttCommon');
 const { getUuid } = require('../helper/util');
 const md5Service = require('../services/md5.service');
+const { sendEmail } = require('../common/mqttMail');
 
 let client, db, clientRemote, dbRemote;
 
@@ -139,7 +140,7 @@ async function checkDeviceStatus() {
 
                 if (instanceData.isRelayTimer && 
                     ((!mqttRelayState) || (durationSeconds > instanceData.heartBeatTimer))) {
-                    await updateDeviceStatus(device, 'InActive', true, durationSeconds);
+                    await updateDeviceStatus(device, 'InActive', true, durationSeconds, instanceData);
                 }
 
                 if (currentTime.isAfter(instanceExpiry)) {
@@ -179,13 +180,15 @@ async function checkDeviceStatus() {
                 }
             }));
         }
+
+        return true;
     } catch (err) {
         console.error('Device status check error:', err);
     }
 }
 
 // Update device status
-async function updateDeviceStatus(device, status, mqttRelayState, durationSeconds) {
+async function updateDeviceStatus(device, status, mqttRelayState, durationSeconds, getFlagData) {
     console.log(`Updating device ${device.deviceName} to ${status}`);
     const MQTT_URL = `mqtt://${device.mqttIP}:${device.mqttPort}`;
     let messageSend = "ON," + device.deviceId;
@@ -199,6 +202,14 @@ async function updateDeviceStatus(device, status, mqttRelayState, durationSecond
             modified_time: moment().format('YYYY-MM-DD HH:mm:ss')
         }
     });
+
+    await sendEmail(getFlagData.superUserMails, {
+        DeviceName: device.deviceName,
+        DeviceId: device.deviceId,
+        Action: `Relay triggered ON for device ${device.deviceName}`,
+        MacId: device.mqttMacId,
+        TimeofActivity: moment().format('YYYY-MM-DD HH:mm:ss'),
+    }, getFlagData, getFlagData.ccUsers, getFlagData.bccUsers);
 
     await logAudit(db.collection('MQTTAuditLog'), {
         moduleName: 'DEVICE',
@@ -218,6 +229,8 @@ async function updateDeviceStatus(device, status, mqttRelayState, durationSecond
             log: { ...device, status, modified_time: moment().format('YYYY-MM-DD HH:mm:ss') }
         });
     }
+
+    return true;
 }
 
 // Check if remote Mongo is enabled

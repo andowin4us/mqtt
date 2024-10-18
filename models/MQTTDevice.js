@@ -154,6 +154,8 @@ const createData = async (tData, userInfo = {}) => {
             };
         }
 
+        let topicsBe = "Power/State,Logs,DOOR,Energy,Weight,process_status,super_access,status,Relay/State,State,STATE";
+
         const MQTT_URL = `mqtt://${tData.mqttIP}:${tData.mqttPort}`;
         const createObj = {
             _id: tData.id,
@@ -162,7 +164,7 @@ const createData = async (tData, userInfo = {}) => {
             mqttIP: tData.mqttIP,
             mqttUserName: tData.mqttUserName,
             mqttPassword: tData.mqttPassword,
-            mqttTopic: tData.mqttTopic,
+            mqttTopic: topicsBe.split(','),
             mqttUrl: MQTT_URL,
             mqttMacId: tData.mqttMacId,
             status: "Active",
