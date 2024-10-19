@@ -217,6 +217,7 @@ async function isRemoteMongoEnabled(instanceData) {
 
 // Check and update device hearbeat
 async function checkHeartBeatStatus() {
+    console.log("Checking heartbeat status...");
     try {
         const collection = db.collection('MQTTDevice');
         const collectionAudit = db.collection('MQTTAuditLog');
