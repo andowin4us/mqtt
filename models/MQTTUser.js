@@ -101,15 +101,28 @@ const updateData = async (tData, userInfo = {}) => {
     if (permissionCheck) return permissionCheck;
 
     try {
-        const updateObj = {
-            $set: {
-                _id: tData.id,
-                name: tData.name,
-                status: tData.status,
-                password: md5Service().password(tData),
-                modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
-            },
-        };
+        let updateObj = {};
+
+        if (tData?.password && tData.password?.length > 0) {
+            updateObj = {
+                $set: {
+                    _id: tData.id,
+                    name: tData.name,
+                    status: tData.status,
+                    password: md5Service().password(tData),
+                    modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+                },
+            };
+        } else {
+            updateObj = {
+                $set: {
+                    _id: tData.id,
+                    name: tData.name,
+                    status: tData.status,
+                    modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+                },
+            };
+        }
 
         const result = await Util.mongo.updateOne(deviceMongoCollection, { _id: tData.id }, updateObj);
         if (result) {
@@ -308,6 +321,14 @@ const login = async (tData, res) => {
             }
 
             if (md5Service().comparePassword(password, user.password) && user.status === "Active") {
+                const getFlagData = await Util.mongo.findOne("MQTTFlag", {});
+                const currentTime = moment();
+                const instanceExpiry = moment(getFlagData.instanceExpiry);
+                if (currentTime.isAfter(instanceExpiry) && user.accesslevel > 1) {
+                    await Util.mongo.updateOne(MQTTFlag, { _id: getFlagData._id }, {$set: { instanceExpired: true }});
+                    return res.status(404).json({ msg: 'Your Instance has Expired.' });
+                }
+
                 const session = {
                     id: user._id,
                     accesslevel: user.accesslevel,

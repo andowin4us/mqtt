@@ -37,8 +37,9 @@ async function seedData() {
         const flagsData = {
             _id: getUuid(),
             instanceExpiry: moment().add(1, 'years').format('YYYY-MM-DD HH:mm:ss'),
-            heartBeatTimer: 60,
-            isRelayTimer: true,
+            relayTimer: 300,
+            isRelayTimer: false,
+            heartBeatTimer: 30,
             instanceExpired: false,
             logLineLimit: 240000,
             useRemoteMongo: false,
@@ -133,36 +134,15 @@ async function checkDeviceStatus() {
             await Promise.all(devices.map(async (device) => {
                 console.log(`Checking status for device ${device.deviceName}`);
                 const deviceTime = moment(device.modified_time);
-                const instanceExpiry = moment(instanceData.instanceExpiry);
                 const durationSeconds = moment.duration(currentTime.diff(deviceTime)).asSeconds();
 
-                if (instanceData.isRelayTimer && (parseInt(durationSeconds, 10) > parseInt(instanceData.heartBeatTimer, 10))) {
+                if (instanceData.isRelayTimer && (parseInt(durationSeconds, 10) > parseInt(instanceData.relayTimer, 10))) {
                     await updateDeviceStatus(device, 'InActive', true, durationSeconds, instanceData);
                 }
-
-                if (currentTime.isAfter(instanceExpiry)) {
-                    console.log(`Instance expired for ${device.deviceName}`);
-                    await collectionInstance.updateOne({ _id: instanceData._id }, { $set: { instanceExpired: true, modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss') } });
-                    await logAudit(collectionAudit, {
-                        moduleName: 'DEVICE_CONFIG',
-                        operation: "update",
-                        message: `SYSTEM updated the Device Configurations.`,
-                        log: { ...instanceData, instanceExpired: true, modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss') }
-                    });
-                    
-                    if (instanceData.useRemoteMongo) {
-                        await initializeRemoteMongo(instanceData);
-                        const collectionAuditRemote = dbRemote.collection('MQTTAuditLog');
-                        await logAudit(collectionAuditRemote, {
-                            moduleName: 'DEVICE_CONFIG',
-                            operation: "update",
-                            message: `SYSTEM updated the Device Configurations.`,
-                            log: { ...instanceData, instanceExpired: true, modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss') }
-                        });
-                    }
-                }
             }));
-        } else if(maintainences.length > 0) {
+        }
+        
+        if(maintainences.length > 0) {
             await Promise.all(maintainences.map(async (maintainence) => {
                 const maintainenceEndTime = moment(maintainence.endTime);
 
@@ -235,9 +215,54 @@ async function isRemoteMongoEnabled(instanceData) {
     return instanceData.useRemoteMongo;
 }
 
+// Check and update device hearbeat
+async function checkHeartBeatStatus() {
+    try {
+        const collection = db.collection('MQTTDevice');
+        const collectionAudit = db.collection('MQTTAuditLog');
+
+        const devices = await collection.find({ status: 'Active' }).toArray();
+        const currentTime = moment();
+
+        if (devices.length > 0) {
+            await Promise.all(devices.map(async (device) => {
+                console.log(`Checking status for device ${device.deviceName}`);
+                const deviceTime = moment(device.modified_time);
+                const durationSeconds = moment.duration(currentTime.diff(deviceTime)).asSeconds();
+
+                if (parseInt(durationSeconds, 10) > parseInt(instanceData.heartBeatTimer, 10)) {
+                    await collection.updateOne({ _id: device._id }, {
+                        $set: {
+                            status: 'InActive',
+                            modified_time: moment().format('YYYY-MM-DD HH:mm:ss')
+                        }
+                    });
+
+                    await collectionAudit.insertOne({
+                        moduleName: "AuditLog",
+                        operation: "update",
+                        message: "Device updated to InActive due to Heartbeat Event not received.",
+                        modified_user_id: 1,
+                        modified_user_name: 'SYSTEM',
+                        role: "SuperUser",
+                        status: "success",
+                        modified_time: moment().format('YYYY-MM-DD HH:mm:ss'),
+                        log: JSON.stringify({})
+                    });
+                }
+            }));
+        }
+
+        return true;
+    } catch (err) {
+        console.error('Device status check error:', err);
+    }
+}
+
 // Schedule the device status handler
 function scheduleDeviceStatusHandler() {
     cron.schedule('* */1 * * *', checkDeviceStatus);
+    cron.schedule('*/30 * * * * *', checkHeartBeatStatus);
 }
 
 module.exports = {
