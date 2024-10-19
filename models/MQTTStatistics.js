@@ -579,6 +579,7 @@ const getDashboardStateDetails = async (tData, userInfo = {}) => {
         const endOfDayStr = `${targetDateStr} 23:59:59`; // End of the day
         
         const loggerAggregation = [
+            { $match: loggerFilter },
             {
                 $match: {
                     timestamp: {
