@@ -120,7 +120,7 @@ async function handleHeartbeat(data, result, getFlagData) {
     await mongoInsert({ mqttStatusDetails, modified_time: moment().format('YYYY-MM-DD HH:mm:ss') }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
     await mongoInsert({ $set : { mqttStatusDetails, modified_time: moment().format('YYYY-MM-DD HH:mm:ss') } }, { deviceId: data.device_id }, 'MQTTDevice', 'update', "remote");
 
-    if (getFlagData.isRelayTimer && duration > parseInt(getFlagData.heartBeatTimer, 10)) {
+    if (getFlagData.isRelayTimer && parseInt(duration, 10) > parseInt(getFlagData.heartBeatTimer, 10)) {
         const MQTT_URL = `mqtt://${result.mqttIP}:${result.mqttPort}`;
         let messageSend = "ON,"+data.device_id;
         await sendEmail(getFlagData.superUserMails, {
