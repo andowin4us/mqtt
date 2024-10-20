@@ -10,7 +10,7 @@ async function utilizeMqtt(message) {
         let data;
 
         // Ensure message is a valid JSON object
-        if (typeof message === 'object' && JSON.parse(message)) {
+        if (typeof message === 'string' && JSON.parse(message)) {
             data = JSON.parse(message);
         } else {
             return handleInvalidJson(message);
