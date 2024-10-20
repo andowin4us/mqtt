@@ -86,7 +86,7 @@ class MQTTConnector {
     async processQueue(job) {
         try {
             const { topic, message, packet } = job.data;
-            const jsonString = String.fromCharCode(JSON.stringify(...buffer.data));
+            const jsonString = String.fromCharCode(JSON.stringify(...message.data));
             const jsonData = JSON.parse(jsonString);
 
             console.log("as", jsonData);
