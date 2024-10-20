@@ -73,7 +73,7 @@ async function processMessage(data) {
             return await handleOtherLogs(data, result, getFlagData);
         } else {
             console.log("Device status InActive, but lets check heartbeat");
-            if (data?.log_type === 'Heartbeat') {
+            if (data?.log_type === 'Heartbeat' && result?.mqttStatusDetails?.mqttRelayState === false) {
                 const getFlagData = await mongoInsert(data, {}, 'MQTTFlag', 'find');
                 return await handleHeartbeat(data, result, getFlagData);
             }
@@ -138,7 +138,6 @@ async function handleHeartbeat(data, result, getFlagData) {
     }
 
     if (parseInt(duration, 10) <= parseInt(getFlagData.relayTimer, 10)) {
-        console.log("parseInt(duration, 10) <= parseInt(getFlagData.relayTimer, 10)", result,  parseInt(duration, 10))
         if (result.status === "InActive") {
             await mongoInsert({ mqttStatusDetails, status: "Active", modified_time: moment().format('YYYY-MM-DD HH:mm:ss') }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
             await mongoInsert({ $set : { mqttStatusDetails, status: "Active", modified_time: moment().format('YYYY-MM-DD HH:mm:ss') } }, { deviceId: data.device_id }, 'MQTTDevice', 'update', "remote");            
