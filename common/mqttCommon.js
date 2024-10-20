@@ -138,6 +138,7 @@ async function handleHeartbeat(data, result, getFlagData) {
     }
 
     if (parseInt(duration, 10) <= parseInt(getFlagData.relayTimer, 10)) {
+        console.log("parseInt(duration, 10) <= parseInt(getFlagData.relayTimer, 10)", result,  parseInt(duration, 10))
         if (result.status === "InActive") {
             await mongoInsert({ mqttStatusDetails, status: "Active", modified_time: moment().format('YYYY-MM-DD HH:mm:ss') }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
             await mongoInsert({ $set : { mqttStatusDetails, status: "Active", modified_time: moment().format('YYYY-MM-DD HH:mm:ss') } }, { deviceId: data.device_id }, 'MQTTDevice', 'update', "remote");            
