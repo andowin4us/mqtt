@@ -25,18 +25,17 @@ class MQTTConnector {
 
         // Connect to the MQTT broker only if not already connected
         if (!this.isConnected) {
+            this.closeConnCheck = closeConnCheck;
+            this.resultDevice = resultDevice;
+            this.createObj = createObj;
+    
+            this.queue = new BullQueueWrapper('mqttQueue', `redis://${process.env.REDIS_HOST}:6379`);
+            this.reconnectAttempts = 0;
+    
             this.client = mqtt.connect(this.url, this.options);
             this.setupEventHandlers(); // Set up handlers immediately after connecting
+            this.initialize();
         }
-
-        this.closeConnCheck = closeConnCheck;
-        this.resultDevice = resultDevice;
-        this.createObj = createObj;
-
-        this.queue = new BullQueueWrapper('mqttQueue', `redis://${process.env.REDIS_HOST}:6379`);
-        this.reconnectAttempts = 0;
-
-        this.initialize();
     }
 
     initialize() {
@@ -91,7 +90,6 @@ class MQTTConnector {
         try {
             let { topic, message, packet } = job.data;
             const jsonString = String.fromCharCode(...message.data);
-            console.log("Incoming message on topic", topic);
             if (this.resultDevice && this.createObj && this.createObj.length > 0) {
                 let response = await this.sendMessage(this.createObj.sendingTopic, this.resultDevice, this.createObj, packet);
                 this.createObj = null;
