@@ -9,7 +9,7 @@ const RECONNECTION_TIMEOUT_BASE = 2000;
 const MAX_RECONNECT_ATTEMPTS = 5;
 
 class MQTTConnector {
-    constructor({ url, userName, password, topics, closeConnCheck, resultDevice, createObj }) {
+    constructor(url, userName, password, topics, closeConnCheck, resultDevice, createObj) {
         console.log("url, userName, password, topics, closeConnCheck, resultDevice, createObj", url, userName, password, topics, closeConnCheck, resultDevice, createObj);
         this.url = url;
         this.isConnected = false;
