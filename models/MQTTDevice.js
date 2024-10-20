@@ -118,7 +118,7 @@ const updateData = async (tData, userInfo = {}) => {
 
         const configDetailsCheckExisting = await Util.mongo.findOne(deviceMongoCollection, { mqttIP: tData.mqttIP });
 
-        if (!configDetailsCheckExisting || tData.status === "Active") {
+        if (!configDetailsCheckExisting) {
             new MQTT(MQTT_URL, tData.mqttUserName, tData.mqttPassword, tData.mqttTopic, false);
         }
         await Util.addAuditLogs(MODULE_NAME, userInfo, "update", `${userInfo.userName} updated device ${tData.deviceName}.`, "success", JSON.stringify(result));
