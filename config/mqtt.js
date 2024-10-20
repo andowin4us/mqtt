@@ -221,8 +221,10 @@ async function checkHeartBeatStatus() {
     try {
         const collection = db.collection('MQTTDevice');
         const collectionAudit = db.collection('MQTTAuditLog');
+        const collectionInstance = db.collection('MQTTFlag');
 
         const devices = await collection.find({ status: 'Active' }).toArray();
+        const instanceData = await collectionInstance.findOne({});
         const currentTime = moment();
 
         if (devices.length > 0) {
