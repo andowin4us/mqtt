@@ -85,7 +85,7 @@ class MQTTConnector {
 
     async processQueue(job) {
         try {
-            console.log("job", job);
+            console.log("job", job.data);
             const { topic, message, packet } = job.data;
             if (this.resultDevice && this.createObj && this.createObj.length > 0) {
                 let response = await this.sendMessage(this.createObj.sendingTopic, this.resultDevice, this.createObj, packet);
