@@ -87,14 +87,14 @@ class MQTTConnector {
         try {
             let { topic, message, packet } = job.data;
             const jsonString = String.fromCharCode(...message.data);
-            const jsonData = JSON.parse(jsonString);
+            // const jsonData = JSON.parse(jsonString);
 
             if (this.resultDevice && this.createObj && this.createObj.length > 0) {
                 let response = await this.sendMessage(this.createObj.sendingTopic, this.resultDevice, this.createObj, packet);
                 this.createObj = null;
                 console.log(response ? "Message sent successfully." : "Message sending failed.");
             } else {
-                let processMessage = await utilizeMqtt(jsonData);
+                let processMessage = await utilizeMqtt(jsonString);
                 console.log(processMessage ? "Message Process Success." : "Message Process Failed.");
             }
         } catch (err) {
