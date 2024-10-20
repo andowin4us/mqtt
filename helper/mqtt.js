@@ -1,7 +1,7 @@
 const dotenv = require('dotenv');
 const mqtt = require('mqtt');
 const { utilizeMqtt } = require('../common/mqttCommon');
-const BullQueue = require('bull');
+const BullQueueWrapper = require('../common/BullQueueWrapper');
 
 dotenv.config({ path: process.env.ENV_PATH || '.env' });
 
@@ -10,7 +10,6 @@ const MAX_RECONNECT_ATTEMPTS = 5;
 
 class MQTTConnector {
     constructor(url, userName, password, topics, closeConnCheck, resultDevice, createObj) {
-        console.log("url, userName, password, topics, closeConnCheck, resultDevice, createObj", url, userName, password, topics, closeConnCheck, resultDevice, createObj);
         this.url = url;
         this.isConnected = false;
         this.topics = Array.isArray(topics) ? topics : [topics];
@@ -22,22 +21,27 @@ class MQTTConnector {
             password: password || null,
             reconnectPeriod: 1000,
         };
-        this.client = mqtt.connect(this.url, this.options);
+        // this.client = mqtt.connect(this.url, this.options);
+
+        // Connect to the MQTT broker only if not already connected
+        if (!this.isConnected) {
+            this.client = mqtt.connect(this.url, this.options);
+            this.setupEventHandlers(); // Set up handlers immediately after connecting
+        }
+
         this.closeConnCheck = closeConnCheck;
         this.resultDevice = resultDevice;
         this.createObj = createObj;
 
-        this.queue = new BullQueue('mqttQueue', `redis://${process.env.REDIS_HOST}:6379`);
+        this.queue = new BullQueueWrapper('mqttQueue', `redis://${process.env.REDIS_HOST}:6379`);
         this.reconnectAttempts = 0;
 
         this.initialize();
     }
 
     initialize() {
-        if (this.closeConnCheck) {
-            this.client.end();
-        } else {
-            this.setupEventHandlers();
+        if (this.closeConnCheck && this.isConnected) {
+            this.client.end(); // Close if instructed and connected
         }
     }
 
@@ -48,7 +52,7 @@ class MQTTConnector {
         this.client.on('close', this.onClose.bind(this));
         this.client.on('error', this.onError.bind(this));
 
-        this.queue.process(this.processQueue.bind(this));
+        this.queue.processJobs(this.processQueue.bind(this));
     }
 
     onConnect(packet) {
@@ -80,15 +84,14 @@ class MQTTConnector {
 
     onMessage(topic, message, packet) {
         console.log('Topic=' + topic);
-        this.queue.add({ topic, message, packet });
+        this.queue.addJob({ topic, message, packet });
     }
 
     async processQueue(job) {
         try {
             let { topic, message, packet } = job.data;
             const jsonString = String.fromCharCode(...message.data);
-            // const jsonData = JSON.parse(jsonString);
-
+            console.log("Incoming message on topic", topic);
             if (this.resultDevice && this.createObj && this.createObj.length > 0) {
                 let response = await this.sendMessage(this.createObj.sendingTopic, this.resultDevice, this.createObj, packet);
                 this.createObj = null;
@@ -97,6 +100,9 @@ class MQTTConnector {
                 let processMessage = await utilizeMqtt(jsonString);
                 console.log(processMessage ? "Message Process Success." : "Message Process Failed.");
             }
+
+            // Clear the queue after processing the job
+            await this.queue.clear();
         } catch (err) {
             console.error('Error processing message:', err);
         }

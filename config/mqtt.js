@@ -124,7 +124,7 @@ async function checkDeviceStatus() {
         const collectionInstance = db.collection('MQTTFlag');
         const collectionMaintainence = db.collection('MQTTMaintainence');
 
-        const devices = await collection.find({ status: 'Active' }).toArray();
+        const devices = await collection.find({}).toArray();
         const instanceData = await collectionInstance.findOne({});
         const maintainences = await collectionMaintainence.find({ status: 'Pending' }).toArray();
         const currentTime = moment();
@@ -135,7 +135,8 @@ async function checkDeviceStatus() {
                 const deviceTime = moment(device.modified_time);
                 const durationSeconds = moment.duration(currentTime.diff(deviceTime)).asSeconds();
 
-                if (instanceData.isRelayTimer && (parseInt(durationSeconds, 10) > parseInt(instanceData.relayTimer, 10))) {
+                let relayStatus = device.mqttStatusDetails.mqttRelayState;
+                if (relayStatus === false && instanceData.isRelayTimer && (parseInt(durationSeconds, 10) > parseInt(instanceData.relayTimer, 10))) {
                     await updateDeviceStatus(device, 'InActive', true, durationSeconds, instanceData);
                 }
             }));
@@ -165,7 +166,7 @@ async function checkDeviceStatus() {
 
 // Update device status
 async function updateDeviceStatus(device, status, mqttRelayState, durationSeconds, getFlagData) {
-    console.log(`Updating device ${device.deviceName} to ${status}`);
+    console.log(`Updating device ${device.deviceName} to ${status} and triggering relay`);
     const MQTT_URL = `mqtt://${device.mqttIP}:${device.mqttPort}`;
     let messageSend = "ON," + device.deviceId;
     await publishMessage(MQTT_URL, device.mqttUserName, device.mqttPassword, messageSend);
@@ -216,7 +217,6 @@ async function isRemoteMongoEnabled(instanceData) {
 
 // Check and update device hearbeat
 async function checkHeartBeatStatus() {
-    console.log("Checking heartbeat status...");
     try {
         const collection = db.collection('MQTTDevice');
         const collectionAudit = db.collection('MQTTAuditLog');
@@ -228,11 +228,12 @@ async function checkHeartBeatStatus() {
 
         if (devices.length > 0) {
             await Promise.all(devices.map(async (device) => {
-                console.log(`Checking status for device ${device.deviceName}`);
+                console.log(`Checking heartbeat status for device ${device.deviceName}`);
                 const deviceTime = moment(device.modified_time);
                 const durationSeconds = moment.duration(currentTime.diff(deviceTime)).asSeconds();
 
                 if (parseInt(durationSeconds, 10) > parseInt(instanceData.heartBeatTimer, 10)) {
+                    console.log(`Updating device ${device.deviceName} to InActive due to heartbeat missed.`);
                     await collection.updateOne({ _id: device._id }, {
                         $set: {
                             status: 'InActive',
