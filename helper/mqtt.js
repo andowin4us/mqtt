@@ -1,31 +1,33 @@
-/* eslint-disable no-console */
 const dotenv = require('dotenv');
-dotenv.config({ path: process.env.ENV_PATH || '.env' });
 const mqtt = require('mqtt');
 const { utilizeMqtt } = require('../common/mqttCommon');
+const BullQueue = require('bull');
 
-const RECONNECTION_TIMEOUT = 2000; // 2 seconds
-const CLIENT_ID = `mqtt_${Math.random().toString(16).slice(3)}`;
+dotenv.config({ path: process.env.ENV_PATH || '.env' });
+
+const RECONNECTION_TIMEOUT_BASE = 2000;
+const MAX_RECONNECT_ATTEMPTS = 5;
 
 class MQTTConnector {
-    constructor(url, userName, password, topic, closeConnCheck, resultDevice, createObj) {
+    constructor({ url, userName, password, topics, closeConnCheck, resultDevice, createObj }) {
         this.url = url;
         this.isConnected = false;
+        this.topics = Array.isArray(topics) ? topics : [topics];
         this.options = {
-            clientId: CLIENT_ID,
+            clientId: `mqtt_${Math.random().toString(16).slice(3)}`,
             clean: true,
             connectTimeout: 4000,
             username: userName || null,
             password: password || null,
             reconnectPeriod: 1000,
         };
-        this.topic = topic;
         this.client = mqtt.connect(this.url, this.options);
         this.closeConnCheck = closeConnCheck;
         this.resultDevice = resultDevice;
         this.createObj = createObj;
-        this.messageQueue = [];
-        this.isProcessingQueue = false; // Track if processing is in progress
+
+        this.queue = new BullQueue('mqttQueue', `redis://${process.env.REDIS_HOST}:6379`);
+        this.reconnectAttempts = 0;
 
         this.initialize();
     }
@@ -44,68 +46,56 @@ class MQTTConnector {
         this.client.on('reconnect', this.onReconnect.bind(this));
         this.client.on('close', this.onClose.bind(this));
         this.client.on('error', this.onError.bind(this));
+
+        this.queue.process(this.processQueue.bind(this));
     }
 
     onConnect(packet) {
         console.log("\n\nPacket incoming received type ", packet.cmd);
-
         if (packet.cmd === 'connack') {
             this.isConnected = true;
             console.log("Successfully connected to broker on " + this.url);
-            this.client.subscribe(this.topic, this.onSubscribe.bind(this));
+            Promise.all(this.topics.map(topic => this.subscribe(topic)))
+                .then(() => console.log("All topics subscribed successfully."))
+                .catch(err => console.error("Error subscribing to topics:", err));
         } else {
             this.handleConnectionError(packet.cmd);
         }
     }
 
-    handleConnectionError(cmd) {
-        this.isConnected = false;
-        console.log("Connect event error occurred ", cmd);
-        this.reconnect();
-    }
-
-    onSubscribe(err) {
-        if (err) {
-            this.isConnected = false;
-            console.log("Subscription error occurred ", err);
-            this.reconnect();
-        } else {
-            console.log("Subscribed successfully to " + this.topic + " topic.");
-        }
-    }
-
-    async onMessage(topic, message, packet) {
-        console.log('Topic=' + topic);
-
-        // Add message to the queue
-        this.messageQueue.push({ topic, message, packet });
-
-        // Process the queue if not already processing
-        if (!this.isProcessingQueue) {
-            this.processQueue();
-        }
-    }
-
-    async processQueue() {
-        this.isProcessingQueue = true;
-
-        while (this.messageQueue.length > 0) {
-            const { topic, message, packet } = this.messageQueue.shift();
-            try {
-                if (this.resultDevice && this.createObj && this.createObj.length > 0) {
-                    let response = await this.sendMessage(this.createObj.sendingTopic, this.resultDevice, this.createObj, packet);
-                    this.createObj = null;
-                    console.log(response ? "Message sent successfully." : "Message sending failed.");
-                } else {
-                    let processMessage = await utilizeMqtt(message);
-                    console.log(processMessage ? "Message Process Success." : "Message Process Failed.");
+    subscribe(topic) {
+        return new Promise((resolve, reject) => {
+            this.client.subscribe(topic, (err) => {
+                if (err) {
+                    this.isConnected = false;
+                    console.log("Subscription error occurred ", err);
+                    return reject(err);
                 }
-            } catch (err) {
-                console.error('Error processing message:', err);
-            }
-        }
+                console.log("Subscribed successfully to " + topic + " topic.");
+                resolve();
+            });
+        });
+    }
 
-        this.isProcessingQueue = false;
+    onMessage(topic, message, packet) {
+        console.log('Topic=' + topic);
+        this.queue.add({ topic, message, packet });
+    }
+
+    async processQueue(job) {
+        try {
+            const { topic, message, packet } = job.data;
+            if (this.resultDevice && this.createObj && this.createObj.length > 0) {
+                let response = await this.sendMessage(this.createObj.sendingTopic, this.resultDevice, this.createObj, packet);
+                this.createObj = null;
+                console.log(response ? "Message sent successfully." : "Message sending failed.");
+            } else {
+                let processMessage = await utilizeMqtt(message);
+                console.log(processMessage ? "Message Process Success." : "Message Process Failed.");
+            }
+        } catch (err) {
+            console.error('Error processing message:', err);
+        }
     }
 
     async sendMessage(topic, device, message, packet) {
@@ -124,16 +114,24 @@ class MQTTConnector {
         this.reconnect();
     }
 
-    onError() {
-        console.log(`MQTT error occurred ${this.url}`);
+    onError(err) {
+        console.error(`MQTT error occurred ${this.url}:`, err);
         this.reconnect();
     }
 
     reconnect() {
+        if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+            console.error("Max reconnect attempts reached. Stopping reconnection.");
+            return;
+        }
+
+        this.reconnectAttempts++;
+        const timeout = RECONNECTION_TIMEOUT_BASE * Math.pow(2, this.reconnectAttempts);
         setTimeout(() => {
+            console.log(`Reconnecting attempt ${this.reconnectAttempts}...`);
             this.client = mqtt.connect(this.url, this.options);
             this.setupEventHandlers();
-        }, RECONNECTION_TIMEOUT);
+        }, timeout);
     }
 }
 

@@ -9,21 +9,15 @@ const mapRoutes = require('express-routes-mapper');
 const config = require('./config/config');
 const auth = require('./policies/auth.policy');
 const { invokeInitialization, scheduleDeviceStatusHandler } = require('./config/mqtt');
+const { checkResourceUsage } = require('./helper/resourceMonitor');
+const CHECK_INTERVAL = 1000 * 10 * 60; // Check every 5 minutes
 
-const os = require('os');
-const { exec } = require('child_process');
-
-// Initialize Express app
 const app = express();
 const server = http.Server(app);
 
 // Middleware setup
 app.use(cors());
-app.use(helmet({
-    dnsPrefetchControl: false,
-    frameguard: false,
-    ieNoOpen: false,
-}));
+app.use(helmet({ dnsPrefetchControl: false, frameguard: false, ieNoOpen: false }));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json({ limit: '5mb' }));
 app.use(cookieParser());
@@ -49,66 +43,6 @@ app.get('/', (req, res) => {
     res.status(200).json({ success: true, statusCode: 200, msg: 'MQTT Home Called.' });
 });
 
-// Resource monitoring setup
-const CPU_THRESHOLD = 80; // CPU usage percentage
-const MEMORY_THRESHOLD = 80; // Memory usage percentage
-const CHECK_INTERVAL = 1000 * 5 * 60; // Check every 60 seconds
-
-// Function to check system resource usage
-function checkResourceUsage() {
-    const cpuUsage = getCPUUsage();
-    const memoryUsage = getMemoryUsage();
-
-    console.log(`Current CPU Usage: ${cpuUsage}%`);
-    console.log(`Current Memory Usage: ${memoryUsage}%`);
-
-    if (cpuUsage > CPU_THRESHOLD) {
-        console.warn('CPU usage is high! Taking action...');
-        restartApplication();
-    }
-
-    if (memoryUsage > MEMORY_THRESHOLD) {
-        console.warn('Memory usage is high! Taking action...');
-        clearMemoryCache();
-    }
-}
-
-// Function to get CPU usage
-function getCPUUsage() {
-    const cpus = os.cpus();
-    const totalIdle = cpus.reduce((acc, cpu) => acc + cpu.times.idle, 0);
-    const totalTick = cpus.reduce((acc, cpu) => acc + Object.values(cpu.times).reduce((a, b) => a + b, 0), 0);
-    return ((1 - totalIdle / totalTick) * 100).toFixed(2);
-}
-
-// Function to get memory usage
-function getMemoryUsage() {
-    const { freemem, totalmem } = os;
-    return ((1 - freemem() / totalmem()) * 100).toFixed(2);
-}
-
-// Function to restart the application (customize this for your environment)
-function restartApplication() {
-    // Example using PM2
-    exec('pm2 restart logsense-backend', (error, stdout, stderr) => {
-        if (error) {
-            console.error(`Error restarting app: ${error}`);
-            return;
-        }
-        console.log(`App restarted: ${stdout}`);
-    });
-}
-
-// Function to clear memory cache (customize this as necessary)
-function clearMemoryCache() {
-    if (global.gc) {
-        console.log('Clearing memory...');
-        global.gc();
-    } else {
-        console.warn('Garbage collection is not exposed. Run the app with --expose-gc');
-    }
-}
-
 // Start monitoring
 setInterval(checkResourceUsage, CHECK_INTERVAL);
 
@@ -116,8 +50,7 @@ setInterval(checkResourceUsage, CHECK_INTERVAL);
 const startServer = async () => {
     try {
         if (!['production', 'development', 'testing'].includes(process.env.NODE_ENV)) {
-            console.error(`Invalid NODE_ENV: ${process.env.NODE_ENV}. Valid values are 'production', 'development', or 'testing'.`);
-            process.exit(1);
+            throw new Error(`Invalid NODE_ENV: ${process.env.NODE_ENV}. Valid values are 'production', 'development', or 'testing'.`);
         }
 
         await invokeInitialization();
