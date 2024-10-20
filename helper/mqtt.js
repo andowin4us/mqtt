@@ -9,6 +9,8 @@ const RECONNECTION_TIMEOUT_BASE = 2000;
 const MAX_RECONNECT_ATTEMPTS = 5;
 
 class MQTTConnector {
+    static instances = new Map(); // Map to keep track of instances by URL
+
     constructor(url, userName, password, topics, closeConnCheck, resultDevice, createObj) {
         this.url = url;
         this.isConnected = false;
@@ -21,21 +23,29 @@ class MQTTConnector {
             password: password || null,
             reconnectPeriod: 1000,
         };
-        // this.client = mqtt.connect(this.url, this.options);
 
-        // Connect to the MQTT broker only if not already connected
-        if (!this.isConnected) {
-            this.closeConnCheck = closeConnCheck;
-            this.resultDevice = resultDevice;
-            this.createObj = createObj;
-    
-            this.queue = new BullQueueWrapper('mqttQueue', `redis://${process.env.REDIS_HOST}:6379`);
-            this.reconnectAttempts = 0;
-    
-            this.client = mqtt.connect(this.url, this.options);
-            this.setupEventHandlers(); // Set up handlers immediately after connecting
-            this.initialize();
+        this.closeConnCheck = closeConnCheck;
+        this.resultDevice = resultDevice;
+        this.createObj = createObj;
+
+        this.queue = new BullQueueWrapper('mqttQueue', `redis://${process.env.REDIS_HOST}:6379`);
+        this.reconnectAttempts = 0;
+
+        this.client = mqtt.connect(this.url, this.options);
+        this.setupEventHandlers();
+        this.initialize();
+    }
+
+    static initialize(url, userName, password, topics, closeConnCheck, resultDevice, createObj) {
+        if (!this.instances.has(url)) {
+            const instance = new MQTTConnector(url, userName, password, topics, closeConnCheck, resultDevice, createObj);
+            this.instances.set(url, instance);
+            console.log(`Created new MQTTConnector instance for URL: ${url}`);
+        } else {
+            console.log(`MQTTConnector instance already exists for URL: ${url}. Not starting a new one.`);
         }
+
+        return this.instances.get(url);
     }
 
     initialize() {
@@ -115,6 +125,7 @@ class MQTTConnector {
     onClose() {
         this.client.end();
         console.log(`MQTT connection was closed ${this.url}`);
+        MQTTConnector.instances.delete(this.url); // Remove the instance from the map on close
     }
 
     onReconnect() {

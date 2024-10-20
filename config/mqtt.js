@@ -85,7 +85,7 @@ async function startDevices() {
         const device = await collection.findOne({ mqttIP: mqttIP, status: "Active" });
         if (device) {
             const MQTT_URL = `mqtt://${device.mqttIP}:${device.mqttPort}`;
-            new MQTT(MQTT_URL, device.mqttUserName, device.mqttPassword, device.mqttTopic, false);
+            MQTT.initialize(MQTT_URL, device.mqttUserName, device.mqttPassword, device.mqttTopic, false);
         }
     }
 }

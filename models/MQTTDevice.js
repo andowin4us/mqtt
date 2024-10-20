@@ -66,7 +66,7 @@ const deleteData = async (tData, userInfo = {}) => {
         const configDetailsCheckExisting = await Util.mongo.findOne(deviceMongoCollection, { mqttIP: configDetails.mqttIP });
 
         if (!configDetailsCheckExisting) {
-            new MQTT(MQTT_URL, configDetails.mqttUserName, configDetails.mqttPassword, configDetails.mqttTopic, true);
+            MQTT.initialize(MQTT_URL, configDetails.mqttUserName, configDetails.mqttPassword, configDetails.mqttTopic, true);
         }
 
         await Util.addAuditLogs(MODULE_NAME, userInfo, "delete", `${userInfo.userName} deleted device ${configDetails.deviceName}.`, "success", JSON.stringify(result));
@@ -118,8 +118,8 @@ const updateData = async (tData, userInfo = {}) => {
 
         const configDetailsCheckExisting = await Util.mongo.findOne(deviceMongoCollection, { mqttIP: tData.mqttIP });
 
-        if (!configDetailsCheckExisting) {
-            new MQTT(MQTT_URL, tData.mqttUserName, tData.mqttPassword, tData.mqttTopic, false);
+        if (!configDetailsCheckExisting || tData.status === "Active") {
+            MQTT.initialize(MQTT_URL, tData.mqttUserName, tData.mqttPassword, tData.mqttTopic, false);
         }
         await Util.addAuditLogs(MODULE_NAME, userInfo, "update", `${userInfo.userName} updated device ${tData.deviceName}.`, "success", JSON.stringify(result));
         return handleSuccess("MQTT device Config Successful", result);
@@ -180,7 +180,7 @@ const createData = async (tData, userInfo = {}) => {
         const configDetailsCheckExisting = await Util.mongo.findOne(deviceMongoCollection, { mqttIP: tData.mqttIP });
 
         if (!configDetailsCheckExisting) {
-            new MQTT(MQTT_URL, tData.mqttUserName, tData.mqttPassword, tData.mqttTopic, false);
+            MQTT.initialize(MQTT_URL, tData.mqttUserName, tData.mqttPassword, tData.mqttTopic, false);
         }
         await Util.addAuditLogs(MODULE_NAME, userInfo, "create", `${userInfo.userName} has created a device ${tData.deviceName}.`, "success", JSON.stringify(result));
         return handleSuccess("MQTT device Created Successfully", result);
@@ -308,7 +308,7 @@ const pingMQTTDevice = async (tData, userInfo = {}) => {
         if (!device) return handleError("MQTT device Not Found");
 
         const MQTT_URL = `mqtt://${device.mqttIP}:${device.mqttPort}`;
-        const mqtt = new MQTT(MQTT_URL, device.mqttUserName, device.mqttPassword, device.mqttTopic, false);
+        const mqtt = MQTT.initialize(MQTT_URL, device.mqttUserName, device.mqttPassword, device.mqttTopic, false);
 
         mqtt.mqttClient.pingreq();
         return handleSuccess("MQTT device Pinged Successfully", {});
