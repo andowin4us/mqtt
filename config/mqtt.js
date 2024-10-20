@@ -131,7 +131,7 @@ async function checkDeviceStatus() {
 
         if (devices.length > 0) {
             await Promise.all(devices.map(async (device) => {
-                console.log(`Checking status for device ${device.deviceName}`);
+                console.log(`Checking status for device ${device.deviceName} for relay`);
                 const deviceTime = moment(device.modified_time);
                 const durationSeconds = moment.duration(currentTime.diff(deviceTime)).asSeconds();
 
