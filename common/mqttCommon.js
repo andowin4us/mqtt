@@ -73,7 +73,7 @@ async function processMessage(data) {
             return await handleOtherLogs(data, result, getFlagData);
         } else {
             console.log("Device status InActive, but lets check heartbeat");
-            if (data?.log_type === 'Heartbeat' && result?.mqttStatusDetails?.mqttRelayState === false) {
+            if (data?.log_type === 'Heartbeat') {
                 const getFlagData = await mongoInsert(data, {}, 'MQTTFlag', 'find');
                 return await handleHeartbeat(data, result, getFlagData);
             }
@@ -114,15 +114,12 @@ async function handleHeartbeat(data, result, getFlagData) {
         [data.log_type]: data.log_desc,
     };
 
-    const mqttStatusDetails = {
+    let mqttStatusDetails = {
         ...result.mqttStatusDetails,
         ...logTypeUpdate,
         mqttBattery: data.battery_level,
         mqttRelayState: data.relay_state === 'OFF' ? false : true,
     };
-
-    // await mongoInsert({ mqttStatusDetails, modified_time: moment().format('YYYY-MM-DD HH:mm:ss') }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
-    // await mongoInsert({ $set : { mqttStatusDetails, modified_time: moment().format('YYYY-MM-DD HH:mm:ss') } }, { deviceId: data.device_id }, 'MQTTDevice', 'update', "remote");
 
     if (getFlagData.isRelayTimer && parseInt(duration, 10) > parseInt(getFlagData.relayTimer, 10)) {
         const MQTT_URL = `mqtt://${result.mqttIP}:${result.mqttPort}`;
@@ -135,6 +132,9 @@ async function handleHeartbeat(data, result, getFlagData) {
             TimeofActivity: moment().format('YYYY-MM-DD HH:mm:ss'),
         }, getFlagData, getFlagData.ccUsers, getFlagData.bccUsers);
         await publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword, messageSend);
+        mqttStatusDetails.mqttRelayState = true;
+        await mongoInsert({ mqttStatusDetails, modified_time: moment().format('YYYY-MM-DD HH:mm:ss') }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
+        await mongoInsert({ $set : { mqttStatusDetails, modified_time: moment().format('YYYY-MM-DD HH:mm:ss') } }, { deviceId: data.device_id }, 'MQTTDevice', 'update', "remote");
     }
 
     if (parseInt(duration, 10) <= parseInt(getFlagData.relayTimer, 10)) {
