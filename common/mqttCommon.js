@@ -121,7 +121,7 @@ async function handleHeartbeat(data, result, getFlagData) {
         mqttRelayState: data.relay_state === 'OFF' ? false : true,
     };
 
-    if (getFlagData.isRelayTimer && parseInt(duration, 10) > parseInt(getFlagData.relayTimer, 10)) {
+    if (getFlagData.isRelayTimer && parseInt(duration, 10) > parseInt(getFlagData.relayTimer, 10) && data.relay_state === 'OFF') {
         const MQTT_URL = `mqtt://${result.mqttIP}:${result.mqttPort}`;
         let messageSend = "ON,"+data.device_id;
         await sendEmail(getFlagData.superUserMails, {
@@ -137,7 +137,7 @@ async function handleHeartbeat(data, result, getFlagData) {
         await mongoInsert({ $set : { mqttStatusDetails, status: "InActive", modified_time: moment().format('YYYY-MM-DD HH:mm:ss') } }, { deviceId: data.device_id }, 'MQTTDevice', 'update', "remote");
     }
 
-    if (parseInt(duration, 10) <= parseInt(getFlagData.relayTimer, 10)) {
+    if (parseInt(duration, 10) <= parseInt(getFlagData.relayTimer, 10) && data.relay_state === 'OFF') {
         if (result.status === "InActive") {
             await mongoInsert({ mqttStatusDetails, status: "Active", modified_time: moment().format('YYYY-MM-DD HH:mm:ss') }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
             await mongoInsert({ $set : { mqttStatusDetails, status: "Active", modified_time: moment().format('YYYY-MM-DD HH:mm:ss') } }, { deviceId: data.device_id }, 'MQTTDevice', 'update', "remote");            
@@ -194,7 +194,7 @@ async function handleOtherLogs(data, result, getFlagData) {
             }, getFlagData, getFlagData.ccUsers, getFlagData.bccUsers);
 
             await mongoInsert({
-                moduleName: 'MQTTLogger',
+                moduleName: 'DEVICE',
                 operation: "Relay ON",
                 message: `Relay Timer breached has triggered the relay ON via the predefined timer`,
                 modified_user_id: 'SYSTEM',
@@ -204,7 +204,7 @@ async function handleOtherLogs(data, result, getFlagData) {
             }, {}, 'MQTTAuditLog', 'create');
 
             await mongoInsert({
-                moduleName: 'MQTTLogger',
+                moduleName: 'DEVICE',
                 operation: "Relay ON",
                 message: `Relay Timer breached has triggered the relay ON via the predefined timer`,
                 modified_user_id: 'SYSTEM',

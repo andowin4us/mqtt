@@ -243,7 +243,7 @@ async function checkHeartBeatStatus() {
                     });
 
                     await collectionAudit.insertOne({
-                        moduleName: "AuditLog",
+                        moduleName: "DEVICE",
                         operation: "update",
                         message: "Device updated to InActive due to Heartbeat Event not received.",
                         modified_user_id: 1,
