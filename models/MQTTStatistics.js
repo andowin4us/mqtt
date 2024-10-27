@@ -717,7 +717,8 @@ const getDashboardGraphDetails = async (tData, userInfo = {}) => {
                             log_type: "$_id.log_type",
                             count: "$count"
                         }
-                    }
+                    },
+                    totalCount: { $sum: "$count" } // Sum counts for totalCount
                 }
             },
             {
@@ -726,13 +727,14 @@ const getDashboardGraphDetails = async (tData, userInfo = {}) => {
             {
                 $project: {
                     day: "$_id", // Keep the day
-                    log_types: { $ifNull: ["$log_types", []] } // Ensure log_types is an array
+                    log_types: { $ifNull: ["$log_types", []] }, // Ensure log_types is an array
+                    totalCount: { $ifNull: ["$totalCount", 0] } // Include totalCount
                 }
             },
             {
                 $group: {
                     _id: null,
-                    daysData: { $push: { day: "$day", log_types: "$log_types" } }
+                    daysData: { $push: { day: "$day", log_types: "$log_types", totalCount: "$totalCount" } }
                 }
             },
             {
@@ -764,6 +766,31 @@ const getDashboardGraphDetails = async (tData, userInfo = {}) => {
                                                 if: { $ifNull: ["$$found", false] },
                                                 then: "$$found.log_types",
                                                 else: [{ log_type: "Unknown", count: 0 }]
+                                            }
+                                        }
+                                    }
+                                },
+                                totalCount: {
+                                    $let: {
+                                        vars: {
+                                            found: {
+                                                $arrayElemAt: [
+                                                    {
+                                                        $filter: {
+                                                            input: "$daysData",
+                                                            as: "d",
+                                                            cond: { $eq: ["$$d.day", "$$day.day"] }
+                                                        }
+                                                    },
+                                                    0
+                                                ]
+                                            }
+                                        },
+                                        in: {
+                                            $cond: {
+                                                if: { $ifNull: ["$$found", false] },
+                                                then: "$$found.totalCount",
+                                                else: 0 // Default to 0 if not found
                                             }
                                         }
                                     }

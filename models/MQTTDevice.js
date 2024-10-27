@@ -95,57 +95,28 @@ const updateData = async (tData, userInfo = {}) => {
 
     const MQTT_URL = `mqtt://${tData.mqttIP}:${tData.mqttPort}`;
 
-    let updateObj = {};
-
-    if (tData.status === "InActive") {
-        updateObj = {
-            $set: {
-                _id: tData.id,
-                deviceId: tData.deviceId,
-                deviceName: tData.deviceName,
-                mqttIP: tData.mqttIP,
-                mqttUserName: tData.mqttUserName,
-                mqttPassword: tData.mqttPassword,
-                mqttTopic: topicsBe.split(','),
-                mqttUrl: MQTT_URL,
-                mqttMacId: tData.mqttMacId,
-                status: tData.status,
-                mqttPort: tData.mqttPort,
-                mqttExtraReceipe: tData.mqttExtraReceipe || {},
-                modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
-                modified_by_user: true
-            }
-        };
-    } else {
-        updateObj = {
-            $set: {
-                _id: tData.id,
-                deviceId: tData.deviceId,
-                deviceName: tData.deviceName,
-                mqttIP: tData.mqttIP,
-                mqttUserName: tData.mqttUserName,
-                mqttPassword: tData.mqttPassword,
-                mqttTopic: topicsBe.split(','),
-                mqttUrl: MQTT_URL,
-                mqttMacId: tData.mqttMacId,
-                status: tData.status,
-                mqttPort: tData.mqttPort,
-                mqttExtraReceipe: tData.mqttExtraReceipe || {},
-                modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
-                modified_by_user: false
-            }
-        };
-    }
+    const updateObj = {
+        $set: {
+            _id: tData.id,
+            deviceId: tData.deviceId,
+            deviceName: tData.deviceName,
+            mqttIP: tData.mqttIP,
+            mqttUserName: tData.mqttUserName,
+            mqttPassword: tData.mqttPassword,
+            mqttTopic: topicsBe.split(','),
+            mqttUrl: MQTT_URL,
+            mqttMacId: tData.mqttMacId,
+            status: tData.status,
+            mqttPort: tData.mqttPort,
+            modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
+        }
+    };
 
     try {
         const result = await Util.mongo.updateOne(deviceMongoCollection, { _id: tData.id }, updateObj);
         if (!result) return handleError("MQTT device Config Error");
 
-        const configDetailsCheckExisting = await Util.mongo.findOne(deviceMongoCollection, { mqttIP: tData.mqttIP });
-
-        if (!configDetailsCheckExisting || tData.status === "Active") {
-            MQTT.initialize(MQTT_URL, tData.mqttUserName, tData.mqttPassword, tData.mqttTopic, false);
-        }
+        MQTT.initialize(MQTT_URL, tData.mqttUserName, tData.mqttPassword, tData.mqttTopic, false);
         await Util.addAuditLogs(MODULE_NAME, userInfo, "update", `${userInfo.userName} updated device ${tData.deviceName}.`, "success", JSON.stringify(result));
         return handleSuccess("MQTT device Config Successful", result);
     } catch (error) {
@@ -195,7 +166,6 @@ const createData = async (tData, userInfo = {}) => {
             status: "Active",
             mqttPort: tData.mqttPort,
             mqttStatusDetails: { mqttRelayState: false },
-            modified_by_user: false,
             created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
         };
@@ -313,7 +283,7 @@ const relayTriggerOnOrOffMQTTDevice = async (tData, userInfo = {}) => {
             await sendEmailToUsers({...device, message: "OFF"});
         }
         let result = await Util.mongo.updateOne(deviceMongoCollection, { deviceId: tData.deviceId }, { $set: { "mqttStatusDetails.mqttRelayState": tData.mqttRelayState, 
-            status: tData.mqttRelayState ? "InActive" : "Active", modified_by_user: tData.mqttRelayState ? true : false} });
+            status: tData.mqttRelayState ? "InActive" : "Active" } });
 
         await Util.addAuditLogs(MODULE_NAME, userInfo, `Relay ${tData.mqttRelayState ? "ON" : "OFF"}`, `${userInfo.userName} has triggered the relay ${tData.mqttRelayState ? "ON" : "OFF"} via the Toggle Button.`, "success", JSON.stringify(result));
         return handleSuccess("MQTT device Relay Triggered Successfully", {});

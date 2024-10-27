@@ -47,8 +47,7 @@ async function processMessage(data) {
         console.log('Processing message for device', data.device_id);
         const result = await mongoInsert(data, { deviceId: data.device_id }, 'MQTTDevice', 'find');
 
-        //Accepting Events for active devices only.
-        if (result && result.status === "Active") {
+        if (result) {
             const getFlagData = await mongoInsert(data, {}, 'MQTTFlag', 'find');
         
             if (!result || !data.device_id || data.device_id !== result.deviceId) {
@@ -71,13 +70,6 @@ async function processMessage(data) {
             }
         
             return await handleOtherLogs(data, result, getFlagData);
-        } else {
-            console.log("Device status InActive, but lets check heartbeat");
-            if (data?.log_type === 'Heartbeat' && result?.modified_by_user === false) {
-                const getFlagData = await mongoInsert(data, {}, 'MQTTFlag', 'find');
-                return await handleHeartbeat(data, result, getFlagData);
-            }
-            return false;
         }
     } else {
         console.log("No Device Data present or invalid Timestamp in the log event.");
@@ -106,45 +98,50 @@ async function handleDumpData(data, collectionName) {
 }
 
 async function handleHeartbeat(data, result, getFlagData) {
-    const startTime = moment();
+    const now = moment();
     const end = moment(result.modified_time);
-    const duration = moment.duration(startTime.diff(end)).asSeconds();
+    const duration = now.diff(end, 'seconds');
 
     const logTypeUpdate = {
         [data.log_type]: data.log_desc,
     };
 
-    let mqttStatusDetails = {
+    const mqttStatusDetails = {
         ...result.mqttStatusDetails,
         ...logTypeUpdate,
         mqttBattery: data.battery_level,
-        mqttRelayState: data.relay_state === 'OFF' ? false : true,
+        mqttRelayState: data.relay_state !== 'OFF',
     };
+
+    const modifiedTime = now.format('YYYY-MM-DD HH:mm:ss');
+
+    const mongoUpdate = async (status) => {
+        await mongoInsert({ mqttStatusDetails, status, modified_time: modifiedTime }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
+        await mongoInsert({ $set: { mqttStatusDetails, status, modified_time: modifiedTime } }, { deviceId: data.device_id }, 'MQTTDevice', 'update', "remote");
+    };
+
+    if (parseInt(duration, 10) <= parseInt(getFlagData.relayTimer, 10) && data.relay_state === 'OFF') {
+        if (result.status === "InActive") {
+            await mongoUpdate("Active");
+        } else {
+            await mongoInsert({ mqttStatusDetails, modified_time: modifiedTime }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
+            await mongoInsert({ $set: { mqttStatusDetails, modified_time: modifiedTime } }, { deviceId: data.device_id }, 'MQTTDevice', 'update', "remote");
+        }
+    }
 
     if (getFlagData.isRelayTimer && parseInt(duration, 10) > parseInt(getFlagData.relayTimer, 10) && data.relay_state === 'OFF') {
         const MQTT_URL = `mqtt://${result.mqttIP}:${result.mqttPort}`;
-        let messageSend = "ON,"+data.device_id;
+        const messageSend = `ON,${data.device_id}`;        
         await sendEmail(getFlagData.superUserMails, {
             DeviceName: data.device_name,
             DeviceId: data.device_id,
             Action: `Relay triggered ON for device ${data.device_name}`,
             MacId: data.mac_id,
-            TimeofActivity: moment().format('YYYY-MM-DD HH:mm:ss'),
+            TimeofActivity: modifiedTime,
         }, getFlagData, getFlagData.ccUsers, getFlagData.bccUsers);
         await publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword, messageSend);
         mqttStatusDetails.mqttRelayState = true;
-        await mongoInsert({ mqttStatusDetails, status: "InActive", modified_time: moment().format('YYYY-MM-DD HH:mm:ss') }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
-        await mongoInsert({ $set : { mqttStatusDetails, status: "InActive", modified_time: moment().format('YYYY-MM-DD HH:mm:ss') } }, { deviceId: data.device_id }, 'MQTTDevice', 'update', "remote");
-    }
-
-    if (parseInt(duration, 10) <= parseInt(getFlagData.relayTimer, 10) && data.relay_state === 'OFF') {
-        if (result.status === "InActive") {
-            await mongoInsert({ mqttStatusDetails, status: "Active", modified_time: moment().format('YYYY-MM-DD HH:mm:ss') }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
-            await mongoInsert({ $set : { mqttStatusDetails, status: "Active", modified_time: moment().format('YYYY-MM-DD HH:mm:ss') } }, { deviceId: data.device_id }, 'MQTTDevice', 'update', "remote");            
-        } else {
-            await mongoInsert({ mqttStatusDetails, modified_time: moment().format('YYYY-MM-DD HH:mm:ss') }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
-            await mongoInsert({ $set : { mqttStatusDetails, modified_time: moment().format('YYYY-MM-DD HH:mm:ss') } }, { deviceId: data.device_id }, 'MQTTDevice', 'update', "remote");
-        }
+        await mongoUpdate("InActive");
     }
 
     return true;

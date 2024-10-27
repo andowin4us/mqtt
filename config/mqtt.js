@@ -124,7 +124,7 @@ async function checkDeviceStatus() {
         const collectionInstance = db.collection('MQTTFlag');
         const collectionMaintainence = db.collection('MQTTMaintainence');
 
-        const devices = await collection.find({modified_by_user: false}).toArray();
+        const devices = await collection.find({}).toArray();
         const instanceData = await collectionInstance.findOne({});
         const maintainences = await collectionMaintainence.find({ status: 'Pending' }).toArray();
         const currentTime = moment();
@@ -237,7 +237,6 @@ async function checkHeartBeatStatus() {
                     await collection.updateOne({ _id: device._id }, {
                         $set: {
                             status: 'InActive',
-                            modified_by_user: false,
                             modified_time: moment().format('YYYY-MM-DD HH:mm:ss')
                         }
                     });
