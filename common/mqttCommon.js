@@ -44,7 +44,7 @@ async function processLogs(logs) {
 
 async function processMessage(data) {
     if (data && data.device_id && data.timestamp) {
-        console.log('Processing message for device', data.device_id);
+        console.log('Processing message for device', data.device_id, data);
         const result = await mongoInsert(data, { deviceId: data.device_id }, 'MQTTDevice', 'find');
 
         if (result) {
@@ -67,6 +67,12 @@ async function processMessage(data) {
     
             if (data.log_type === 'Heartbeat') {
                 return await handleHeartbeat(data, result, getFlagData);
+            }
+
+            if (result?.mqttStatusDetails?.mqttRelayState === true) {
+                data.visibleTo = 1;
+            } else {
+                data.visibleTo = 2;
             }
         
             return await handleOtherLogs(data, result, getFlagData);

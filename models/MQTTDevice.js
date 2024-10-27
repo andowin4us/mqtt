@@ -91,7 +91,7 @@ const updateData = async (tData, userInfo = {}) => {
     if (validation?.error === "PARAMETER_ISSUE") return handleParameterIssue(validation);
 
     if (userInfo.accesslevel > 1) return handlePermissionIssue();
-    let topicsBe = "Power/State,Logs,DOOR,Energy,Weight,process_status,super_access,status,Relay/State,State,STATE,Heartbeat,RELAY,POWER,Power";
+    let topicsBe = "Power/State,Logs,DOOR,Energy,Weight,process_status,super_access,status,Relay/State,State,STATE,Heartbeat,RELAY,POWER,Power,MQTT";
 
     const MQTT_URL = `mqtt://${tData.mqttIP}:${tData.mqttPort}`;
 

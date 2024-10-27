@@ -31,6 +31,13 @@ const buildFilter = async (tData, userInfo) => {
         filter.device_id = { $in: deviceIdList }
     }
 
+
+    if (userInfo && userInfo.accesslevel === 1) {
+        filter.visibleTo.$gte = 1;
+    } else {
+        filter.visibleTo.$gte = 2;
+    }
+
     if (tData) {
         const { device_id, device_name, log_type, log_desc, log_line_count, 
             battery_level, mac_id, state, startDate, endDate } = tData;
