@@ -20,6 +20,7 @@ const createResponse = (statusCode, success, msg, status = [], err = "") => ({
 // Helper function to build filter from query parameters
 const buildFilter = async (tData, userInfo) => {
     let filter = {};
+    filter.visibleTo = {};
     let deviceIdList = [];
 
     if (userInfo && userInfo.accesslevel === 3) {

@@ -84,8 +84,9 @@ async function startDevices() {
     for (const mqttIP of devices) {
         const device = await collection.findOne({ mqttIP: mqttIP });
         if (device) {
+            let topicsBe = "WIFI,STATE,Heartbeat,RELAY,POWER,Power,MQTT,Power/State,Logs,DOOR,Energy,Weight,process_status,super_access,status,Relay/State,State";
             const MQTT_URL = `mqtt://${device.mqttIP}:${device.mqttPort}`;
-            MQTT.initialize(MQTT_URL, device.mqttUserName, device.mqttPassword, device.mqttTopic, false);
+            MQTT.initialize(MQTT_URL, device.mqttUserName, device.mqttPassword, topicsBe.split(','), false);
         }
     }
 }

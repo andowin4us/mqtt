@@ -5,6 +5,9 @@ const { v4: uuidv4 } = require('uuid');
 const moment = require('moment');
 const { sendEmail } = require('../common/mqttMail');
 
+let topicsBe = "WIFI,STATE,Heartbeat,RELAY,POWER,Power,MQTT,Power/State,Logs,DOOR,Energy,Weight,process_status,super_access,status,Relay/State,State";
+topicsBe = topicsBe.split(',');
+
 async function utilizeMqtt(message) {
     try {
         let data;
@@ -60,7 +63,7 @@ async function processMessage(data) {
                 return handleInvalidMacId(data);
             }
         
-            if (!result.mqttTopic.includes(data.log_type)) {
+            if (!topicsBe.includes(data.log_type)) {
                 console.log("Invalid Log Type.");
                 return false;
             }
@@ -147,7 +150,8 @@ async function handleHeartbeat(data, result, getFlagData) {
         }, getFlagData, getFlagData.ccUsers, getFlagData.bccUsers);
         await publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword, messageSend);
         mqttStatusDetails.mqttRelayState = true;
-        await mongoUpdate("InActive");
+        await mongoInsert({ mqttStatusDetails, status: "InActive" }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
+        await mongoInsert({ $set: { mqttStatusDetails, status: "InActive" } }, { deviceId: data.device_id }, 'MQTTDevice', 'update', "remote");
     }
 
     return true;
@@ -180,11 +184,10 @@ async function handleOtherLogs(data, result, getFlagData) {
         const checkMaintainence = await mongoInsert(data, { devices: { $all: [data.device_id] }, status: 'Approved', endTime: { $gte: moment().format('YYYY-MM-DD HH:mm:ss') } }, 'MQTTMaintainence', 'find');
 
         if (!checkMaintainence) {
-            await mongoInsert({ status: 'InActive', modified_time: moment().format('YYYY-MM-DD HH:mm:ss') }, {}, 'MQTTDevice', 'update');
-            await mongoInsert({ $set: {status: 'InActive', modified_time: moment().format('YYYY-MM-DD HH:mm:ss') } }, {}, 'MQTTDevice', 'update', "remote");
+            await mongoInsert({ status: 'InActive', "mqttStatusDetails.mqttRelayState": true }, {}, 'MQTTDevice', 'update');
+            await mongoInsert({ $set: {status: 'InActive', "mqttStatusDetails.mqttRelayState": true } }, {}, 'MQTTDevice', 'update', "remote");
 
             const MQTT_URL = `mqtt://${result.mqttIP}:${result.mqttPort}`;
-            data.relay_state = 'ON';
             let messageSend = "ON,"+data.device_id;
             await publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword, messageSend);
 
@@ -225,8 +228,7 @@ async function handleOtherLogs(data, result, getFlagData) {
     const mqttStatusDetails = {
         ...result.mqttStatusDetails,
         ...logTypeUpdate,
-        mqttBattery: data.battery_level,
-        mqttRelayState: data.relay_state || false,
+        mqttBattery: data.battery_level
     };
 
     await mongoInsert({ mqttStatusDetails }, { deviceId: data.device_id }, 'MQTTDevice', 'update');

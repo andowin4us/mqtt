@@ -807,7 +807,7 @@ const getDashboardGraphDetails = async (tData, userInfo = {}) => {
             statusCode: 200,
             success: true,
             msg: 'MQTT Graph data retrieved successfully',
-            data: results[0].data,
+            data: results[0] ? results[0].data : [],
             err: {},
         };
 
