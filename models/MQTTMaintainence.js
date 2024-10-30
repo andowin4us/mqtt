@@ -180,20 +180,13 @@ const createMaintainenceRequest = async (tData, userInfo = {}) => {
             for (const deviceId of tData.devices) {
                 const deviceData = await getMaintainenceData("MQTTDevice", { deviceId: deviceId });
                 if (deviceData) {
-                    const emailResponse = await sendEmail(getFlagData.superUserMails, {
+                    await sendEmail(getFlagData.superUserMails, {
                         DeviceName: deviceData.deviceName,
                         DeviceId: deviceData.deviceId,
                         Action: "Maintainence Request Raised.",
                         MacId: deviceData.mqttMacId,
                         TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss"),
                     }, getFlagData, getFlagData.ccUsers, getFlagData.bccUsers);
-
-                    const mailResponse = {
-                        ...emailResponse,
-                        status: emailResponse?.rejected?.length > 0 ? "failed" : "success",
-                    };
-
-                    await Util.mongo.insertOne("MQTTNotify", mailResponse);
                 }
             }
 
@@ -293,20 +286,13 @@ const updateMaintainenceRequest = async (tData, userInfo = {}) => {
                 for (const deviceId of tData.devices) {
                     const deviceData = await getMaintainenceData("MQTTDevice", { deviceId: deviceId });
                     if (deviceData) {
-                        const emailResponse = await sendEmail(getFlagData.superUserMails, {
+                        await sendEmail(getFlagData.superUserMails, {
                             DeviceName: deviceData.deviceName,
                             DeviceId: deviceData.deviceId,
                             Action: "Maintainence Request Updated.",
                             MacId: deviceData.mqttMacId,
                             TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss"),
                         }, getFlagData, getFlagData.ccUsers, getFlagData.bccUsers);
-
-                        const mailResponse = {
-                            ...emailResponse,
-                            status: emailResponse.rejected.length > 0 ? "failed" : "success",
-                        };
-
-                        await Util.mongo.insertOne("MQTTNotify", mailResponse);
                     }
                 }
 

@@ -176,8 +176,7 @@ async function updateDeviceStatus(device, status, mqttRelayState, durationSecond
     await collection.updateOne({ _id: device._id }, {
         $set: {
             status,
-            mqttStatusDetails: { ...device.mqttStatusDetails, mqttRelayState },
-            modified_time: moment().format('YYYY-MM-DD HH:mm:ss')
+            mqttStatusDetails: { ...device.mqttStatusDetails, mqttRelayState }
         }
     });
 

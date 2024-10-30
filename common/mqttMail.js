@@ -1,6 +1,22 @@
 const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
+const moment = require('moment');
+const { MongoClient } = require('mongodb');
+const { mongoInsert } = require("../common/mqttCommon");
+const connection = require('../config/connection');
+
+// Utility function to connect to MongoDB
+async function connectToMongo(url) {
+    let client;
+    try {
+        client = await MongoClient.connect(url, { });
+        return client;
+    } catch (err) {
+        console.error('MongoDB connection error:', err);
+        return null;
+    }
+}
 
 // Email sending function
 async function sendEmail(recipient, deviceInfo, emailConfig, ccUsers, bccUsers) {
@@ -74,12 +90,38 @@ async function sendEmail(recipient, deviceInfo, emailConfig, ccUsers, bccUsers) 
         }]
     };
 
+    let responseEmail = await transporter.sendMail(mailOptions);
+    let localClient = await connectToMongo(connection.mongo.url);
+    let localDb = localClient.db(connection.mongo.database);
+    const localCollection = localDb.collection('MQTTAuditLog');
     try {
-        let responseEmail = await transporter.sendMail(mailOptions);
-        console.log(`Email sent to ${recipient} for ${deviceInfo.DeviceName}`);
+        await localCollection.insertOne({
+            moduleName: 'EMAIL',
+            modified_user_id: 'SYSTEM',
+            operation: "email",
+            message: `Email sent to ${recipient} for ${deviceInfo.DeviceName}.`,
+            status: "success",
+            role: "SuperUser",
+            modified_user_name: 'SYSTEM',
+            modified_time: moment().format('YYYY-MM-DD HH:mm:ss'),
+            log: JSON.stringify({responseEmail}),
+        });
+
         return responseEmail;
     } catch (error) {
-        console.error(`Error sending email to ${recipient}: ${error}`);
+        await localCollection.insertOne({
+            moduleName: 'EMAIL',
+            modified_user_id: 'SYSTEM',
+            operation: "email",
+            message: `Email sending to ${recipient} for ${deviceInfo.DeviceName} failed.`,
+            status: "failed",
+            role: "SuperUser",
+            modified_user_name: 'test1',
+            modified_time: moment().format('YYYY-MM-DD HH:mm:ss'),
+            log: JSON.stringify({error}),
+        });
+
+        return {};
     }
 };
 

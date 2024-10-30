@@ -244,8 +244,7 @@ const assignMQTTDevice = async (tData, userInfo = {}) => {
         const userDetails = await Util.mongo.findOne("MQTTUser", { _id: tData.userId });
         const updateObj = {
             $set: {
-                userName: userDetails.userName,
-                modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+                userName: userDetails.userName
             }
         };
 
@@ -283,7 +282,7 @@ const relayTriggerOnOrOffMQTTDevice = async (tData, userInfo = {}) => {
             await sendEmailToUsers({...device, message: "OFF"});
         }
         let result = await Util.mongo.updateOne(deviceMongoCollection, { deviceId: tData.deviceId }, { $set: { "mqttStatusDetails.mqttRelayState": tData.mqttRelayState, 
-            status: tData.mqttRelayState ? "InActive" : "Active" } });
+            status: tData.mqttRelayState ? "InActive" : "Active", modified_time: moment().format("YYYY-MM-DD HH:mm:ss") } });
 
         await Util.addAuditLogs(MODULE_NAME, userInfo, `Relay ${tData.mqttRelayState ? "ON" : "OFF"}`, `${userInfo.userName} has triggered the relay ${tData.mqttRelayState ? "ON" : "OFF"} via the Toggle Button.`, "success", JSON.stringify(result));
         return handleSuccess("MQTT device Relay Triggered Successfully", {});

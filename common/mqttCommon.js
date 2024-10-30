@@ -47,7 +47,7 @@ async function processLogs(logs) {
 
 async function processMessage(data) {
     if (data && data.device_id && data.timestamp) {
-        console.log('Processing message for device', data.device_id, data);
+        console.log('Processing message for device', data.device_id);
         const result = await mongoInsert(data, { deviceId: data.device_id }, 'MQTTDevice', 'find');
 
         if (result) {
@@ -205,6 +205,8 @@ async function handleOtherLogs(data, result, getFlagData) {
                 message: `Relay Timer breached has triggered the relay ON via the predefined timer`,
                 modified_user_id: 'SYSTEM',
                 modified_user_name: 'SYSTEM',
+                status: "success",
+                role: "SuperUser",
                 modified_time: moment().format('YYYY-MM-DD HH:mm:ss'),
                 log: 'RELAY Turned ON',
             }, {}, 'MQTTAuditLog', 'create');
@@ -215,6 +217,8 @@ async function handleOtherLogs(data, result, getFlagData) {
                 message: `Relay Timer breached has triggered the relay ON via the predefined timer`,
                 modified_user_id: 'SYSTEM',
                 modified_user_name: 'SYSTEM',
+                status: "success",
+                role: "SuperUser",
                 modified_time: moment().format('YYYY-MM-DD HH:mm:ss'),
                 log: 'RELAY Turned ON',
             }, {}, 'MQTTAuditLog', 'create', "remote");
