@@ -1,11 +1,14 @@
 const Util = require("../helper/util");
 const deviceMongoCollection = "MQTTDevice";
 const MODULE_NAME = "DEVICE";
-const dotenv = require("dotenv");
 const MQTT = require('../helper/mqtt');
 const moment = require("moment");
 const { publishMessage } = require("../common/mqttCommon");
-const { bullQueueInstanceEmail } = require('../config/bullQueueInstance');
+const dotenv = require('dotenv');
+dotenv.config({ path: process.env.ENV_PATH || '.env' });
+const BullQueueService = require('../common/BullQueueService');
+const redisUrl = `redis://${process.env.REDIS_HOST}:6379`;
+const emailQueueService = new BullQueueService('email', redisUrl);
 
 dotenv.config({ path: process.env.ENV_PATH || '.env' });
 
@@ -277,7 +280,7 @@ const relayTriggerOnOrOffMQTTDevice = async (tData, userInfo = {}) => {
         await publishMessage(MQTT_URL, device.mqttUserName, device.mqttPassword, messageSend);
 
         // Add email sending to the Bull queue
-        await bullQueueInstanceEmail.addJob({ device, message: `Relay triggered ${tData.mqttRelayState ? "ON" : "OFF"} for device ${device.deviceName}.` });
+        await emailQueueService.addJob({ device, message: `Relay triggered ${tData.mqttRelayState ? "ON" : "OFF"} for device ${device.deviceName}.` });
 
         let result = await Util.mongo.updateOne(deviceMongoCollection, { deviceId: tData.deviceId }, {
             $set: {

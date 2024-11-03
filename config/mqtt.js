@@ -6,7 +6,11 @@ const moment = require('moment');
 const { publishMessage } = require('../common/mqttCommon');
 const { getUuid } = require('../helper/util');
 const md5Service = require('../services/md5.service');
-const { bullQueueInstanceEmail } = require('../config/bullQueueInstance');
+const dotenv = require('dotenv');
+const BullQueueService = require('../common/BullQueueService');
+dotenv.config({ path: process.env.ENV_PATH || '.env' });
+const redisUrl = `redis://${process.env.REDIS_HOST}:6379`;
+const emailQueueService = new BullQueueService('email', redisUrl);
 
 let client, db, clientRemote, dbRemote;
 
@@ -180,7 +184,7 @@ async function updateDeviceStatus(device, status, mqttRelayState, durationSecond
         }
     });
 
-    await bullQueueInstanceEmail.addJob({ device, message: `Relay triggered ON for device ${device.deviceName}` });
+    await emailQueueService.addJob({ device, message: `Relay triggered ON for device ${device.deviceName}` });
 
     await logAudit(db.collection('MQTTAuditLog'), {
         moduleName: 'DEVICE',

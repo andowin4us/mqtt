@@ -3,7 +3,11 @@ const mqtt = require('async-mqtt');
 const connection = require('../config/connection');
 const { v4: uuidv4 } = require('uuid');
 const moment = require('moment');
-const { bullQueueInstanceEmail } = require('../config/bullQueueInstance');
+const dotenv = require('dotenv');
+const BullQueueService = require('../common/BullQueueService');
+dotenv.config({ path: process.env.ENV_PATH || '.env' });
+const redisUrl = `redis://${process.env.REDIS_HOST}:6379`;
+const emailQueueService = new BullQueueService('email', redisUrl);
 
 let topicsBe = "WIFI,STATE,Heartbeat,RELAY,POWER,Power,MQTT,Power/State,Logs,DOOR,Energy,Weight,process_status,super_access,status,Relay/State,State";
 topicsBe = topicsBe.split(',');
@@ -141,7 +145,7 @@ async function handleHeartbeat(data, result, getFlagData) {
     if (getFlagData.isRelayTimer && parseInt(duration, 10) > parseInt(getFlagData.relayTimer, 10) && data.relay_state === 'OFF') {
         const MQTT_URL = `mqtt://${result.mqttIP}:${result.mqttPort}`;
         const messageSend = `ON,${data.device_id}`;
-        await bullQueueInstanceEmail.addJob({ result, message: `Relay triggered ON for device ${data.device_name}.` });
+        await emailQueueService.addJob({ device: result, message: `Relay triggered ON for device ${data.device_name}.` });
         await publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword, messageSend);
         mqttStatusDetails.mqttRelayState = true;
         await mongoInsert({ mqttStatusDetails, status: "InActive" }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
@@ -165,7 +169,7 @@ async function handleOtherLogs(data, result, getFlagData) {
     }
 
     if (['DOOR', 'POWER'].includes(data.log_type)) {
-        await bullQueueInstanceEmail.addJob({ result, message: `${data.log_type} ${data.log_desc}.` });
+        await emailQueueService.addJob({ device: result, message: `${data.log_type} ${data.log_desc}.` });
     }
 
     if (data.log_type === 'DOOR' && data.log_desc === 'OPENED') {
@@ -179,7 +183,7 @@ async function handleOtherLogs(data, result, getFlagData) {
             let messageSend = "ON,"+data.device_id;
             await publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword, messageSend);
 
-            await bullQueueInstanceEmail.addJob({ result, message: `Relay triggered ON for device ${data.device_name}.` });
+            await emailQueueService.addJob({ device: result, message: `Relay triggered ON for device ${data.device_name}.` });
 
             await mongoInsert({
                 moduleName: 'DEVICE',

@@ -1,11 +1,13 @@
-const dotenv = require('dotenv');
-dotenv.config();
 const moment = require('moment');
 const Util = require("../helper/util");
 const workerHelper = require("../helper/mainWorkerHelper");
 const deviceMongoCollection = "MQTTMaintainence";
 const MODULE_NAME = "Maintainence";
-const { bullQueueInstanceEmail } = require('../config/bullQueueInstance');
+const dotenv = require('dotenv');
+const BullQueueService = require('../common/BullQueueService');
+dotenv.config({ path: process.env.ENV_PATH || '.env' });
+const redisUrl = `redis://${process.env.REDIS_HOST}:6379`;
+const emailQueueService = new BullQueueService('email', redisUrl);
 
 // Helper function to get maintenance data
 const getMaintainenceData = async (collectionName, query) => {
@@ -179,7 +181,7 @@ const createMaintainenceRequest = async (tData, userInfo = {}) => {
             for (const deviceId of tData.devices) {
                 const deviceData = await getMaintainenceData("MQTTDevice", { deviceId: deviceId });
                 if (deviceData) {
-                    await bullQueueInstanceEmail.addJob({ deviceData, message: `Maintainence Request Raised.` });
+                    await emailQueueService.addJob({ device: deviceData, message: `Maintainence Request Raised.` });
                 }
             }
 
@@ -278,7 +280,7 @@ const updateMaintainenceRequest = async (tData, userInfo = {}) => {
                 for (const deviceId of tData.devices) {
                     const deviceData = await getMaintainenceData("MQTTDevice", { deviceId: deviceId });
                     if (deviceData) {
-                        await bullQueueInstanceEmail.addJob({ deviceData, message: `Maintainence Request Updated.` });
+                        await emailQueueService.addJob({ device: deviceData, message: `Maintainence Request Updated.` });
                     }
                 }
 
