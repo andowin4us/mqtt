@@ -1,4 +1,4 @@
-const mqttDevicePrivate = {
+const MQTTDevicePrivate = {
     "POST /updateMQTTDevice"   : "MQTTDeviceController.updateMQTTDevice",
     "POST /createMQTTDevice": "MQTTDeviceController.createMQTTDevice",
     "POST /getMQTTDevice": "MQTTDeviceController.getMQTTDevice",
@@ -7,9 +7,9 @@ const mqttDevicePrivate = {
     "POST /relayTriggerOnOrOffMQTTDevice": "MQTTDeviceController.relayTriggerOnOrOffMQTTDevice",
     "POST /relayTriggerOnMQTTDevice": "MQTTDeviceController.relayTriggerOnMQTTDevice",
 };
-let mqttDevicePublic = mqttDevicePrivate;
+let MQTTDevicePublic = MQTTDevicePrivate;
 
 module.exports = {
-    mqttDevicePublic,
-    mqttDevicePrivate,
+    MQTTDevicePublic,
+    MQTTDevicePrivate,
 };

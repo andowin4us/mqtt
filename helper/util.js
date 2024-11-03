@@ -255,7 +255,6 @@ const validator = async (getData, res, checkData) => {
             msg: validation.error,
             err: validation.list
         };
-        console.log("response", response);
         res.status(400).json(response);
         return null;
     }

@@ -41,7 +41,7 @@ class BullQueueService {
     }    
 
     async processJob(job) {
-        console.log("Processing job:", job.data);
+        console.log("Processing job:", job.id);
         try {
             const { device, message } = job.data;
 

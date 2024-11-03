@@ -37,7 +37,6 @@ async function seedData() {
 
     const instanceData = await collectionInstance.findOne({});
     if (!instanceData) {
-        console.log('No seeding data found. Inserting default data.');
         const flagsData = {
             _id: getUuid(),
             instanceExpiry: moment().add(1, 'years').format('YYYY-MM-DD HH:mm:ss'),

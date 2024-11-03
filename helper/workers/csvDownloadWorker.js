@@ -48,12 +48,9 @@ const testFunc = async ({
 					tRow[tData.name || tData] = t[tData.name || tData];
 
 				});
-				//console.log("tColumnRow",tRow);
 				tColumnRow.push(tRow);
 			}
 			await csvWriter.writeRecords(tColumnRow);
-			//   return finalURL;
-			// parentPort.postMessage(finalURL);
 			const tResponse = {
 				statusCode: 200,
 				success: true,

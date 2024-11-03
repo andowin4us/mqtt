@@ -41,7 +41,6 @@ const uploadCsvFile = async (req, fileConfig = [], ignoreEmpty = false) => {
 				);
 				resolve(finalData);
 			} catch (error) {
-				console.log("(csvUploader.js):uploadCsvFile, fail with error", error);
 				reject(error);
 			}
 		});
@@ -149,7 +148,6 @@ const upload = async (file, fileFields, userInfo = {}, ignoreEmpty) => {
 				});
 			})
 			.catch((e) => {
-				console.log("Error", e);
 				reject({ statusCode: 400, success: false, msg: "uploaded error" });
 			});
 	});

@@ -34,9 +34,6 @@ const csvDownload = async ({
 			for (let t of tData) {
 				let tRow = {};
 				column.forEach((data) => {
-					// if (data && typeof data !== "undefined") {
-					//   tRow[data.name || data] = t[data.name || data];
-					// }
 					let tData = data;
 					if (data && data.dataValues && typeof data.dataValues !== "undefined") {
 						tData = data.dataValues;
@@ -48,7 +45,6 @@ const csvDownload = async ({
 
 					tRow[tData.name || tData] = t[tData.name || tData];
 				});
-				//console.log("tColumnRow",tColumnRow);
 				tColumnRow.push(tRow);
 			}
 			await csvWriter.writeRecords(tColumnRow);

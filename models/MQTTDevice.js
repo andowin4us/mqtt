@@ -296,7 +296,6 @@ const relayTriggerOnOrOffMQTTDevice = async (tData, userInfo = {}) => {
         
         return handleSuccess("MQTT device Relay Triggered Successfully", {});
     } catch (error) {
-        console.log("error", error);
         await Util.addAuditLogs(MODULE_NAME, userInfo, `Relay ${tData.mqttRelayState ? "ON" : "OFF"}`, 
             `${userInfo.userName} has triggered the relay ${tData.mqttRelayState ? "ON" : "OFF"} via the Toggle Button.`, 
             "failure", {});
