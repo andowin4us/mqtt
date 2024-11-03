@@ -4,8 +4,8 @@ const MODULE_NAME = "DEVICE";
 const dotenv = require("dotenv");
 const MQTT = require('../helper/mqtt');
 const moment = require("moment");
-const { sendEmail } = require("../common/mqttMail");
 const { publishMessage } = require("../common/mqttCommon");
+const { bullQueueInstanceEmail } = require('../config/bullQueueInstance');
 
 dotenv.config({ path: process.env.ENV_PATH || '.env' });
 
@@ -84,8 +84,7 @@ const updateData = async (tData, userInfo = {}) => {
         deviceName: "required|string",
         mqttIP: "required|string",
         mqttPort: "required|string",
-        mqttMacId: "required|string",
-        status: "required|string",
+        mqttMacId: "required|string"
     });
 
     if (validation?.error === "PARAMETER_ISSUE") return handleParameterIssue(validation);
@@ -106,7 +105,6 @@ const updateData = async (tData, userInfo = {}) => {
             mqttTopic: topicsBe.split(','),
             mqttUrl: MQTT_URL,
             mqttMacId: tData.mqttMacId,
-            status: tData.status,
             mqttPort: tData.mqttPort,
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         }
@@ -218,6 +216,10 @@ const getData = async (tData, userInfo = {}) => {
             filter.mqttMacId = tData.mqttMacId;
         }
 
+        if (tData && tData.state) {
+            filter.mqttStatusDetails.STATE = tData.state;
+        }
+
         const result = await Util.mongo.findAndPaginate(deviceMongoCollection, filter, {}, tData.skip, tData.limit);
         const sanitizedData = await Util.snatizeFromMongo(result);
 
@@ -271,23 +273,31 @@ const relayTriggerOnOrOffMQTTDevice = async (tData, userInfo = {}) => {
         if (!device) return handleError("MQTT device Not Found");
 
         const MQTT_URL = `mqtt://${device.mqttIP}:${device.mqttPort}`;
+        const messageSend = `${tData.mqttRelayState ? "ON" : "OFF"},${device.deviceId}`;
+        await publishMessage(MQTT_URL, device.mqttUserName, device.mqttPassword, messageSend);
 
-        if (tData && tData.mqttRelayState) {
-            let messageSend = "ON,"+device.deviceId;
-            await publishMessage(MQTT_URL, device.mqttUserName, device.mqttPassword, messageSend);
-            await sendEmailToUsers({...device, message: "ON"});
-        } else {
-            let messageSend = "OFF,"+device.deviceId;
-            await publishMessage(MQTT_URL, device.mqttUserName, device.mqttPassword, messageSend);
-            await sendEmailToUsers({...device, message: "OFF"});
-        }
-        let result = await Util.mongo.updateOne(deviceMongoCollection, { deviceId: tData.deviceId }, { $set: { "mqttStatusDetails.mqttRelayState": tData.mqttRelayState, 
-            status: tData.mqttRelayState ? "InActive" : "Active", modified_time: moment().format("YYYY-MM-DD HH:mm:ss") } });
+        // Add email sending to the Bull queue
+        await bullQueueInstanceEmail.addJob({ device, message: `Relay triggered ${tData.mqttRelayState ? "ON" : "OFF"} for device ${device.deviceName}.` });
 
-        await Util.addAuditLogs(MODULE_NAME, userInfo, `Relay ${tData.mqttRelayState ? "ON" : "OFF"}`, `${userInfo.userName} has triggered the relay ${tData.mqttRelayState ? "ON" : "OFF"} via the Toggle Button.`, "success", JSON.stringify(result));
+        let result = await Util.mongo.updateOne(deviceMongoCollection, { deviceId: tData.deviceId }, {
+            $set: {
+                "mqttStatusDetails.mqttRelayState": tData.mqttRelayState,
+                status: tData.mqttRelayState ? "InActive" : "Active",
+                modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
+            }
+        });
+
+        await Util.addAuditLogs(MODULE_NAME, userInfo, `Relay ${tData.mqttRelayState ? "ON" : "OFF"}`, 
+            `${userInfo.userName} has triggered the relay ${tData.mqttRelayState ? "ON" : "OFF"} via the Toggle Button.`, 
+            "success", JSON.stringify(result));
+        
         return handleSuccess("MQTT device Relay Triggered Successfully", {});
     } catch (error) {
-        await Util.addAuditLogs(MODULE_NAME, userInfo, `Relay ${tData.mqttRelayState ? "ON" : "OFF"}`, `${userInfo.userName} has triggered the relay ${tData.mqttRelayState ? "ON" : "OFF"} via the Toggle Button.`, "failure", {});
+        console.log("error", error);
+        await Util.addAuditLogs(MODULE_NAME, userInfo, `Relay ${tData.mqttRelayState ? "ON" : "OFF"}`, 
+            `${userInfo.userName} has triggered the relay ${tData.mqttRelayState ? "ON" : "OFF"} via the Toggle Button.`, 
+            "failure", {});
+        
         return handleError("MQTT device Relay Trigger Error", error);
     }
 };
@@ -312,23 +322,6 @@ const pingMQTTDevice = async (tData, userInfo = {}) => {
     }
 };
 
-const sendEmailToUsers = async (tData) => {
-    try {
-        const getFlagData = await Util.mongo.findOne("MQTTFlag", {});
-
-        await sendEmail(getFlagData.superUserMails, { DeviceName: tData.deviceName, 
-            DeviceId: tData.deviceId, 
-            Action: `Relay triggered ${tData.message} for device ${tData.deviceName}`, 
-            MacId: tData.mqttMacId, 
-            TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss")
-        }, getFlagData, getFlagData.ccUsers, getFlagData.bccUsers);
-
-        return handleSuccess("Email Sent Successfully", {});
-    } catch (error) {
-        return handleError("Email Sending Error", error);
-    }
-};
-
 module.exports = {
     deleteData,
     updateData,
@@ -337,5 +330,4 @@ module.exports = {
     assignMQTTDevice,
     relayTriggerOnOrOffMQTTDevice,
     pingMQTTDevice,
-    sendEmailToUsers
 };

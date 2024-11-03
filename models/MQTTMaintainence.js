@@ -5,7 +5,7 @@ const Util = require("../helper/util");
 const workerHelper = require("../helper/mainWorkerHelper");
 const deviceMongoCollection = "MQTTMaintainence";
 const MODULE_NAME = "Maintainence";
-const { sendEmail } = require("../common/mqttMail");
+const { bullQueueInstanceEmail } = require('../config/bullQueueInstance');
 
 // Helper function to get maintenance data
 const getMaintainenceData = async (collectionName, query) => {
@@ -176,17 +176,10 @@ const createMaintainenceRequest = async (tData, userInfo = {}) => {
     try {
         const result = await Util.mongo.insertOne(deviceMongoCollection, createObj);
         if (result) {
-            const getFlagData = await getMaintainenceData("MQTTFlag", {});
             for (const deviceId of tData.devices) {
                 const deviceData = await getMaintainenceData("MQTTDevice", { deviceId: deviceId });
                 if (deviceData) {
-                    await sendEmail(getFlagData.superUserMails, {
-                        DeviceName: deviceData.deviceName,
-                        DeviceId: deviceData.deviceId,
-                        Action: "Maintainence Request Raised.",
-                        MacId: deviceData.mqttMacId,
-                        TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss"),
-                    }, getFlagData, getFlagData.ccUsers, getFlagData.bccUsers);
+                    await bullQueueInstanceEmail.addJob({ deviceData, message: `Maintainence Request Raised.` });
                 }
             }
 
@@ -282,17 +275,10 @@ const updateMaintainenceRequest = async (tData, userInfo = {}) => {
         if (existingRequest) {
             const result = await Util.mongo.updateOne(deviceMongoCollection, { _id: tData.id }, updateObj);
             if (result) {
-                const getFlagData = await getMaintainenceData("MQTTFlag", {});
                 for (const deviceId of tData.devices) {
                     const deviceData = await getMaintainenceData("MQTTDevice", { deviceId: deviceId });
                     if (deviceData) {
-                        await sendEmail(getFlagData.superUserMails, {
-                            DeviceName: deviceData.deviceName,
-                            DeviceId: deviceData.deviceId,
-                            Action: "Maintainence Request Updated.",
-                            MacId: deviceData.mqttMacId,
-                            TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss"),
-                        }, getFlagData, getFlagData.ccUsers, getFlagData.bccUsers);
+                        await bullQueueInstanceEmail.addJob({ deviceData, message: `Maintainence Request Updated.` });
                     }
                 }
 

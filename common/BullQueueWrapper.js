@@ -11,11 +11,16 @@ class BullQueueWrapper {
 
     processJobs(processFunction) {
         this.queue.process(processFunction);
+        this.queue.on('completed', (job, result) => {
+            console.log(`Job ${job.id} completed with result:`, result);
+        });
+        this.queue.on('failed', (job, err) => {
+            console.error(`Job ${job.id} failed with error:`, err);
+        });
     }
 
     async close() {
         await this.queue.close();
-        this.isConnected = false;
         console.log(`Queue ${this.queue.name} has been closed.`);
     }
 

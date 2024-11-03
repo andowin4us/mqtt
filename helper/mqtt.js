@@ -1,7 +1,6 @@
 const dotenv = require('dotenv');
 const mqtt = require('mqtt');
 const { utilizeMqtt } = require('../common/mqttCommon');
-const BullQueueWrapper = require('../common/BullQueueWrapper');
 
 dotenv.config({ path: process.env.ENV_PATH || '.env' });
 
@@ -28,7 +27,6 @@ class MQTTConnector {
         this.resultDevice = resultDevice;
         this.createObj = createObj;
 
-        this.queue = new BullQueueWrapper('mqttQueue', `redis://${process.env.REDIS_HOST}:6379`);
         this.reconnectAttempts = 0;
 
         this.client = mqtt.connect(this.url, this.options);
@@ -60,8 +58,6 @@ class MQTTConnector {
         this.client.on('reconnect', this.onReconnect.bind(this));
         this.client.on('close', this.onClose.bind(this));
         this.client.on('error', this.onError.bind(this));
-
-        this.queue.processJobs(this.processQueue.bind(this));
     }
 
     onConnect(packet) {
@@ -91,15 +87,10 @@ class MQTTConnector {
         });
     }
 
-    onMessage(topic, message, packet) {
-        console.log('Topic=' + topic);
-        this.queue.addJob({ topic, message, packet });
-    }
-
-    async processQueue(job) {
+    async onMessage(topic, message, packet) {
+        console.log('Received message on topic=' + topic);
         try {
-            let { topic, message, packet } = job.data;
-            const jsonString = String.fromCharCode(...message.data);
+            const jsonString = message.toString();;
             if (this.resultDevice && this.createObj && this.createObj.length > 0) {
                 let response = await this.sendMessage(this.createObj.sendingTopic, this.resultDevice, this.createObj, packet);
                 this.createObj = null;
@@ -108,9 +99,6 @@ class MQTTConnector {
                 let processMessage = await utilizeMqtt(jsonString);
                 console.log(processMessage ? "Message Process Success." : "Message Process Failed.");
             }
-
-            // Clear the queue after processing the job
-            await this.queue.clear();
         } catch (err) {
             console.error('Error processing message:', err);
         }

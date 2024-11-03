@@ -6,7 +6,7 @@ const moment = require('moment');
 const { publishMessage } = require('../common/mqttCommon');
 const { getUuid } = require('../helper/util');
 const md5Service = require('../services/md5.service');
-const { sendEmail } = require('../common/mqttMail');
+const { bullQueueInstanceEmail } = require('../config/bullQueueInstance');
 
 let client, db, clientRemote, dbRemote;
 
@@ -180,13 +180,7 @@ async function updateDeviceStatus(device, status, mqttRelayState, durationSecond
         }
     });
 
-    await sendEmail(getFlagData.superUserMails, {
-        DeviceName: device.deviceName,
-        DeviceId: device.deviceId,
-        Action: `Relay triggered ON for device ${device.deviceName}`,
-        MacId: device.mqttMacId,
-        TimeofActivity: moment().format('YYYY-MM-DD HH:mm:ss'),
-    }, getFlagData, getFlagData.ccUsers, getFlagData.bccUsers);
+    await bullQueueInstanceEmail.addJob({ device, message: `Relay triggered ON for device ${device.deviceName}` });
 
     await logAudit(db.collection('MQTTAuditLog'), {
         moduleName: 'DEVICE',
