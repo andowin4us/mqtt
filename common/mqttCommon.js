@@ -289,6 +289,9 @@ async function mongoInsert(data, filter, collectionName, type, host = "local") {
                 case 'update':
                     results.remote = await remoteCollection.updateOne(filter, data);
                     break;
+                case 'updateMany':
+                    results.remote = await remoteCollection.updateMany(filter, data);
+                    break;
                 case 'remove':
                     results.remote = await remoteCollection.deleteOne(filter);
                     break;

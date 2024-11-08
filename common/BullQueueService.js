@@ -41,12 +41,11 @@ class BullQueueService {
     }    
 
     async processJob(job) {
+        let localClient, remoteClient;
+        let localDb, remoteDb;
         console.log("Processing job:", job.id);
         try {
             const { device, message } = job.data;
-
-            let localClient, remoteClient;
-            let localDb, remoteDb;
 
             // Connect to the local MongoDB
             localClient = await this.connectToMongo(connection.mongo.url);

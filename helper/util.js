@@ -130,6 +130,7 @@ const mongoPool = {
         return Mongo.db.collection(collection).updateOne(filter, updateData);
     },
     async updateMany(collection, filter, updateData) {
+        await mongoInsert(updateData, filter, collection, 'updateMany', "remote");
         return Mongo.db.collection(collection).updateMany(filter, updateData);
     },
     async aggregateData(collection, query) {

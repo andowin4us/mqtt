@@ -290,6 +290,14 @@ const relayTriggerOnOrOffMQTTDevice = async (tData, userInfo = {}) => {
             }
         });
 
+        if (!tData.mqttRelayState) {
+            await Util.mongo.updateMany("MQTTLogger", { device_id: tData.deviceId, visibleTo: 1 }, {
+                $set: {
+                    visibleTo: 2
+                }
+            });
+        }
+
         await Util.addAuditLogs(MODULE_NAME, userInfo, `Relay ${tData.mqttRelayState ? "ON" : "OFF"}`, 
             `${userInfo.userName} has triggered the relay ${tData.mqttRelayState ? "ON" : "OFF"} via the Toggle Button.`, 
             "success", JSON.stringify(result));
