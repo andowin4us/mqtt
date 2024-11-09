@@ -186,7 +186,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"deviceId\": \"device_id\",\r\n    \"mqttRelayState\": false\r\n}",
+							"raw": "{\r\n    \"deviceId\": \"device_id2\",\r\n    \"mqttRelayState\": false\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -672,6 +672,70 @@
 					"response": []
 				},
 				{
+					"name": "getEnergyConsumption",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/getEnergyConsumption",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"getEnergyConsumption"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "downloadEnergyConsumption",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/downloadEnergyConsumption",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"downloadEnergyConsumption"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "getStateLogger",
 					"request": {
 						"method": "POST",
@@ -803,6 +867,29 @@
 							"path": [
 								"api",
 								"downloadAuditLog"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getDashboardGraphDetails",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://35.154.95.187:4330/api/getDashboardGraphDetails",
+							"protocol": "http",
+							"host": [
+								"35",
+								"154",
+								"95",
+								"187"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"getDashboardGraphDetails"
 							]
 						}
 					},
