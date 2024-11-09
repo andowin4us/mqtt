@@ -31,13 +31,25 @@ const MQTTController = () => {
         const result = await MQTT.downloadAuditLog(req.body, req.user);
         return res.status(result.statusCode).json(result);
     }
+    const getEnergyConsumption = async (req, res) => {
+        console.log('getEnergyConsumption logs ', req.body, req.user);
+        const result = await MQTT.getEnergyConsumption(req.body, req.user);
+        return res.status(result.statusCode).json(result);
+    };
+    const downloadEnergyConsumption = async (req, res) => {
+        console.log('downloadEnergyConsumption', req.body, req.user);
+        const result = await MQTT.downloadEnergyConsumption(req.body, req.user);
+        return res.status(result.statusCode).json(result);
+    }
     return {
         getDeviceLogger,
         getStateLogger,
         downloadLogger,
         downloadStateLogger,
         getAuditLog,
-        downloadAuditLog
+        downloadAuditLog,
+        getEnergyConsumption,
+        downloadEnergyConsumption
     };
 }
 

@@ -109,6 +109,7 @@ const updateData = async (tData, userInfo = {}) => {
             mqttUrl: MQTT_URL,
             mqttMacId: tData.mqttMacId,
             mqttPort: tData.mqttPort,
+            mqttAliasName: tData.mqttAliasName ? tData.mqttAliasName : "",
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
         }
     };
@@ -167,6 +168,7 @@ const createData = async (tData, userInfo = {}) => {
             status: "Active",
             mqttPort: tData.mqttPort,
             mqttStatusDetails: { mqttRelayState: false },
+            mqttAliasName: tData.mqttAliasName ? tData.mqttAliasName : "",
             created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
             modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
         };

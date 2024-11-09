@@ -232,11 +232,65 @@ const downloadAuditLog = async (tData, userInfo) => {
     }
 };
 
+// Fetch Energy Consumption Log
+const getEnergyConsumption = async (tData, userInfo) => {
+    const tCheck = await Util.checkQueryParams(tData, {
+        skip: "numeric",
+        limit: "numeric",
+    });
+
+    if (tCheck?.error === "PARAMETER_ISSUE") {
+        return createResponse(404, false, "PARAMETER_ISSUE", [], tCheck);
+    }
+
+    try {
+        const filter = {
+            ...((tData.startDate || tData.endDate) && { modified_time : tData.startDate && tData.endDate ? { $gte: tData.startDate, $lte: tData.endDate } : tData.startDate ? { $gte: tData.startDate} : { $lte: tData.endDate }}),
+            ...(tData.userName && { modified_user_name: tData.userName }),
+            ...(tData.moduleName && { moduleName: tData.moduleName }),
+            ...(tData.operation && { operation: tData.operation }),
+            ...(tData.status && { status: tData.status })
+        };
+        const result = await Util.mongo.findAndPaginate(collectionName, filter, {}, tData.skip, tData.limit);
+        const sanitizedData = await Util.snatizeFromMongo(result);
+
+        if (sanitizedData) {
+            return createResponse(200, true, "MQTT Energy Consumption get Successful", sanitizedData[0].totalData, sanitizedData[0].totalSize);
+        } else {
+            return createResponse(404, false, "MQTT Energy Consumption get Failed", []);
+        }
+    } catch (error) {
+        return createResponse(500, false, "MQTT Error", [], error);
+    }
+};
+
+// Download Enery Consumption Log
+const downloadEnergyConsumption = async (tData, userInfo) => {
+    try {
+        const filter = {
+            ...((tData.startDate || tData.endDate) && { modified_time : tData.startDate && tData.endDate ? { $gte: tData.startDate, $lte: tData.endDate } : tData.startDate ? { $gte: tData.startDate} : { $lte: tData.endDate }}),
+            ...(tData.userName && { modified_user_name: tData.userName }),
+            ...(tData.moduleName && { moduleName: tData.moduleName }),
+            ...(tData.operation && { operation: tData.operation }),
+            ...(tData.status && { status: tData.status })
+        };
+
+        const columns = ["modified_time", "modified_user_name", "role", "moduleName", "operation", "status", "message"];
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded Energy Consumption report.`, "success", JSON.stringify({}));
+        return downloadLogs(tData, userInfo, filter, columns, "EnergyConsumptionReport", collectionName);
+    } catch (e) {
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded Energy Consumption report.`, "failure", JSON.stringify({}));
+        return createResponse(404, false, "No data found to generate report.");
+    }
+};
+
 module.exports = {
     getDeviceLogger,
     getStateLogger,
     downloadLogger,
     downloadStateLogger,
     getAuditLog,
-    downloadAuditLog
+    downloadAuditLog,
+    getEnergyConsumption,
+    downloadEnergyConsumption
 };
