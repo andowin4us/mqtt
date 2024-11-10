@@ -133,7 +133,6 @@ const createData = async (tData, userInfo = {}) => {
         deviceId: "required|string",
         deviceName: "required|string",
         mqttIP: "required|string",
-        mqttTopic: "required|array",
         mqttPort: "required|string",
         mqttMacId: "required|string"
     });
