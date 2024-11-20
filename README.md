@@ -118,3 +118,6 @@ sudo tail -f /var/log/mosquitto/mosquitto.log
 ### Conclusion
 
 Following these steps should help you resolve the connection issue. If you continue to face problems, please provide any specific error messages from the logs or additional details about your configuration, and I’ll assist you further!
+
+
+pm2 serve build/ 3000 --name "react-build" --spa

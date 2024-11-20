@@ -220,6 +220,10 @@ const getData = async (tData, userInfo = {}) => {
             filter.mqttMacId = tData.mqttMacId;
         }
 
+        if (tData && tData.mqttAliasName) {
+            filter.mqttAliasName = tData.mqttAliasName;
+        }
+
         if (tData && tData.state) {
             filter.mqttStatusDetails.STATE = tData.state;
         }
