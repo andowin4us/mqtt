@@ -118,14 +118,14 @@ const mongoPool = {
         return Mongo.db.collection(collection).find(filter, { projection }).skip(skip).limit(limit).toArray();
     },
     async insertOne(collection, insertData) {
-        await sendMessageToQueue({...insertData});
+        await sendMessageToQueue({...insertData, operation: "insert"});
         return Mongo.db.collection(collection).insertOne(insertData);
     },
     async insertMany(collection, insertData) {
         return Mongo.db.collection(collection).insertMany(insertData);
     },
     async updateOne(collection, filter, updateData) {
-        await sendMessageToQueue(insertData);
+        await sendMessageToQueue({...insertData, operation: "update"});
         return Mongo.db.collection(collection).updateOne(filter, updateData);
     },
     async updateMany(collection, filter, updateData) {
@@ -135,7 +135,7 @@ const mongoPool = {
         return Mongo.db.collection(collection).aggregate(query, { allowDiskUse: true }).toArray();
     },
     async remove(collection, filter) {
-        await sendMessageToQueue(insertData);
+        await sendMessageToQueue({...insertData, operation: "remove"});
         return Mongo.db.collection(collection).deleteOne(filter);
     },
     async removeAll(collection, filter) {
