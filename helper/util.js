@@ -5,7 +5,7 @@ const moment = require("moment");
 const passwordValidator = require("password-validator");
 const { Validator } = require("node-input-validator");
 require("dotenv").config();
-const { mongoInsert } = require("../common/mqttCommon");
+const { sendMessageToQueue } = require("../config/sqs");
 
 // Password Validator schema
 const passValidator = new passwordValidator();
@@ -118,12 +118,14 @@ const mongoPool = {
         return Mongo.db.collection(collection).find(filter, { projection }).skip(skip).limit(limit).toArray();
     },
     async insertOne(collection, insertData) {
+        await sendMessageToQueue({...insertData});
         return Mongo.db.collection(collection).insertOne(insertData);
     },
     async insertMany(collection, insertData) {
         return Mongo.db.collection(collection).insertMany(insertData);
     },
     async updateOne(collection, filter, updateData) {
+        await sendMessageToQueue(insertData);
         return Mongo.db.collection(collection).updateOne(filter, updateData);
     },
     async updateMany(collection, filter, updateData) {
@@ -133,6 +135,7 @@ const mongoPool = {
         return Mongo.db.collection(collection).aggregate(query, { allowDiskUse: true }).toArray();
     },
     async remove(collection, filter) {
+        await sendMessageToQueue(insertData);
         return Mongo.db.collection(collection).deleteOne(filter);
     },
     async removeAll(collection, filter) {
