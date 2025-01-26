@@ -43,19 +43,6 @@ const updateFlag = async (tData, userInfo = {}) => {
                 { $set: updateObj }
             );
 
-            if (result && result.useRemoteMongo === true) {
-                if (result.REMOTE_MONGO_HOST) {
-                    const remoteMongoUrl = `mongodb+srv://${result.REMOTE_MONGO_USERNAME}:${result.REMOTE_MONGO_PASSWORD}@${result.REMOTE_MONGO_HOST}/?retryWrites=true&w=majority`;
-                    let serverStatus = await checkMongoConnection(remoteMongoUrl)
-
-                    if (serverStatus === true) {
-                        await Util.addAuditLogs(MODULE_NAME, userInfo, "update", `Remote mongo connect success.`, "success", JSON.stringify(updateResult));
-                    } else {
-                        await Util.addAuditLogs(MODULE_NAME, userInfo, "update", `Remote mongo connect failed.`, "failure", JSON.stringify(updateResult));
-                    }
-                }
-            }
-
             if (updateResult) {
                 await Util.addAuditLogs(MODULE_NAME, userInfo, "update", `${userInfo.userName} updated the Device Congfigurations.`, "success", JSON.stringify(updateResult));
                 return createResponse(200, true, "MQTT Flag Success", updateResult);

@@ -12,21 +12,13 @@ dotenv.config({ path: process.env.ENV_PATH || '.env' });
 const redisUrl = `redis://${process.env.REDIS_HOST}:6379`;
 const emailQueueService = new BullQueueService('email', redisUrl);
 
-let client, db, clientRemote, dbRemote;
+let client, db;
 
 // Initialize MongoDB client
 async function initializeMongo() {
     if (!client) {
         client = await MongoClient.connect(connection.mongo.url, {});
         db = client.db(connection.mongo.database);
-    }
-}
-
-async function initializeRemoteMongo(flagData) {
-    if (!clientRemote) {
-        const remoteMongoUrl = `mongodb+srv://${flagData.REMOTE_MONGO_USERNAME}:${flagData.REMOTE_MONGO_PASSWORD}@${flagData.REMOTE_MONGO_HOST}/?retryWrites=true&w=majority`;
-        clientRemote = await MongoClient.connect(remoteMongoUrl, {});
-        dbRemote = clientRemote.db("mqtt");
     }
 }
 
@@ -52,10 +44,7 @@ async function seedData() {
             SMTP_SERVER: 'smtp.migadu.com',
             SMTP_SENDING_EMAIL: 'test@gccglobetech.com',
             SMTP_SENDING_PASSWORD: 'Gofortest@321',
-            SMTP_PORT: 465,
-            REMOTE_MONGO_HOST: "",
-            REMOTE_MONGO_USERNAME: "",
-            REMOTE_MONGO_PASSWORD: "",
+            SMTP_PORT: 465
         };
 
         const userData = {
@@ -192,27 +181,10 @@ async function updateDeviceStatus(device, status, mqttRelayState, durationSecond
         log: { ...device, status, modified_time: moment().format('YYYY-MM-DD HH:mm:ss') }
     });
 
-    // Handle remote Mongo logging
-    if (await isRemoteMongoEnabled(device)) {
-        await initializeRemoteMongo(instanceData);
-        const collectionAuditRemote = dbRemote.collection('MQTTAuditLog');
-        await logAudit(collectionAuditRemote, {
-            moduleName: 'DEVICE',
-            operation: "Relay ON",
-            message: `Relay Timer breached has triggered the relay ON via the predefined timer of ${durationSeconds}`,
-            log: { ...device, status, modified_time: moment().format('YYYY-MM-DD HH:mm:ss') }
-        });
-    }
-
     return true;
 }
 
-// Check if remote Mongo is enabled
-async function isRemoteMongoEnabled(instanceData) {
-    return instanceData.useRemoteMongo;
-}
-
-// Check and update device hearbeat
+// Check and update device heartbeat
 async function checkHeartBeatStatus() {
     try {
         const collection = db.collection('MQTTDevice');

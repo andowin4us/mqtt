@@ -40,7 +40,6 @@ const addAuditLogs = async (moduleName, userInfo, operation, message, response, 
     };
 
     await Mongo.db.collection("MQTTAuditLog").insertOne(logEntry);
-    await mongoInsert(logEntry, {}, 'MQTTAuditLog', 'create', "remote");
     return logEntry;
 };
 
@@ -119,25 +118,21 @@ const mongoPool = {
         return Mongo.db.collection(collection).find(filter, { projection }).skip(skip).limit(limit).toArray();
     },
     async insertOne(collection, insertData) {
-        await mongoInsert(insertData, {}, collection, 'create', "remote");
         return Mongo.db.collection(collection).insertOne(insertData);
     },
     async insertMany(collection, insertData) {
         return Mongo.db.collection(collection).insertMany(insertData);
     },
     async updateOne(collection, filter, updateData) {
-        await mongoInsert(updateData, filter, collection, 'update', "remote");
         return Mongo.db.collection(collection).updateOne(filter, updateData);
     },
     async updateMany(collection, filter, updateData) {
-        await mongoInsert(updateData, filter, collection, 'updateMany', "remote");
         return Mongo.db.collection(collection).updateMany(filter, updateData);
     },
     async aggregateData(collection, query) {
         return Mongo.db.collection(collection).aggregate(query, { allowDiskUse: true }).toArray();
     },
     async remove(collection, filter) {
-        await mongoInsert({}, filter, collection, 'remove', "remote");
         return Mongo.db.collection(collection).deleteOne(filter);
     },
     async removeAll(collection, filter) {
