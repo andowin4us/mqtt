@@ -36,6 +36,8 @@ async function sendMessageToQueue(messageBody) {
         // Send the message to the queue
         const data = await sqsClient.send(command);
         console.log(`Message sent successfully, MessageId: ${data.MessageId}`);
+
+        return data;
     } catch (error) {
         console.error('Error sending message to SQS:', error);
     }
