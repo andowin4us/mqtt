@@ -23,7 +23,7 @@
 		"express-routes-mapper": "^1.1.0",
 		"formidable": "^3.5.1",
 		"helmet": "^7.1.0",
-		"jsonwebtoken": "^9.0.2",
+		"jsonwebtoken": ">=9.0.0",
 		"md5": "^2.3.0",
 		"moment": "^2.30.1",
 		"moment-timezone": "^0.5.45",
