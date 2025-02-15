@@ -10,10 +10,9 @@ const MAX_RECONNECT_ATTEMPTS = 5;
 class MQTTConnector {
     static instances = new Map(); // Map to keep track of instances by URL
 
-    constructor(url, userName, password, topics, closeConnCheck, resultDevice, createObj) {
+    constructor(url, userName, password, closeConnCheck, resultDevice, createObj) {
         this.url = url;
         this.isConnected = false;
-        this.topics = Array.isArray(topics) ? topics : [topics];
         this.options = {
             clientId: `mqtt_${Math.random().toString(16).slice(3)}`,
             clean: true,
@@ -34,9 +33,9 @@ class MQTTConnector {
         this.initialize();
     }
 
-    static initialize(url, userName, password, topics, closeConnCheck, resultDevice, createObj) {
+    static initialize(url, userName, password, closeConnCheck, resultDevice, createObj) {
         if (!this.instances.has(url)) {
-            const instance = new MQTTConnector(url, userName, password, topics, closeConnCheck, resultDevice, createObj);
+            const instance = new MQTTConnector(url, userName, password, closeConnCheck, resultDevice, createObj);
             this.instances.set(url, instance);
             console.log(`Created new MQTTConnector instance for URL: ${url}`);
         } else {
@@ -65,8 +64,9 @@ class MQTTConnector {
         if (packet.cmd === 'connack') {
             this.isConnected = true;
             console.log("Successfully connected to broker on " + this.url);
-            Promise.all(this.topics.map(topic => this.subscribe(topic)))
-                .then(() => console.log("All topics subscribed successfully."))
+            // Subscribe to all topics with wildcard #
+            this.subscribe('#')
+                .then(() => console.log("Subscribed to all topics successfully."))
                 .catch(err => console.error("Error subscribing to topics:", err));
         } else {
             this.handleConnectionError(packet.cmd);
@@ -90,13 +90,13 @@ class MQTTConnector {
     async onMessage(topic, message, packet) {
         console.log('Received message on topic=' + topic);
         try {
-            const jsonString = message.toString();;
+            const jsonString = message.toString();
             if (this.resultDevice && this.createObj && this.createObj.length > 0) {
                 let response = await this.sendMessage(this.createObj.sendingTopic, this.resultDevice, this.createObj, packet);
                 this.createObj = null;
                 console.log(response ? "Message sent successfully." : "Message sending failed.");
             } else {
-                let processMessage = await utilizeMqtt(jsonString);
+                let processMessage = await utilizeMqtt(jsonString); // Pass topic as well
                 console.log(processMessage ? "Message Process Success." : "Message Process Failed.");
             }
         } catch (err) {

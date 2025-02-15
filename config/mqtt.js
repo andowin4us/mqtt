@@ -26,6 +26,7 @@ async function initializeMongo() {
 async function seedData() {
     const collectionInstance = db.collection('MQTTFlag');
     const collectionUser = db.collection('MQTTUser');
+    const collectionLocation = db.collection('MQTTLocation');
 
     const instanceData = await collectionInstance.findOne({});
     if (!instanceData) {
@@ -44,7 +45,9 @@ async function seedData() {
             SMTP_SERVER: 'smtp.migadu.com',
             SMTP_SENDING_EMAIL: 'test@gccglobetech.com',
             SMTP_SENDING_PASSWORD: 'Gofortest@321',
-            SMTP_PORT: 465
+            SMTP_PORT: 465,
+            location: 'India',
+            consumptionSlab: 'Commercial'
         };
 
         const userData = {
@@ -59,9 +62,29 @@ async function seedData() {
             modified_time: moment().format('YYYY-MM-DD HH:mm:ss')
         };
 
+        const locationData = {
+            id: getUuid(),
+            locationName: "India",
+            consumptionSlab: {
+                domestic: {
+                    "0-100": 4,
+                    "101-300": 6,
+                    "301-500": 8,
+                    "above500": 12
+                },
+                commercial: {
+                    "0-100": 9,
+                    "101-300": 10,
+                    "301-500": 12.50,
+                    "above500": 16
+                }
+            }
+        }
+
         await Promise.all([
             collectionInstance.insertOne(flagsData),
-            collectionUser.insertOne(userData)
+            collectionUser.insertOne(userData),
+            collectionLocation.insertOne(locationData)
         ]);
     }
 }
@@ -76,9 +99,9 @@ async function startDevices() {
     for (const mqttIP of devices) {
         const device = await collection.findOne({ mqttIP: mqttIP });
         if (device) {
-            let topicsBe = "WIFI,STATE,Heartbeat,RELAY,POWER,Power,MQTT,Power/State,Logs,DOOR,Energy,Weight,process_status,super_access,status,Relay/State,State";
+            // let topicsBe = "POWER_STATUS,WIFI,STATE,Heartbeat,RELAY,POWER,Power,MQTT,Power/State,Logs,DOOR,Energy,Weight,process_status,super_access,status,Relay/State,State,Power/State,Power/State/RealTime";
             const MQTT_URL = `mqtt://${device.mqttIP}:${device.mqttPort}`;
-            MQTT.initialize(MQTT_URL, device.mqttUserName, device.mqttPassword, topicsBe.split(','), false);
+            MQTT.initialize(MQTT_URL, device.mqttUserName, device.mqttPassword, false);
         }
     }
 }

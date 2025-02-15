@@ -9,8 +9,8 @@ dotenv.config({ path: process.env.ENV_PATH || '.env' });
 const redisUrl = `redis://${process.env.REDIS_HOST}:6379`;
 const emailQueueService = new BullQueueService('email', redisUrl);
 
-let topicsBe = "WIFI,STATE,Heartbeat,RELAY,POWER,Power,MQTT,Power/State,Logs,DOOR,Energy,Weight,process_status,super_access,status,Relay/State,State";
-topicsBe = topicsBe.split(',');
+// let topicsBe = "ENRGY,WIFI,STATE,Heartbeat,RELAY,POWER,Power,MQTT,Power/State,Logs,DOOR,Energy,Weight,process_status,super_access,status,Relay/State,State,Power/State,Power/State/RealTime";
+// topicsBe = topicsBe.split(',');
 
 async function utilizeMqtt(message) {
     try {
@@ -67,10 +67,10 @@ async function processMessage(data) {
                 return handleInvalidMacId(data);
             }
         
-            if (!topicsBe.includes(data.log_type)) {
-                console.log("Invalid Log Type.");
-                return false;
-            }
+            // if (!topicsBe.includes(data.log_type)) {
+            //     console.log("Invalid Log Type.");
+            //     return false;
+            // }
     
             if (data.log_type === 'Heartbeat') {
                 return await handleHeartbeat(data, result, getFlagData);
