@@ -246,6 +246,149 @@
 			]
 		},
 		{
+			"name": "MQTTLocation",
+			"item": [
+				{
+					"name": "createMQTTLocation",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3NsZXZlbCI6MSwibmFtZSI6IlRlc3QxIiwidXNlck5hbWUiOiJ0ZXN0MSIsImVtYWlsIjoiY20xNDY4M0BnbWFpbC5jb20iLCJpYXQiOjE3MDU3MTk1MjcsImV4cCI6MTcwODMxMTUyN30.NWwTcaptQ_yJJYUtb57hBQysRTSxazoWPhvE_ruy7SQ",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": \"122325651b2n1j11k2njjbn12\",\r\n    \"locationName\": \"India\",\r\n    \"consumptionSlab\": {\r\n        \"domestic\": {\r\n            \"0-100\": 4,\r\n            \"101-300\": 6,\r\n            \"301-500\": 8,\r\n            \"above500\": 12\r\n        },\r\n        \"commercial\": {\r\n            \"0-100\": 9,\r\n            \"101-300\": 10,\r\n            \"301-500\": 12.50,\r\n            \"above500\": 16\r\n        }\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/createMQTTLocation",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"createMQTTLocation"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "updateMQTTLocation",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": \"122325651b2n1j11k2njjbn12\",\r\n    \"locationName\": \"India\",\r\n    \"consumptionSlab\": {\r\n        \"domestic\": {\r\n            \"0-100\": 3,\r\n            \"101-300\": 6,\r\n            \"301-500\": 8,\r\n            \"above500\": 12\r\n        },\r\n        \"commercial\": {\r\n            \"0-100\": 9,\r\n            \"101-300\": 10,\r\n            \"301-500\": 12.50,\r\n            \"above500\": 16\r\n        }\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/updateMQTTLocation",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"updateMQTTLocation"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getMQTTLocation",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/getMQTTLocation",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"getMQTTLocation"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "deleteMQTTLocation",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": \"122325651b2n1j11k2njjbn12\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:4330/api/deleteMQTTLocation",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "4330",
+							"path": [
+								"api",
+								"deleteMQTTLocation"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "MQTTLoggerType",
 			"item": [
 				{
