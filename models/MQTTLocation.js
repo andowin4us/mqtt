@@ -35,10 +35,7 @@ const handleSuccess = (msg, result) => ({
 });
 
 const duplicate = async (locationName) => {
-    const query = {
-        $or: [{ locationName: locationName }]
-    };
-    const result = await Util.mongo.findOne(deviceMongoCollection, query);
+    const result = await Util.mongo.findOne(deviceMongoCollection, { locationName: locationName });
     return Boolean(result);
 };
 

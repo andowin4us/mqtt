@@ -81,7 +81,6 @@ class MQTTConnector {
                     console.log("Subscription error occurred ", err);
                     return reject(err);
                 }
-                console.log("Subscribed successfully to " + topic + " topic.");
                 resolve();
             });
         });

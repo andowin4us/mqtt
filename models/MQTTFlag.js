@@ -2,7 +2,6 @@ const Util = require("../helper/util");
 const moment = require("moment");
 const MODULE_NAME = "DEVICE_CONFIG";
 const deviceMongoCollection = "MQTTFlag";
-const { MongoClient } = require('mongodb');
 
 // Helper function for standard responses
 const createResponse = (statusCode, success, msg, status = [], err = "") => ({
@@ -71,26 +70,6 @@ const getData = async (tData, userInfo) => {
         return createResponse(500, false, "MQTT Flags get Error", [], error);
     }
 };
-
-async function checkMongoConnection(connectionUrl) {
-    const client = new MongoClient(connectionUrl);
-    let serverStatus = false;
-    try {
-        await client.connect();
-        const adminDb = client.db().admin();
-        serverStatus = await adminDb.ping();
-
-        if (serverStatus && serverStatus.ok === 1) {
-            serverStatus = true;
-        }
-    } catch (error) {
-        serverStatus = false;
-    } finally {
-        await client.close();
-    }
-
-    return serverStatus;
-}
 
 module.exports = {
     updateFlag,
