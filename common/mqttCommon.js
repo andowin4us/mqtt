@@ -194,6 +194,59 @@ async function handleOtherLogs(data, result, getFlagData) {
         }
     }
 
+    if (data.log_type === 'Status' && data.log_desc === 'POWER_STATUS') {
+        const currentTimestamp = moment(new Date(data.timestamp)).format('YYYY-MM-DD HH:mm:ss');
+    
+        // Define the query filter object for mongoInsert
+        const filter = {
+            devices: data.device_id,
+            $and: [
+                { active_energy_kwh: { $ne: 0 } },
+                { max_demand_power_kw: { $ne: 0 } },
+                { apparent_energy_kvah: { $ne: 0 } },
+                { active_power_kw: { $ne: 0 } },
+                { reactive_energy_kvarh: { $ne: 0 } },
+                { timestamp: { $lt: currentTimestamp } }
+            ]
+        };
+    
+        // Fetch both checkPowerMaintainenceLogs and consumption plan in parallel
+        const [checkPowerMaintainenceLogs, getConsumptionPlan] = await Promise.all([
+            mongoInsert(data, filter, 'MQTTLogger', 'find').sort({ timestamp: -1 }).limit(1),
+            mongoInsert(data, { locationName: getFlagData.location }, 'MQTTLocation', 'find')
+        ]);
+    
+        // Check if logs exist and update data accordingly
+        if (checkPowerMaintainenceLogs && checkPowerMaintainenceLogs.length > 0) {
+            const lastRecord = checkPowerMaintainenceLogs[0];
+            const timeDiff = moment(currentTimestamp).diff(lastRecord.timestamp);
+            
+            // Update energy consumption values
+            data.active_energy_kwh -= lastRecord.active_energy_kwh;
+            data.apparent_energy_kvah -= lastRecord.apparent_energy_kvah;
+            data.reactive_energy_kvarh -= lastRecord.reactive_energy_kvarh;
+    
+            // Calculate operating hours
+            data.operatingHours = moment.duration(timeDiff).asHours();
+        } else {
+            data.operatingHours = 0;
+        }
+    
+        // Get the corresponding consumption slab
+        const consumptionSlab = getConsumptionPlan[getFlagData.consumptionSlab];
+    
+        // Calculate the cost based on energy consumption
+        if (data.active_energy_kwh >= 0 && data.active_energy_kwh <= 100) {
+            data.cost = data.active_energy_kwh * consumptionSlab["0-100"];
+        } else if (data.active_energy_kwh >= 101 && data.active_energy_kwh <= 300) {
+            data.cost = data.active_energy_kwh * consumptionSlab["101-300"];
+        } else if (data.active_energy_kwh >= 301 && data.active_energy_kwh <= 500) {
+            data.cost = data.active_energy_kwh * consumptionSlab["301-500"];
+        } else {
+            data.cost = data.active_energy_kwh * consumptionSlab["above500"];
+        }
+    }
+    
     const logTypeUpdate = {
         [data.log_type]: data.log_desc
     };
