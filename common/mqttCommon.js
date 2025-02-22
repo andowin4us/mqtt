@@ -32,7 +32,7 @@ async function utilizeMqtt(message) {
         return await processMessage(data);
     } catch (err) {
         console.error('Error occurred:', err);
-        return false;
+        return handleInvalidJson({ message });
     }
 }
 
@@ -212,7 +212,7 @@ async function handleOtherLogs(data, result, getFlagData) {
     
         // Fetch both checkPowerMaintainenceLogs and consumption plan in parallel
         const [checkPowerMaintainenceLogs, getConsumptionPlan] = await Promise.all([
-            mongoInsert(data, filter, 'MQTTLogger', 'find').sort({ timestamp: -1 }).limit(1),
+            mongoInsert(data, filter, 'MQTTLogger', 'findAll'),
             mongoInsert(data, { locationName: getFlagData.location }, 'MQTTLocation', 'find')
         ]);
     
@@ -283,6 +283,9 @@ async function mongoInsert(data, filter, collectionName, type) {
         switch (type) {
             case 'find':
                 results = await localCollection.findOne(filter);
+                break;
+            case 'findAll':
+                results = await localCollection.find(filter).sort({ timestamp: -1 }).limit(1);
                 break;
             case 'create':
                 results = await localCollection.insertOne(data);

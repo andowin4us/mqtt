@@ -95,7 +95,7 @@ class MQTTConnector {
                 this.createObj = null;
                 console.log(response ? "Message sent successfully." : "Message sending failed.");
             } else {
-                let processMessage = await utilizeMqtt(jsonString); // Pass topic as well
+                let processMessage = await utilizeMqtt(jsonString);
                 console.log(processMessage ? "Message Process Success." : "Message Process Failed.");
             }
         } catch (err) {
