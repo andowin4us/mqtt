@@ -40,8 +40,9 @@ const buildFilter = async (tData, userInfo) => {
     }
 
     if (tData) {
-        const { device_id, device_name, log_type, log_desc, log_line_count, 
-            battery_level, mac_id, state, startDate, endDate } = tData;
+        const { device_id, device_name, log_type, log_desc, log_line_count, battery_level, mac_id,
+            state, phase1_current, phase2_current, phase3_current, phase1_voltage, phase2_voltage,
+            phase3_voltage, phase1_power_factor, phase2_power_factor, phase3_power_factor, startDate, endDate } = tData;
 
         if (device_id) {
             deviceIdList.push(device_id);
@@ -54,6 +55,16 @@ const buildFilter = async (tData, userInfo) => {
         if (battery_level) filter.battery_level = battery_level;
         if (mac_id) filter.mac_id = mac_id;
         if (state) filter.state = state;
+        if (phase1_current) filter.phase2_current = phase1_current;
+        if (phase2_current) filter.phase2_current = phase2_current;
+        if (phase3_current) filter.phase3_current = phase3_current;
+        if (phase1_voltage) filter.phase1_voltage = phase1_voltage;
+        if (phase2_voltage) filter.phase2_voltage = phase2_voltage;
+        if (phase3_voltage) filter.phase3_voltage = phase3_voltage;
+        if (phase1_power_factor) filter.phase1_power_factor = phase1_power_factor;
+        if (phase2_power_factor) filter.phase2_power_factor = phase2_power_factor;
+        if (phase3_power_factor) filter.phase3_power_factor = phase3_power_factor;
+
         if (startDate || endDate) {
             filter.timestamp = {};
             if (startDate) {
@@ -234,31 +245,11 @@ const downloadAuditLog = async (tData, userInfo) => {
 
 // Fetch Energy Consumption Log
 const getEnergyConsumption = async (tData, userInfo) => {
-    const tCheck = await Util.checkQueryParams(tData, {
-        skip: "numeric",
-        limit: "numeric",
-    });
-
-    if (tCheck?.error === "PARAMETER_ISSUE") {
-        return createResponse(404, false, "PARAMETER_ISSUE", [], tCheck);
-    }
-
     try {
-        const filter = {
-            ...((tData.startDate || tData.endDate) && { modified_time : tData.startDate && tData.endDate ? { $gte: tData.startDate, $lte: tData.endDate } : tData.startDate ? { $gte: tData.startDate} : { $lte: tData.endDate }}),
-            ...(tData.userName && { modified_user_name: tData.userName }),
-            ...(tData.moduleName && { moduleName: tData.moduleName }),
-            ...(tData.operation && { operation: tData.operation }),
-            ...(tData.status && { status: tData.status })
-        };
-        const result = await Util.mongo.findAndPaginate(collectionName, filter, {}, tData.skip, tData.limit);
-        const sanitizedData = await Util.snatizeFromMongo(result);
+        let filter = await buildFilter(tData, userInfo);
+        filter.$and = [{ log_type: "Status" }, { log_desc: "POWER_STATUS" }];
 
-        if (sanitizedData) {
-            return createResponse(200, true, "MQTT Energy Consumption get Successful", sanitizedData[0].totalData, sanitizedData[0].totalSize);
-        } else {
-            return createResponse(404, false, "MQTT Energy Consumption get Failed", []);
-        }
+        return fetchLogs(tData, userInfo, filter, collectionName);
     } catch (error) {
         return createResponse(500, false, "MQTT Error", [], error);
     }
@@ -267,15 +258,14 @@ const getEnergyConsumption = async (tData, userInfo) => {
 // Download Enery Consumption Log
 const downloadEnergyConsumption = async (tData, userInfo) => {
     try {
-        const filter = {
-            ...((tData.startDate || tData.endDate) && { modified_time : tData.startDate && tData.endDate ? { $gte: tData.startDate, $lte: tData.endDate } : tData.startDate ? { $gte: tData.startDate} : { $lte: tData.endDate }}),
-            ...(tData.userName && { modified_user_name: tData.userName }),
-            ...(tData.moduleName && { moduleName: tData.moduleName }),
-            ...(tData.operation && { operation: tData.operation }),
-            ...(tData.status && { status: tData.status })
-        };
+        let filter = await buildFilter(tData, userInfo);
+        filter = {...filter, log_type: "Status", log_desc: "POWER_STATUS"};
 
-        const columns = ["modified_time", "modified_user_name", "role", "moduleName", "operation", "status", "message"];
+        const columns = ["timestamp", "device_id", "device_name", "log_type", "log_desc", "battery_level", 
+            "mac_id", "active_energy_kwh", "max_demand_power_kw", "active_power_kw", "apparent_energy_kvah", 
+            "reactive_energy_kvarh", "phase1_current", "phase2_current", "phase3_current", 
+            "phase1_voltage", "phase2_voltage", "phase3_voltage", "phase1_power_factor", "phase2_power_factor", "phase3_power_factor"
+        ];
         await Util.addAuditLogs(MODULE_NAME, userInfo, "download", `${userInfo.userName} has downloaded Energy Consumption report.`, "success", JSON.stringify({}));
         return downloadLogs(tData, userInfo, filter, columns, "EnergyConsumptionReport", collectionName);
     } catch (e) {
