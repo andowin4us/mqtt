@@ -63,7 +63,7 @@ async function seedData() {
         };
 
         const locationData = {
-            id: getUuid(),
+            _id: getUuid(),
             locationName: "India",
             consumptionSlab: {
                 domestic: {
@@ -78,7 +78,9 @@ async function seedData() {
                     "301-500": 12.50,
                     "above500": 16
                 }
-            }
+            },
+            created_time: moment().format('YYYY-MM-DD HH:mm:ss'),
+            modified_time: moment().format('YYYY-MM-DD HH:mm:ss')
         }
 
         await Promise.all([
