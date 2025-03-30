@@ -49,7 +49,7 @@ const deleteData = async (tData, userInfo = {}) => {
         const configDetails = await Util.mongo.findOne(deviceMongoCollection, { _id: tData.id });
         const configDetailsFlag = await Util.mongo.findOne("MQTTFlag", { });
         
-        if (configDetailsFlag && configDetailsFlag.locationName === configDetails.locationName) {
+        if (configDetailsFlag && configDetailsFlag.location === configDetails.locationName) {
             return handleError("MQTT location Deletion Failed. Location is in use.");
         }
         const result = await Util.mongo.remove(deviceMongoCollection, { _id: tData.id });
