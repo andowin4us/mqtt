@@ -233,7 +233,7 @@ async function handleOtherLogs(data, result, getFlagData) {
         }
     
         // Get the corresponding consumption slab
-        const consumptionSlab = getConsumptionPlan[getFlagData.consumptionSlab];
+        const consumptionSlab = getConsumptionPlan.consumptionSlab[getFlagData.consumptionSlab];
     
         // Calculate the cost based on energy consumption
         if (data.active_energy_kwh >= 0 && data.active_energy_kwh <= 100) {

@@ -121,3 +121,5 @@ Following these steps should help you resolve the connection issue. If you conti
 
 
 pm2 serve build/ 3000 --name "react-build" --spa
+
+pm2 start "serve -s build" --name "react-app"
