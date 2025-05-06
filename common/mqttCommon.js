@@ -194,7 +194,7 @@ async function handleOtherLogs(data, result, getFlagData) {
         }
     }
 
-    if (data.log_type === 'Status' && data.log_desc === 'POWER_STATUS') {
+    if (data.log_type === 'Status' && data.log_desc === 'ENRGY') {
         const currentTimestamp = moment(new Date(data.timestamp)).format('YYYY-MM-DD HH:mm:ss');
     
         // Define the query filter object for mongoInsert

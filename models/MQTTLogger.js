@@ -247,7 +247,7 @@ const downloadAuditLog = async (tData, userInfo) => {
 const getEnergyConsumption = async (tData, userInfo) => {
     try {
         let filter = await buildFilter(tData, userInfo);
-        filter.$and = [{ log_type: "Status" }, { log_desc: "POWER_STATUS" }];
+        filter.$and = [{ log_type: "Status" }, { log_desc: "ENRGY" }];
 
         return fetchLogs(tData, userInfo, filter, collectionName);
     } catch (error) {
@@ -259,7 +259,7 @@ const getEnergyConsumption = async (tData, userInfo) => {
 const downloadEnergyConsumption = async (tData, userInfo) => {
     try {
         let filter = await buildFilter(tData, userInfo);
-        filter = {...filter, log_type: "Status", log_desc: "POWER_STATUS"};
+        filter = {...filter, log_type: "Status", log_desc: "ENRGY"};
 
         const columns = ["timestamp", "device_id", "device_name", "log_type", "log_desc", "battery_level", 
             "mac_id", "active_energy_kwh", "max_demand_power_kw", "active_power_kw", "apparent_energy_kvah", 
