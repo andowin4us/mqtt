@@ -126,7 +126,7 @@ const getDeviceLogger = async (tData, userInfo) => {
 // Fetch State Logger
 const getStateLogger = async (tData, userInfo) => {
     const filter = await buildFilter(tData, userInfo);
-    filter.$or = [{ log_type: "STATE" }];
+    filter.$or = [{ log_desc: "IDLE" }, { log_desc: "RUNNING" }];
     return fetchLogs(tData, userInfo, filter, collectionName);
 };
 
