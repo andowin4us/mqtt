@@ -62,6 +62,11 @@ async function processMessage(data) {
                 return handleInvalidDeviceData(data);
             }
         
+            if (data.epoctime && data.epoctime === 0) {
+                console.log("Invalid Epoc time.");
+                return handleInvalidDeviceData(data);
+            }
+
             if (data.mac_id && data.mac_id !== result.mqttMacId) {
                 console.log("Invalid Mac Id.");
                 return handleInvalidMacId(data);
