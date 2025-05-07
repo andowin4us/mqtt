@@ -51,17 +51,12 @@ async function processLogs(logs) {
 
 async function processMessage(data) {
     console.log('Processing message for device', data?.device_id, data);
-    if (data && data.device_id && data.timestamp) {
+    if (data && data.device_id && data.timestamp && data.log_type.length > 0) {
         const result = await mongoInsert(data, { deviceId: data.device_id }, 'MQTTDevice', 'find');
 
         if (result) {
             const getFlagData = await mongoInsert(data, {}, 'MQTTFlag', 'find');
         
-            if (data.epoctime && data.epoctime === 0) {
-                console.log("Invalid Epoc time.");
-                return handleInvalidJson(data);
-            }
-
             if (!result || !data.device_id || data.device_id !== result.deviceId) {
                 console.log("Invalid Device Id.");
                 return handleInvalidDeviceData(data);
