@@ -31,7 +31,6 @@ async function utilizeMqtt(message) {
         // Process single message
         return await processMessage(data);
     } catch (err) {
-        console.error('Error occurred:', err);
         return handleInvalidJson({ message });
     }
 }
@@ -50,7 +49,7 @@ async function processLogs(logs) {
 }
 
 async function processMessage(data) {
-    console.log('Processing message for device', data?.device_id, data);
+    console.log('Processing message for device', data?.device_id, 'for log type', data.log_type);
     if (data && data.device_id && data.timestamp && data.log_type.length > 0) {
         const result = await mongoInsert(data, { deviceId: data.device_id }, 'MQTTDevice', 'find');
 
@@ -227,7 +226,7 @@ async function handleOtherLogs(data, result, getFlagData) {
             data.reactive_energy_kvarh -= lastRecord.reactive_energy_kvarh;
     
             // Calculate operating hours
-            data.operatingHours = moment.duration(timeDiff).asHours();
+            data.operatingHours = moment.duration(timeDiff).asMinutes();
         } else {
             data.operatingHours = 0;
         }
@@ -245,6 +244,8 @@ async function handleOtherLogs(data, result, getFlagData) {
         } else {
             data.cost = data.active_energy_kwh * consumptionSlab["above500"];
         }
+
+        data.cost = parseFloat(data.cost).toFixed(2);
     }
     
     const logTypeUpdate = {
