@@ -149,13 +149,13 @@ async function checkDeviceStatus() {
 
         if (devices.length > 0) {
             await Promise.all(devices.map(async (device) => {
-                console.log(`Checking status for device ${device.deviceName} for relay`);
+                console.log(`Check ${device.deviceName} for relay`);
                 const deviceTime = moment(device.modified_time);
                 const durationSeconds = moment.duration(currentTime.diff(deviceTime)).asSeconds();
 
                 let relayStatus = device.mqttStatusDetails.mqttRelayState;
                 if (relayStatus === false && instanceData.isRelayTimer && (parseInt(durationSeconds, 10) > parseInt(instanceData.relayTimer, 10))) {
-                    await updateDeviceStatus(device, 'InActive', true, durationSeconds, instanceData);
+                    await updateDeviceStatus(device, 'InActive', true, durationSeconds);
                 }
             }));
         }
@@ -183,8 +183,8 @@ async function checkDeviceStatus() {
 }
 
 // Update device status
-async function updateDeviceStatus(device, status, mqttRelayState, durationSeconds, getFlagData) {
-    console.log(`Updating device ${device.deviceName} to ${status} and triggering relay`);
+async function updateDeviceStatus(device, status, mqttRelayState, durationSeconds) {
+    console.log(`Update ${device.deviceName} to ${status} and triggering relay`);
     const MQTT_URL = `mqtt://${device.mqttIP}:${device.mqttPort}`;
     let messageSend = "ON," + device.deviceId;
     await publishMessage(MQTT_URL, device.mqttUserName, device.mqttPassword, messageSend);
@@ -222,12 +222,12 @@ async function checkHeartBeatStatus() {
 
         if (devices.length > 0) {
             await Promise.all(devices.map(async (device) => {
-                console.log(`Checking heartbeat status for device ${device.deviceName}`);
+                console.log(`Heartbeat check for ${device.deviceName}`);
                 const deviceTime = moment(device.modified_time);
                 const durationSeconds = moment.duration(currentTime.diff(deviceTime)).asSeconds();
 
                 if (parseInt(durationSeconds, 10) > parseInt(instanceData.heartBeatTimer, 10)) {
-                    console.log(`Updating device ${device.deviceName} to InActive due to heartbeat missed.`);
+                    console.log(`Updating ${device.deviceName} to InActive due to heartbeat missed.`);
                     await collection.updateOne({ _id: device._id }, {
                         $set: {
                             status: 'InActive',
