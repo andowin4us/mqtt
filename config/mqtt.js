@@ -38,7 +38,6 @@ async function seedData() {
             heartBeatTimer: 30,
             instanceExpired: false,
             logLineLimit: 240000,
-            useRemoteMongo: false,
             superUserMails: 'test@gmail.com',
             ccUsers: '',
             bccUsers: '',
