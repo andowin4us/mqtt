@@ -114,11 +114,11 @@ async function handleHeartbeat(data, result, getFlagData) {
     const end = moment(result.modified_time);
     const duration = now.diff(end, 'seconds');
 
-    const logTypeUpdate = {
+    let logTypeUpdate = {
         [data.log_type]: data.log_desc,
     };
 
-    const mqttStatusDetails = {
+    let mqttStatusDetails = {
         ...result.mqttStatusDetails,
         ...logTypeUpdate,
         mqttBattery: data.battery_level,
@@ -172,17 +172,17 @@ async function handleOtherLogs(data, result, getFlagData) {
         const checkMaintainence = await mongoInsert(data, { devices: { $all: [data.device_id] }, status: 'Approved', endTime: { $gte: moment().format('YYYY-MM-DD HH:mm:ss') } }, 'MQTTMaintainence', 'find');
 
         if (!checkMaintainence) {
-             const logTypeUpdate = {
+             let logTypeUpdate = {
                 [data.log_type]: data.log_desc,
             };
-            const mqttStatusDetails = {
+            let mqttStatusDetails = {
                 ...result.mqttStatusDetails,
                 ...logTypeUpdate,
                 mqttBattery: data.battery_level,
-                mqttRelayState: true,
             };
 
-            await mongoInsert({ status: 'InActive', mqttStatusDetails }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
+            mqttStatusDetails.mqttRelayState = true;
+            await mongoInsert({ status: 'InActive', mqttStatusDetails: mqttStatusDetails }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
             const MQTT_URL = `mqtt://${result.mqttIP}:${result.mqttPort}`;
             let messageSend = "ON,"+data.device_id;
             await publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword, messageSend);
@@ -192,7 +192,7 @@ async function handleOtherLogs(data, result, getFlagData) {
             await mongoInsert({
                 moduleName: 'DEVICE',
                 operation: "Relay ON",
-                message: `Relay Timer breached has triggered the relay ON via the predefined timer`,
+                message: `Door has been opened, without any maintenance request.`,
                 modified_user_id: 'SYSTEM',
                 modified_user_name: 'SYSTEM',
                 status: "success",
