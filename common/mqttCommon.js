@@ -172,7 +172,17 @@ async function handleOtherLogs(data, result, getFlagData) {
         const checkMaintainence = await mongoInsert(data, { devices: { $all: [data.device_id] }, status: 'Approved', endTime: { $gte: moment().format('YYYY-MM-DD HH:mm:ss') } }, 'MQTTMaintainence', 'find');
 
         if (!checkMaintainence) {
-            await mongoInsert({ status: 'InActive', "mqttStatusDetails.mqttRelayState": true }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
+             const logTypeUpdate = {
+                [data.log_type]: data.log_desc,
+            };
+            const mqttStatusDetails = {
+                ...result.mqttStatusDetails,
+                ...logTypeUpdate,
+                mqttBattery: data.battery_level,
+                mqttRelayState: true,
+            };
+
+            await mongoInsert({ status: 'InActive', mqttStatusDetails }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
             const MQTT_URL = `mqtt://${result.mqttIP}:${result.mqttPort}`;
             let messageSend = "ON,"+data.device_id;
             await publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword, messageSend);
