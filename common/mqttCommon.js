@@ -49,7 +49,7 @@ async function processLogs(logs) {
 }
 
 async function processMessage(data) {
-    console.log('Processing message for device', data?.device_id, 'for log type', data?.log_type);
+    console.log('New message device', data?.device_id, 'for log type', data?.log_type, '=>', data.log_desc, 'with log line count', data?.log_line_count);
     if (data && data.device_id && data.timestamp && data.log_type && data.log_type.length > 0) {
         const result = await mongoInsert(data, { deviceId: data.device_id }, 'MQTTDevice', 'find');
 
