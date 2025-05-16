@@ -142,7 +142,7 @@ async function handleHeartbeat(data, result, getFlagData) {
     }
 
 
-    if (data.relay_state === 'ON' && !mqttStatusDetails.mqttRelayState) {
+    if (data.relay_state === 'ON' && result.mqttStatusDetails.mqttRelayState === false) {
         mqttStatusDetails.mqttRelayState = true;
         await mongoInsert({ mqttStatusDetails, status: "InActive" }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
     }
