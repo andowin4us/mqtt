@@ -57,20 +57,13 @@ async function processMessage(data) {
             const getFlagData = await mongoInsert(data, {}, 'MQTTFlag', 'find');
         
             if (!result || !data.device_id || data.device_id !== result.deviceId) {
-                console.log("Invalid Device Id.");
                 return handleInvalidDeviceData(data);
             }
 
             if (data.mac_id && data.mac_id !== result.mqttMacId) {
-                console.log("Invalid Mac Id.");
                 return handleInvalidMacId(data);
             }
         
-            // if (!topicsBe.includes(data.log_type)) {
-            //     console.log("Invalid Log Type.");
-            //     return false;
-            // }
-    
             if (data.log_type === 'Heartbeat') {
                 return await handleHeartbeat(data, result, getFlagData);
             }
@@ -117,6 +110,8 @@ async function handleHeartbeat(data, result, getFlagData) {
     let logTypeUpdate = {
         [data.log_type]: data.log_desc,
     };
+
+    console.log("data.relay_state ==>", data, result.mqttStatusDetails);
 
     let mqttStatusDetails = {
         ...result.mqttStatusDetails,
@@ -182,8 +177,7 @@ async function handleOtherLogs(data, result, getFlagData) {
                 mqttRelayState: true
             };
             
-            let resultOFUpdate = await mongoInsert({ status: 'InActive', mqttStatusDetails }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
-            console.log("MQTTDevice updated", resultOFUpdate);
+            await mongoInsert({ status: 'InActive', mqttStatusDetails }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
             const MQTT_URL = `mqtt://${result.mqttIP}:${result.mqttPort}`;
             let messageSend = "ON,"+data.device_id;
             await publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword, messageSend);
@@ -303,7 +297,6 @@ async function mongoInsert(data, filter, collectionName, type) {
                 results = await localCollection.insertOne(data);
                 break;
             case 'update':
-                console.log("Update data", data, filter);
                 results = await localCollection.updateOne(filter, { $set: data });
                 break;
             default:
