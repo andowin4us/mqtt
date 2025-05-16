@@ -303,6 +303,7 @@ async function mongoInsert(data, filter, collectionName, type) {
                 results = await localCollection.insertOne(data);
                 break;
             case 'update':
+                console.log("Update data", data, filter);
                 results = await localCollection.updateOne(filter, { $set: data });
                 break;
             default:
