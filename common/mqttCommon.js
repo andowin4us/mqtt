@@ -111,8 +111,6 @@ async function handleHeartbeat(data, result, getFlagData) {
         [data.log_type]: data.log_desc,
     };
 
-    console.log("data.relay_state ==>", data, result.mqttStatusDetails);
-
     let mqttStatusDetails = {
         ...result.mqttStatusDetails,
         ...logTypeUpdate,
@@ -139,6 +137,12 @@ async function handleHeartbeat(data, result, getFlagData) {
         const messageSend = `ON,${data.device_id}`;
         await emailQueueService.addJob({ device: result, message: `Relay triggered ON for device ${data.device_name}.` });
         await publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword, messageSend);
+        mqttStatusDetails.mqttRelayState = true;
+        await mongoInsert({ mqttStatusDetails, status: "InActive" }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
+    }
+
+
+    if (data.relay_state === 'ON' && !mqttStatusDetails.mqttRelayState) {
         mqttStatusDetails.mqttRelayState = true;
         await mongoInsert({ mqttStatusDetails, status: "InActive" }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
     }
