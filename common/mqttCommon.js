@@ -179,10 +179,11 @@ async function handleOtherLogs(data, result, getFlagData) {
                 ...result.mqttStatusDetails,
                 ...logTypeUpdate,
                 mqttBattery: data.battery_level,
+                mqttRelayState: true
             };
-
-            mqttStatusDetails.mqttRelayState = true;
-            await mongoInsert({ status: 'InActive', mqttStatusDetails: mqttStatusDetails }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
+            
+            let resultOFUpdate = await mongoInsert({ status: 'InActive', mqttStatusDetails }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
+            console.log("MQTTDevice updated", resultOFUpdate);
             const MQTT_URL = `mqtt://${result.mqttIP}:${result.mqttPort}`;
             let messageSend = "ON,"+data.device_id;
             await publishMessage(MQTT_URL, result.mqttUserName, result.mqttPassword, messageSend);
