@@ -1,5 +1,17 @@
 const nodemailer = require('nodemailer');
 
+const formatDateTime = (dateString) => {
+	const dateObj = new Date(dateString);
+	const day = String(dateObj.getDate()).padStart(2, "0");
+	const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+	const year = String(dateObj.getFullYear()).slice(2);
+	const hours = String(dateObj.getHours()).padStart(2, "0");
+	const minutes = String(dateObj.getMinutes()).padStart(2, "0");
+	const seconds = String(dateObj.getSeconds()).padStart(2, "0");
+
+	return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
+};
+
 // Email sending function
 async function sendEmail(recipient, deviceInfo, emailConfig, ccUsers, bccUsers) {
     const smtpServer = emailConfig.SMTP_SERVER;
@@ -49,7 +61,7 @@ async function sendEmail(recipient, deviceInfo, emailConfig, ccUsers, bccUsers) 
                 </tr>
                 <tr style="background: #f2f2f2;">
                     <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold; text-align: left;">Time of Activity</td>
-                    <td style="padding: 10px; border: 1px solid #ddd; text-align: left;">${deviceInfo.TimeofActivity}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: left;">${formatDateTime(deviceInfo.TimeofActivity)}</td>
                 </tr>
             </table>
             <p style="font-size: 14px;">If this is not you, please <a href="#" style="color: #4CAF50;">You can Trigger the Trigger Relay</a> immediately.</p>
