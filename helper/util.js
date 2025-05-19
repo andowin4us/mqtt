@@ -2,14 +2,9 @@ const Mongo = require("../config/mongo");
 const { v4: uuidv4 } = require("uuid");
 const ObjectID = require("mongodb").ObjectID;
 const moment = require("moment");
-const passwordValidator = require("password-validator");
 const { Validator } = require("node-input-validator");
 require("dotenv").config();
 const { sendMessageToQueue } = require("../config/sqs");
-
-// Password Validator schema
-const passValidator = new passwordValidator();
-passValidator.is().min(6).has().digits().has().not().spaces();
 
 // Helper Functions
 const snatizeFromMongo = async (result) => {
@@ -190,8 +185,6 @@ const getList = (objectArray, key, valueKey) => {
     }, {});
 };
 
-const passValidate = async (param) => passValidator.validate(param);
-
 const getStringArray = (list) => list.map(String);
 
 const getUuid = () => uuidv4();
@@ -263,7 +256,6 @@ const validator = async (getData, res, checkData) => {
 module.exports = {
     mongo: mongoPool,
     moment,
-    passValidate,
     snatizeFromMongo,
     snatizeArrayForId,
     jsonParser,

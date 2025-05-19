@@ -1,3 +1,4 @@
+require('dotenv').config(); // load .env file
 const express = require('express');
 const http = require('http');
 const path = require('path');
@@ -5,9 +6,8 @@ const bodyParser = require('body-parser');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
-const mapRoutes = require('express-routes-mapper');
-const config = require('./config/config');
 const auth = require('./policies/auth.policy');
+const { configureRoutes } = require('./config/routes/routes.config');
 const { invokeInitialization, scheduleDeviceStatusHandler } = require('./config/mqtt');
 const { checkResourceUsage } = require('./helper/resourceMonitor');
 const CHECK_INTERVAL = 1000 * 10 * 60; // Check every 5 minutes
@@ -23,20 +23,15 @@ app.use(bodyParser.json({ limit: '5mb' }));
 app.use(cookieParser());
 app.use('/static', express.static(path.join(__dirname, 'private')));
 
-// Route handlers
-const mappedOpenRoutes = mapRoutes(config.publicRoutes, 'controllers/');
-const mappedAuthRoutes = mapRoutes(config.privateRoutes, 'controllers/');
-
 // Auth and default user info middleware
-app.all('/private/*', auth);
-app.all('/api/*', (req, res, next) => {
+app.all('/private/*wildcard', auth);
+app.all('/api/*wildcard', (req, res, next) => {
     req.user = { id: 1, accesslevel: 1, userName: "SuperUser" };
     next();
 });
 
-// Register routes
-app.use('/api', mappedOpenRoutes);
-app.use('/private', mappedAuthRoutes);
+// Configure all routes (both public and private)
+configureRoutes(app);
 
 // Default route
 app.get('/', (req, res) => {
@@ -55,8 +50,8 @@ const startServer = async () => {
 
         await invokeInitialization();
         await scheduleDeviceStatusHandler();
-        server.listen(config.port, () => {
-            console.log(`MQTT server is running on port ${config.port}`);
+        server.listen(process.env.PORT, () => {
+            console.log(`MQTT server is running on port ${process.env.PORT}`);
         });
     } catch (error) {
         console.error('Error starting server:', error);

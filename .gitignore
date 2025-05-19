@@ -131,3 +131,4 @@ dist
 package-lock.json
 private/
 node_modules_backup/
+.vscode/

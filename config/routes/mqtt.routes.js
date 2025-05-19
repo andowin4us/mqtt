@@ -1,16 +1,14 @@
-const MQTTPrivate = {
-    'POST /getDeviceLogger': 'MQTTController.getDeviceLogger',
-    'POST /downloadLogger': 'MQTTController.downloadLogger',
-    'POST /getStateLogger': 'MQTTController.getStateLogger',
-    'POST /downloadStateLogger': 'MQTTController.downloadStateLogger',
-    'POST /getAuditLog': 'MQTTController.getAuditLog',
-    'POST /downloadAuditLog': 'MQTTController.downloadAuditLog',
-    'POST /getEnergyConsumption': 'MQTTController.getEnergyConsumption',
-    'POST /downloadEnergyConsumption': 'MQTTController.downloadEnergyConsumption',
-};
-const MQTTPublic = MQTTPrivate;
+const express = require('express');
+const router = express.Router();
+const MQTTController = require('../../controllers/MQTTController')();
 
-module.exports = {
-    MQTTPublic,
-    MQTTPrivate,
-};
+router.post('/getDeviceLogger', MQTTController.getDeviceLogger);
+router.post('/downloadLogger', MQTTController.downloadLogger);
+router.post('/getStateLogger', MQTTController.getStateLogger);
+router.post('/downloadStateLogger', MQTTController.downloadStateLogger);
+router.post('/getAuditLog', MQTTController.getAuditLog);
+router.post('/downloadAuditLog', MQTTController.downloadAuditLog);
+router.post('/getEnergyConsumption', MQTTController.getEnergyConsumption);
+router.post('/downloadEnergyConsumption', MQTTController.downloadEnergyConsumption);
+
+module.exports = router;

@@ -1,13 +1,11 @@
-const MQTTMaintainencePrivate = {
-    'POST /downloadMaintainenceRequest': 'MQTTMaintainenceController.downloadMaintainenceRequest',
-    'POST /submitMaintainenceRequest': 'MQTTMaintainenceController.submitMaintainenceRequest',
-    'POST /createMaintainenceRequest': 'MQTTMaintainenceController.createMaintainenceRequest',
-    'POST /getMaintainenceRequest': 'MQTTMaintainenceController.getMaintainenceRequest',
-    'POST /updateMaintainenceRequest': 'MQTTMaintainenceController.updateMaintainenceRequest'
-};
-const MQTTMaintainencePublic = MQTTMaintainencePrivate;
+const express = require('express');
+const router = express.Router();
+const MQTTMaintainenceController = require('../../controllers/MQTTMaintainenceController')();
 
-module.exports = {
-    MQTTMaintainencePublic,
-    MQTTMaintainencePrivate,
-};
+router.post('/downloadMaintainenceRequest', MQTTMaintainenceController.downloadMaintainenceRequest);
+router.post('/submitMaintainenceRequest', MQTTMaintainenceController.submitMaintainenceRequest);
+router.post('/createMaintainenceRequest', MQTTMaintainenceController.createMaintainenceRequest);
+router.post('/getMaintainenceRequest', MQTTMaintainenceController.getMaintainenceRequest);
+router.post('/updateMaintainenceRequest', MQTTMaintainenceController.updateMaintainenceRequest);
+
+module.exports = router;

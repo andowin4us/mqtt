@@ -1,10 +1,8 @@
-const MqttFlagPrivate = {
-    "POST /updateFlag": 'MQTTFlagController.updateFlag',
-    "POST /getFlag": 'MQTTFlagController.getFlag',
-};
-const MqttFlagPublic = MqttFlagPrivate;
+const express = require('express');
+const router = express.Router();
+const MQTTFlagController = require('../../controllers/MQTTFlagController')();
 
-module.exports = {
-    MqttFlagPublic,
-    MqttFlagPrivate,
-};
+router.post('/updateFlag', MQTTFlagController.updateFlag);
+router.post('/getFlag', MQTTFlagController.getFlag);
+
+module.exports = router;
