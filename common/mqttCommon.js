@@ -1,5 +1,5 @@
 const { MongoClient } = require('mongodb');
-const mqtt = require('async-mqtt');
+const mqtt = require('mqtt');
 const connection = require('../config/connection');
 const { v4: uuidv4 } = require('uuid');
 const moment = require('moment');
