@@ -7,27 +7,28 @@ const mqttLocationRoutes = require('./mqtt.location.routes');
 const mqttUserRoutes = require('./mqtt.user.routes');
 
 /**
+ * Route configurations for both public and private prefixes
+ */
+const routes = [
+	mqttFlagRoutes,
+	mqttMaintainenceRoutes,
+	mqttRoutes,
+	mqttStatisticsRoutes,
+	mqttDeviceRoutes,
+	mqttLocationRoutes,
+	mqttUserRoutes
+];
+
+/**
  * Configure application routes
  * @param {Express} app - Express application instance
  */
 const configureRoutes = (app) => {
-	// Public routes (API routes) - no authentication required
-	app.use('/api/flag', mqttFlagRoutes);
-	app.use('/api/maintainence', mqttMaintainenceRoutes);
-	app.use('/api/mqtt', mqttRoutes);
-	app.use('/api/statistics', mqttStatisticsRoutes);
-	app.use('/api/device', mqttDeviceRoutes);
-	app.use('/api/location', mqttLocationRoutes);
-	app.use('/api/user', mqttUserRoutes);
-	
-	// Private routes - authentication required
-	app.use('/private/flag', mqttFlagRoutes);
-	app.use('/private/maintainence', mqttMaintainenceRoutes);
-	app.use('/private/mqtt', mqttRoutes);
-	app.use('/private/statistics', mqttStatisticsRoutes);
-	app.use('/private/device', mqttDeviceRoutes);
-	app.use('/private/location', mqttLocationRoutes);
-	app.use('/private/user', mqttUserRoutes);
+	['api', 'private'].forEach(prefix => {
+		routes.forEach(route => {
+			app.use(`/${prefix}`, route);
+		});
+	});
 };
 
 module.exports = {
