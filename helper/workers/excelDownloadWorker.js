@@ -1,4 +1,3 @@
-const fs = require("fs");
 const momenttz = require("moment-timezone");
 const xlsxPopulate = require("xlsx-populate");
 const { workerData, parentPort } = require("worker_threads");

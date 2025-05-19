@@ -1,6 +1,5 @@
 const fs = require("fs");
 const momenttz = require("moment-timezone");
-const csvWriteStream = require("csv-write-stream");
 const createCsvWriter = require("csv-writer").createObjectCsvWriter;
 const { workerData, parentPort } = require("worker_threads");
 const testFunc = async ({

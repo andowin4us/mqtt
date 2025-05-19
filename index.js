@@ -2,10 +2,10 @@ require('dotenv').config(); // load .env file
 const express = require('express');
 const http = require('http');
 const path = require('path');
-const bodyParser = require('body-parser');
+const compression = require('compression');
 const helmet = require('helmet');
-const cookieParser = require('cookie-parser');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 const auth = require('./policies/auth.policy');
 const { configureRoutes } = require('./config/routes/routes.config');
 const { invokeInitialization, scheduleDeviceStatusHandler } = require('./config/mqtt');
@@ -14,13 +14,19 @@ const CHECK_INTERVAL = 1000 * 10 * 60; // Check every 5 minutes
 
 const app = express();
 const server = http.Server(app);
+const limiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 1000, // limit each IP to 1000 requests/minute
+});
 
 // Middleware setup
 app.use(cors());
 app.use(helmet({ dnsPrefetchControl: false, frameguard: false, ieNoOpen: false }));
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json({ limit: '5mb' }));
-app.use(cookieParser());
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(compression());
+app.use(limiter);
+
 app.use('/static', express.static(path.join(__dirname, 'private')));
 
 // Auth and default user info middleware
