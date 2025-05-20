@@ -1,8 +1,10 @@
 const os = require('os');
 const { exec } = require('child_process');
 
-const CPU_THRESHOLD = 80; // CPU usage percentage
-const MEMORY_THRESHOLD = 80; // Memory usage percentage
+// Adjusted thresholds for production
+const CPU_THRESHOLD = 80; // Increased CPU threshold
+const MEMORY_THRESHOLD = 80; // Increased memory threshold
+const APP_NAME = process.env.APP_NAME || 'mqtt-processor'; // Get app name from env or default
 
 function checkResourceUsage() {
     const cpuUsage = getCPUUsage();
@@ -12,12 +14,12 @@ function checkResourceUsage() {
     console.log(`Current Memory Usage: ${memoryUsage}%`);
 
     if (cpuUsage > CPU_THRESHOLD) {
-        console.warn('CPU usage is high! Restarting application...');
+        console.warn(`CPU usage is high (${cpuUsage}%)! Restarting application...`);
         restartApplication();
     }
 
     if (memoryUsage > MEMORY_THRESHOLD) {
-        console.warn('Memory usage is high! Clearing memory cache...');
+        console.warn(`Memory usage is high (${memoryUsage}%)! Clearing memory cache...`);
         clearMemoryCache();
     }
 }
@@ -36,7 +38,8 @@ function getMemoryUsage() {
 }
 
 function restartApplication() {
-    exec('pm2 restart logsense-backend', (error, stdout, stderr) => {
+    const command = `pm2 restart ${APP_NAME}`;
+    exec(command, (error, stdout, stderr) => {
         if (error) {
             console.error(`Error restarting app: ${error.message}`);
             return;

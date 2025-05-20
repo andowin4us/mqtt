@@ -4,6 +4,9 @@ const { checkResourceUsage } = require('./helper/resourceMonitor');
 
 const CHECK_INTERVAL = 1000 * 10 * 60; // Check every 10 minutes
 
+// Set app name for resource monitoring
+process.env.APP_NAME = 'mqtt-processor';
+
 const startMQTTProcessor = async () => {
     try {
         if (!['production', 'development', 'testing'].includes(process.env.NODE_ENV)) {
