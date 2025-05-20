@@ -663,152 +663,146 @@ const getDashboardGraphDetails = async (tData, userInfo = {}) => {
         let taggedDevices = [];
 
         if (userInfo.accesslevel === 3) {
-            const resultDevice = await Util.mongo.find("MQTTDevice", {userName: userInfo.userName});
-            if (resultDevice.length > 0) {
-                for (let device of resultDevice) {
-                    taggedDevices.push(device.deviceId);
-                }
-            }
+            const resultDevice = await Util.mongo.find("MQTTDevice", { userName: userInfo.userName });
+            taggedDevices = resultDevice.map(device => device.deviceId);
         }
 
-        const loggerFilter = userInfo.accesslevel < 3 ? {} : { device_id: { $in: taggedDevices } }; // Use assigned devices if access level is 3
-        const today = new Date();
-        const dayOfWeek = today.getDay();
-        const startOfWeek = new Date(today.setDate(today.getDate() - dayOfWeek));
-        const endOfWeek = new Date(today.setDate(startOfWeek.getDate() + 7));  
-        const startOfWeekStr = startOfWeek.toISOString().slice(0, 10); // Get YYYY-MM-DD format
-        const endOfWeekStr = endOfWeek.toISOString().slice(0, 10); // Get YYYY-MM-DD format
-        
-        const daysOfWeek = [
-            { day: 1, name: "Sunday" },
-            { day: 2, name: "Monday" },
-            { day: 3, name: "Tuesday" },
-            { day: 4, name: "Wednesday" },
-            { day: 5, name: "Thursday" },
-            { day: 6, name: "Friday" },
-            { day: 7, name: "Saturday" }
-        ];
+        const loggerFilter = {};
+
+        // Apply device filter for access level 3
+        if (userInfo.accesslevel === 3 && taggedDevices.length > 0) {
+            loggerFilter.device_id = { $in: taggedDevices };
+        }
+
+        // Define date range
+        let startDate = null;
+        let endDate = null;
+        const filter = tData?.filter || 'default';
+
+        switch (filter) {
+            case 'this_week':
+                startDate = moment().startOf('week');
+                endDate = moment().endOf('week');
+                break;
+            case 'last_week':
+                startDate = moment().subtract(1, 'weeks').startOf('week');
+                endDate = moment().subtract(1, 'weeks').endOf('week');
+                break;
+            case 'this_month':
+                startDate = moment().startOf('month');
+                endDate = moment().endOf('month');
+                break;
+            case 'last_month':
+                startDate = moment().subtract(1, 'months').startOf('month');
+                endDate = moment().subtract(1, 'months').endOf('month');
+                break;
+            case 'last_6_months':
+                startDate = moment().subtract(6, 'months').startOf('month');
+                endDate = moment().subtract(1, 'months').endOf('month');
+                break;
+            case 'this_year':
+                startDate = moment().startOf('year');
+                endDate = moment().endOf('year');
+                break;
+            case 'last_year':
+                startDate = moment().subtract(1, 'years').startOf('year');
+                endDate = moment().subtract(1, 'years').endOf('year');
+                break;
+            default:
+                startDate = moment().startOf('week');
+                endDate = moment().endOf('week');
+                break;
+        }
+
+        // Add timestamp filter (raw format as string for pre-parsed matching)
+        if (startDate && endDate) {
+            loggerFilter.timestamp = {
+                $gte: startDate.format("YYYY-MM-DD"),
+                $lte: endDate.format("YYYY-MM-DD")
+            };
+        }
+
+        const groupByDay = ['this_week', 'last_week', 'this_month', 'last_month'].includes(filter);
 
         const results = await Util.mongo.aggregateData("MQTTLogger", [
             { $match: loggerFilter },
             {
                 $match: {
                     timestamp: {
-                        $gte: startOfWeekStr.trim(), // Start of the week
-                        $lte: endOfWeekStr.trim() // End of the week
+                        $regex: /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/
+                    }
+                }
+            },
+            {
+                $addFields: {
+                    ts: {
+                        $dateFromString: {
+                            dateString: "$timestamp",
+                            format: "%Y-%m-%d %H:%M:%S",
+                            timezone: "UTC"
+                        }
+                    }
+                }
+            },
+            {
+                $match: {
+                    ts: {
+                        $gte: new Date(startDate.toISOString()),
+                        $lte: new Date(endDate.endOf('day').toISOString())
                     }
                 }
             },
             {
                 $group: {
                     _id: {
-                        log_type: "$log_type",
-                        day: { $dayOfWeek: { $dateFromString: { dateString: "$timestamp" } } },
-                    },
-                    count: { $sum: 1 },
-                    entries: { $push: "$$ROOT" } // Optional: Include the entire data in the output
-                }
-            },
-            {
-                $group: {
-                    _id: "$_id.day", // Group by day of the week
-                    log_types: {
-                        $push: {
-                            log_type: "$_id.log_type",
-                            count: "$count"
-                        }
-                    },
-                    totalCount: { $sum: "$count" } // Sum counts for totalCount
-                }
-            },
-            {
-                $sort: { "_id": 1 } // Sort by day of the week
-            },
-            {
-                $project: {
-                    day: "$_id", // Keep the day
-                    log_types: { $ifNull: ["$log_types", []] }, // Ensure log_types is an array
-                    totalCount: { $ifNull: ["$totalCount", 0] } // Include totalCount
-                }
-            },
-            {
-                $group: {
-                    _id: null,
-                    daysData: { $push: { day: "$day", log_types: "$log_types", totalCount: "$totalCount" } }
-                }
-            },
-            {
-                $project: {
-                    data: {
-                        $map: {
-                            input: daysOfWeek,
-                            as: "day",
-                            in: {
-                                day: "$$day.name",
-                                log_types: {
-                                    $let: {
-                                        vars: {
-                                            found: {
-                                                $arrayElemAt: [
-                                                    {
-                                                        $filter: {
-                                                            input: "$daysData",
-                                                            as: "d",
-                                                            cond: { $eq: ["$$d.day", "$$day.day"] }
-                                                        }
-                                                    },
-                                                    0
-                                                ]
-                                            }
-                                        },
-                                        in: {
-                                            $cond: {
-                                                if: { $ifNull: ["$$found", false] },
-                                                then: "$$found.log_types",
-                                                else: [{ log_type: "Unknown", count: 0 }]
-                                            }
-                                        }
-                                    }
-                                },
-                                totalCount: {
-                                    $let: {
-                                        vars: {
-                                            found: {
-                                                $arrayElemAt: [
-                                                    {
-                                                        $filter: {
-                                                            input: "$daysData",
-                                                            as: "d",
-                                                            cond: { $eq: ["$$d.day", "$$day.day"] }
-                                                        }
-                                                    },
-                                                    0
-                                                ]
-                                            }
-                                        },
-                                        in: {
-                                            $cond: {
-                                                if: { $ifNull: ["$$found", false] },
-                                                then: "$$found.totalCount",
-                                                else: 0 // Default to 0 if not found
-                                            }
-                                        }
-                                    }
-                                }
+                        period: {
+                            $dateToString: {
+                                format: groupByDay ? "%Y-%m-%d" : "%Y-%m",
+                                date: "$ts",
+                                timezone: "UTC"
                             }
-                        }
-                    }
+                        },
+                        log_type: "$log_type"
+                    },
+                    count: { $sum: 1 }
                 }
+            },
+            {
+                $group: {
+                    _id: "$_id.period",
+                    log_type_counts: {
+                        $push: {
+                            k: "$_id.log_type",
+                            v: "$count"
+                        }
+                    },
+                    total: { $sum: "$count" }
+                }
+            },
+            {
+                $addFields: {
+                    log_type_counts: { $arrayToObject: "$log_type_counts" }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    period: "$_id",
+                    log_type_counts: 1,
+                    total: 1
+                }
+            },
+            {
+                $sort: { period: 1 }
             }
         ]);
-
 
         return {
             statusCode: 200,
             success: true,
             msg: 'MQTT Graph data retrieved successfully',
-            data: results[0] ? results[0].data : [],
-            err: {},
+            data: results,
+            err: {}
         };
 
     } catch (error) {
