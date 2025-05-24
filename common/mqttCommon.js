@@ -272,7 +272,7 @@ async function handleOtherLogs(data, result, getFlagData) {
 
     data._id = uuidv4();
     data.modified_time = moment().format('YYYY-MM-DD HH:mm:ss');
-    data.timestamp = momentTZ(new Date(data.timestamp)).tz("Asia/Kolkata").format('YYYY-MM-DD HH:mm:ss');
+    data.timestamp = moment(new Date(data.timestamp)).format('YYYY-MM-DD HH:mm:ss');
 
     await mongoInsert(data, {}, 'MQTTLogger', 'create');
 
