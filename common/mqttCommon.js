@@ -3,6 +3,7 @@ const mqtt = require('mqtt');
 const connection = require('../config/connection');
 const { v4: uuidv4 } = require('uuid');
 const moment = require('moment');
+const momentTZ = require('moment-timezone');
 const dotenv = require('dotenv');
 const BullQueueService = require('../common/BullQueueService');
 dotenv.config({ path: process.env.ENV_PATH || '.env' });
@@ -271,7 +272,7 @@ async function handleOtherLogs(data, result, getFlagData) {
 
     data._id = uuidv4();
     data.modified_time = moment().format('YYYY-MM-DD HH:mm:ss');
-    data.timestamp = moment(new Date(data.timestamp)).format('YYYY-MM-DD HH:mm:ss');
+    data.timestamp = momentTZ(new Date(data.timestamp)).tz("Asia/Kolkata").format('YYYY-MM-DD HH:mm:ss');
 
     await mongoInsert(data, {}, 'MQTTLogger', 'create');
 
