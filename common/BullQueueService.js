@@ -1,6 +1,6 @@
 const BullQueue = require('bull');
 const { MongoClient } = require('mongodb');
-const moment = require('moment-timezone');
+const moment = require('moment');
 const { sendEmail } = require('../common/mqttMail');
 const connection = require('../config/connection');
 
@@ -71,7 +71,7 @@ class BullQueueService {
                 status: "success",
                 role: "SuperUser",
                 modified_user_name: 'SYSTEM',
-                modified_time: moment().format('YYYY-MM-DD HH:mm:ss'),
+                modified_time: moment().tz("Asia/Kolkata").format('YYYY-MM-DD HH:mm:ss'),
                 log: JSON.stringify({emailResults}),
             });
 
@@ -87,7 +87,7 @@ class BullQueueService {
                 status: "failed",
                 role: "SuperUser",
                 modified_user_name: 'test1',
-                modified_time: moment().format('YYYY-MM-DD HH:mm:ss'),
+                modified_time: moment().tz("Asia/Kolkata").format('YYYY-MM-DD HH:mm:ss'),
                 log: JSON.stringify({error}),
             });
             throw error; // Rethrow error to mark job as failed

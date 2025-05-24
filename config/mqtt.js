@@ -32,7 +32,7 @@ async function seedData() {
     if (!instanceData) {
         const flagsData = {
             _id: getUuid(),
-            instanceExpiry: moment().add(1, 'years').format('YYYY-MM-DD HH:mm:ss'),
+            instanceExpiry: moment().tz("Asia/Kolkata").add(1, 'years').format('YYYY-MM-DD HH:mm:ss'),
             relayTimer: 300,
             isRelayTimer: false,
             heartBeatTimer: 30,
@@ -57,8 +57,8 @@ async function seedData() {
             password: md5Service().password({ password: 'test1234' }),
             accesslevel: 1,
             email: 'super@logsense.com',
-            created_time: moment().format('YYYY-MM-DD HH:mm:ss'),
-            modified_time: moment().format('YYYY-MM-DD HH:mm:ss')
+            created_time: moment().tz("Asia/Kolkata").format('YYYY-MM-DD HH:mm:ss'),
+            modified_time: moment().tz("Asia/Kolkata").format('YYYY-MM-DD HH:mm:ss')
         };
 
         const locationData = {
@@ -78,8 +78,8 @@ async function seedData() {
                     "above500": 16
                 }
             },
-            created_time: moment().format('YYYY-MM-DD HH:mm:ss'),
-            modified_time: moment().format('YYYY-MM-DD HH:mm:ss')
+            created_time: moment().tz("Asia/Kolkata").format('YYYY-MM-DD HH:mm:ss'),
+            modified_time: moment().tz("Asia/Kolkata").format('YYYY-MM-DD HH:mm:ss')
         }
 
         await Promise.all([
@@ -128,7 +128,7 @@ async function logAudit(collection, data) {
         modified_user_name: 'SYSTEM',
         role: "SuperUser",
         status: "success",
-        modified_time: moment().format('YYYY-MM-DD HH:mm:ss'),
+        modified_time: moment().tz("Asia/Kolkata").format('YYYY-MM-DD HH:mm:ss'),
         log: JSON.stringify(data.log)
     });
 }
@@ -144,12 +144,12 @@ async function checkDeviceStatus() {
         const devices = await collection.find({}).toArray();
         const instanceData = await collectionInstance.findOne({});
         const maintainences = await collectionMaintainence.find({ status: 'Pending' }).toArray();
-        const currentTime = moment();
+        const currentTime = moment().tz("Asia/Kolkata");
 
         if (devices.length > 0) {
             await Promise.all(devices.map(async (device) => {
                 console.log(`Check ${device.deviceName} for relay`);
-                const deviceTime = moment(device.modified_time);
+                const deviceTime = moment(device.modified_time).tz("Asia/Kolkata");
                 const durationSeconds = moment.duration(currentTime.diff(deviceTime)).asSeconds();
 
                 let relayStatus = device.mqttStatusDetails.mqttRelayState;
@@ -161,7 +161,7 @@ async function checkDeviceStatus() {
         
         if(maintainences.length > 0) {
             await Promise.all(maintainences.map(async (maintainence) => {
-                const maintainenceEndTime = moment(maintainence.endTime);
+                const maintainenceEndTime = moment(maintainence.endTime).tz("Asia/Kolkata");
 
                 if (currentTime.isAfter(maintainenceEndTime)) {
                     await collectionMaintainence.updateOne({ _id: maintainence._id }, { $set: { status: "Auto_Rejected", isEditable: false, modified_time: currentTime.format('YYYY-MM-DD HH:mm:ss') } });
@@ -202,7 +202,7 @@ async function updateDeviceStatus(device, status, mqttRelayState, durationSecond
         moduleName: 'DEVICE',
         operation: "Relay ON",
         message: `Relay Timer breached has triggered the relay ON via the predefined timer of ${durationSeconds}`,
-        log: { ...device, status, modified_time: moment().format('YYYY-MM-DD HH:mm:ss') }
+        log: { ...device, status, modified_time: moment().tz("Asia/Kolkata").format('YYYY-MM-DD HH:mm:ss') }
     });
 
     return true;
@@ -217,12 +217,12 @@ async function checkHeartBeatStatus() {
 
         const devices = await collection.find({ status: 'Active' }).toArray();
         const instanceData = await collectionInstance.findOne({});
-        const currentTime = moment();
+        const currentTime = moment().tz("Asia/Kolkata");
 
         if (devices.length > 0) {
             await Promise.all(devices.map(async (device) => {
                 console.log(`Heartbeat check for ${device.deviceName}`);
-                const deviceTime = moment(device.modified_time);
+                const deviceTime = moment(device.modified_time).tz("Asia/Kolkata");
                 const durationSeconds = moment.duration(currentTime.diff(deviceTime)).asSeconds();
 
                 if (parseInt(durationSeconds, 10) > parseInt(instanceData.heartBeatTimer, 10)) {
@@ -230,7 +230,7 @@ async function checkHeartBeatStatus() {
                     await collection.updateOne({ _id: device._id }, {
                         $set: {
                             status: 'InActive',
-                            modified_time: moment().format('YYYY-MM-DD HH:mm:ss')
+                            modified_time: moment().tz("Asia/Kolkata").format('YYYY-MM-DD HH:mm:ss')
                         }
                     });
 
@@ -242,7 +242,7 @@ async function checkHeartBeatStatus() {
                         modified_user_name: 'SYSTEM',
                         role: "SuperUser",
                         status: "success",
-                        modified_time: moment().format('YYYY-MM-DD HH:mm:ss'),
+                        modified_time: moment().tz("Asia/Kolkata").format('YYYY-MM-DD HH:mm:ss'),
                         log: JSON.stringify({})
                     });
                 }

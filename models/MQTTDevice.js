@@ -109,7 +109,7 @@ const updateData = async (tData, userInfo = {}) => {
             mqttMacId: tData.mqttMacId,
             mqttPort: tData.mqttPort,
             mqttAliasName: tData.mqttAliasName ? tData.mqttAliasName : "",
-            modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
+            modified_time: moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss")
         }
     };
 
@@ -166,8 +166,8 @@ const createData = async (tData, userInfo = {}) => {
             mqttPort: tData.mqttPort,
             mqttStatusDetails: { mqttRelayState: false },
             mqttAliasName: tData.mqttAliasName ? tData.mqttAliasName : "",
-            created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
-            modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+            created_time: moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss"),
+            modified_time: moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss"),
         };
 
         const result = await Util.mongo.insertOne(deviceMongoCollection, createObj);
@@ -289,7 +289,7 @@ const relayTriggerOnOrOffMQTTDevice = async (tData, userInfo = {}) => {
             $set: {
                 "mqttStatusDetails.mqttRelayState": tData.mqttRelayState,
                 status: tData.mqttRelayState ? "InActive" : "Active",
-                modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
+                modified_time: moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss")
             }
         });
 

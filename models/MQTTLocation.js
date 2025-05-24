@@ -77,7 +77,7 @@ const updateData = async (tData, userInfo = {}) => {
             _id: tData.id,
             locationName: tData.locationName,
             consumptionSlab: tData.consumptionSlab,
-            modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
+            modified_time: moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss")
         }
     };
 
@@ -116,8 +116,8 @@ const createData = async (tData, userInfo = {}) => {
             _id: tData.id,
             locationName: tData.locationName,
             consumptionSlab: tData.consumptionSlab,
-            created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
-            modified_time: moment().format("YYYY-MM-DD HH:mm:ss")
+            created_time: moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss"),
+            modified_time: moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss")
         };
 
         const result = await Util.mongo.insertOne(deviceMongoCollection, createObj);

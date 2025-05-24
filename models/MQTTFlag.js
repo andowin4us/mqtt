@@ -31,8 +31,8 @@ const updateFlag = async (tData, userInfo = {}) => {
         if (result) {
             const updateObj = {
                 ...result,
-                created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
-                modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+                created_time: moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss"),
+                modified_time: moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss"),
                 ...tData
             };
 

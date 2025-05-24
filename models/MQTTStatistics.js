@@ -574,7 +574,7 @@ const getDashboardStateDetails = async (tData, userInfo = {}) => {
         }
 
         const loggerFilter = userInfo.accesslevel < 3 ? {} : { device_id: { $in: taggedDevices } }; // Use assigned devices if access level is 3
-        const targetDateStr = moment().format('YYYY-MM-DD'); // Desired date in YYYY-MM-DD format
+        const targetDateStr = moment().tz("Asia/Kolkata").format('YYYY-MM-DD'); // Desired date in YYYY-MM-DD format
         const startOfDayStr = `${targetDateStr} 00:00:00`; // Start of the day
         const endOfDayStr = `${targetDateStr} 23:59:59`; // End of the day
         
@@ -681,36 +681,36 @@ const getDashboardGraphDetails = async (tData, userInfo = {}) => {
 
         switch (filter) {
             case 'this_week':
-                startDate = moment().startOf('week');
-                endDate = moment().endOf('week');
+                startDate = moment().tz("Asia/Kolkata").startOf('week');
+                endDate = moment().tz("Asia/Kolkata").endOf('week');
                 break;
             case 'last_week':
-                startDate = moment().subtract(1, 'weeks').startOf('week');
-                endDate = moment().subtract(1, 'weeks').endOf('week');
+                startDate = moment().tz("Asia/Kolkata").subtract(1, 'weeks').startOf('week');
+                endDate = moment().tz("Asia/Kolkata").subtract(1, 'weeks').endOf('week');
                 break;
             case 'this_month':
-                startDate = moment().startOf('month');
-                endDate = moment().endOf('month');
+                startDate = moment().tz("Asia/Kolkata").startOf('month');
+                endDate = moment().tz("Asia/Kolkata").endOf('month');
                 break;
             case 'last_month':
-                startDate = moment().subtract(1, 'months').startOf('month');
-                endDate = moment().subtract(1, 'months').endOf('month');
+                startDate = moment().tz("Asia/Kolkata").subtract(1, 'months').startOf('month');
+                endDate = moment().tz("Asia/Kolkata").subtract(1, 'months').endOf('month');
                 break;
             case 'last_6_months':
-                startDate = moment().subtract(6, 'months').startOf('month');
-                endDate = moment().subtract(1, 'months').endOf('month');
+                startDate = moment().tz("Asia/Kolkata").subtract(6, 'months').startOf('month');
+                endDate = moment().tz("Asia/Kolkata").subtract(1, 'months').endOf('month');
                 break;
             case 'this_year':
-                startDate = moment().startOf('year');
-                endDate = moment().endOf('year');
+                startDate = moment().tz("Asia/Kolkata").startOf('year');
+                endDate = moment().tz("Asia/Kolkata").endOf('year');
                 break;
             case 'last_year':
-                startDate = moment().subtract(1, 'years').startOf('year');
-                endDate = moment().subtract(1, 'years').endOf('year');
+                startDate = moment().tz("Asia/Kolkata").subtract(1, 'years').startOf('year');
+                endDate = moment().tz("Asia/Kolkata").subtract(1, 'years').endOf('year');
                 break;
             default:
                 startDate = moment().startOf('week');
-                endDate = moment().endOf('week');
+                endDate = moment().tz("Asia/Kolkata").endOf('week');
                 break;
         }
 

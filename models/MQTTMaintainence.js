@@ -61,8 +61,8 @@ const downloadMaintainenceRequest = async (tData, userInfo = {}) => {
         }
 
         const filter = {
-            ...(tData.startTime && { startTime: { "$gte": moment(tData.startTime).format("YYYY-MM-DD HH:mm:ss") } }),
-            ...(tData.endTime && { endTime: { "$lte": moment(tData.endTime).format("YYYY-MM-DD HH:mm:ss") } }),
+            ...(tData.startTime && { startTime: { "$gte": moment(tData.startTime).tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss") } }),
+            ...(tData.endTime && { endTime: { "$lte": moment(tData.endTime).tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss") } }),
             ...(tData.status && { status: tData.status }),
             ...(tData.devices && { devices: { $in: deviceIdList } }),
         };
@@ -118,7 +118,7 @@ const submitMaintainenceRequest = async (tData, userInfo = {}) => {
             _id: tData.id,
             status: tData.isApproved ? "Approved" : "Rejected",
             isEditable: false,
-            modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+            modified_time: moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss"),
         },
     };
 
@@ -157,7 +157,7 @@ const cancelMaintenanceRequest = async (tData, userInfo = {}) => {
             _id: tData.id,
             status: "Cancelled",
             isEditable: false,
-            modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+            modified_time: moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss"),
         },
     };
 
@@ -191,12 +191,12 @@ const createMaintainenceRequest = async (tData, userInfo = {}) => {
     // const permissionCheck = checkPermissions(userInfo);
     // if (permissionCheck) return permissionCheck;
 
-    const currentTime = moment();
+    const currentTime = moment().tz("Asia/Kolkata");
 
     if (currentTime.isAfter(tData.startTime)) {
         return { statusCode: 404, success: false, msg: "START DATE CANNOT BE LESS THAN CURRENT DATE." };
     }
-    if (moment(tData.startTime).isAfter(moment(tData.endTime))) {
+    if (moment(tData.startTime).tz("Asia/Kolkata").isAfter(moment(tData.endTime).tz("Asia/Kolkata"))) {
         return { statusCode: 404, success: false, msg: "START DATE CANNOT BE GREATER THAN END DATE." };
     }
 
@@ -206,12 +206,12 @@ const createMaintainenceRequest = async (tData, userInfo = {}) => {
         maintainenceType: tData.maintainenceType,
         engineerName: tData.engineerName,
         engineerContact: tData.engineerContact,
-        startTime: moment(tData.startTime).format("YYYY-MM-DD HH:mm:ss"),
-        endTime: moment(tData.endTime).format("YYYY-MM-DD HH:mm:ss"),
+        startTime: moment(tData.startTime).tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss"),
+        endTime: moment(tData.endTime).tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss"),
         status: "Pending",
         isEditable: true,
-        created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
-        modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+        created_time: moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss"),
+        modified_time: moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss"),
     };
 
     try {
@@ -264,8 +264,8 @@ const getMaintainenceRequest = async (tData, userInfo = {}) => {
         filter = {
             ...(tData.devices && { devices: { $in: deviceIdList } }),
             ...(tData.status && { status: tData.status }),
-            ...(tData.startTime && { startTime: { "$gte": moment.utc(tData.startTime).startOf('day').format('YYYY-MM-DD HH:mm:ss') } }),
-            ...(tData.endTime && { endTime: { "$lte": moment.utc(tData.endTime).endOf('day').format('YYYY-MM-DD HH:mm:ss') } }),
+            ...(tData.startTime && { startTime: { "$gte": moment(tData.startTime).tz("Asia/Kolkata").startOf('day').format('YYYY-MM-DD HH:mm:ss') } }),
+            ...(tData.endTime && { endTime: { "$lte": moment(tData.endTime).tz("Asia/Kolkata").endOf('day').format('YYYY-MM-DD HH:mm:ss') } }),
         };
 
         const result = await Util.mongo.findAndPaginate(deviceMongoCollection, filter, {}, tData.skip, tData.limit);
@@ -303,10 +303,10 @@ const updateMaintainenceRequest = async (tData, userInfo = {}) => {
             maintainenceType: tData.maintainenceType,
             engineerName: tData.engineerName,
             engineerContact: tData.engineerContact,
-            startTime: moment(tData.startTime).format("YYYY-MM-DD HH:mm:ss"),
-            endTime: moment(tData.endTime).format("YYYY-MM-DD HH:mm:ss"),
+            startTime: moment(tData.startTime).tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss"),
+            endTime: moment(tData.endTime).tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss"),
             status: "Pending",
-            modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+            modified_time: moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss"),
         },
     };
 

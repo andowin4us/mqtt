@@ -110,7 +110,7 @@ const updateData = async (tData, userInfo = {}) => {
                     name: tData.name,
                     status: tData.status,
                     password: md5Service().password(tData),
-                    modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+                    modified_time: moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss"),
                 },
             };
         } else {
@@ -119,7 +119,7 @@ const updateData = async (tData, userInfo = {}) => {
                     _id: tData.id,
                     name: tData.name,
                     status: tData.status,
-                    modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+                    modified_time: moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss"),
                 },
             };
         }
@@ -196,8 +196,8 @@ const createData = async (tData, userInfo = {}) => {
             accesslevel: tData.accesslevel,
             email: tData.email,
             password: md5Service().password(tData),
-            created_time: moment().format("YYYY-MM-DD HH:mm:ss"),
-            modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+            created_time: moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss"),
+            modified_time: moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss"),
         };
 
         const result = await Util.mongo.insertOne(deviceMongoCollection, createObj);
@@ -322,8 +322,8 @@ const login = async (tData, res) => {
 
             if (md5Service().comparePassword(password, user.password) && user.status === "Active") {
                 const getFlagData = await Util.mongo.findOne("MQTTFlag", {});
-                const currentTime = moment();
-                const instanceExpiry = moment(getFlagData.instanceExpiry);
+                const currentTime = moment().tz("Asia/Kolkata");
+                const instanceExpiry = moment(getFlagData.instanceExpiry).tz("Asia/Kolkata");
                 if (currentTime.isAfter(instanceExpiry) && user.accesslevel > 1) {
                     await Util.mongo.updateOne(MQTTFlag, { _id: getFlagData._id }, {$set: { instanceExpired: true }});
                     return res.status(404).json({ msg: 'Your Instance has Expired.' });
@@ -385,7 +385,7 @@ const resetPassword = async (tData, userInfo = {}) => {
         const updateObj = {
             $set: {
                 password: md5Service().password({ password: tData.newPassword }),
-                modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+                modified_time: moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss"),
             },
         };
 

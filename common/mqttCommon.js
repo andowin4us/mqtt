@@ -3,7 +3,6 @@ const mqtt = require('mqtt');
 const connection = require('../config/connection');
 const { v4: uuidv4 } = require('uuid');
 const moment = require('moment');
-const momentTZ = require('moment-timezone');
 const dotenv = require('dotenv');
 const BullQueueService = require('../common/BullQueueService');
 dotenv.config({ path: process.env.ENV_PATH || '.env' });
@@ -38,7 +37,7 @@ async function utilizeMqtt(message) {
 
 async function handleInvalidJson(message) {
     message._id = uuidv4();
-    message.modified_time = moment().format('YYYY-MM-DD HH:mm:ss');
+    message.modified_time = moment().tz("Asia/Kolkata").format('YYYY-MM-DD HH:mm:ss');
     await mongoInsert(message, {}, 'dump_device_id', 'create');
     return false;
 }
@@ -96,7 +95,7 @@ async function handleDumpData(data, collectionName) {
 
     if (!existing) {
         data._id = uuidv4();
-        data.modified_time = moment().format('YYYY-MM-DD HH:mm:ss');
+        data.modified_time = moment().tz("Asia/Kolkata").format('YYYY-MM-DD HH:mm:ss');
         await mongoInsert(data, {}, collectionName, 'create');
     }
 
@@ -104,8 +103,8 @@ async function handleDumpData(data, collectionName) {
 }
 
 async function handleHeartbeat(data, result, getFlagData) {
-    const now = moment();
-    const end = moment(result.modified_time);
+    const now = moment().tz("Asia/Kolkata");
+    const end = moment(result.modified_time).tz("Asia/Kolkata");
     const duration = now.diff(end, 'seconds');
 
     let logTypeUpdate = {
@@ -160,7 +159,7 @@ async function handleOtherLogs(data, result, getFlagData) {
         return false;
     }
 
-    if (existingLogLimit?._id && moment(new Date(data.timestamp)).isBefore(moment().startOf('day'))) {
+    if (existingLogLimit?._id && moment(new Date(data.timestamp)).tz("Asia/Kolkata").isBefore(moment().tz("Asia/Kolkata").startOf('day'))) {
         return false;
     }
 
@@ -169,7 +168,10 @@ async function handleOtherLogs(data, result, getFlagData) {
     }
 
     if (data.log_type === 'DOOR' && data.log_desc === 'OPENED') {
-        const checkMaintainence = await mongoInsert(data, { devices: { $all: [data.device_id] }, status: 'Approved', endTime: { $gte: moment().format('YYYY-MM-DD HH:mm:ss') } }, 'MQTTMaintainence', 'find');
+        const checkMaintainence = await mongoInsert(data, {devices: { $all: [data.device_id] }, status: 'Approved',
+            startTime: { $lte: moment().tz("Asia/Kolkata").format('YYYY-MM-DD HH:mm:ss') },
+            endTime: { $gte: moment().tz("Asia/Kolkata").format('YYYY-MM-DD HH:mm:ss') }
+            }, 'MQTTMaintainence', 'find');
 
         if (!checkMaintainence) {
              let logTypeUpdate = {
@@ -197,14 +199,14 @@ async function handleOtherLogs(data, result, getFlagData) {
                 modified_user_name: 'SYSTEM',
                 status: "success",
                 role: "SuperUser",
-                modified_time: moment().format('YYYY-MM-DD HH:mm:ss'),
+                modified_time: moment().tz("Asia/Kolkata").format('YYYY-MM-DD HH:mm:ss'),
                 log: 'RELAY Turned ON',
             }, {}, 'MQTTAuditLog', 'create');
         }
     }
 
     if (data.log_type === 'Status' && data.log_desc === 'ENRGY') {
-        const currentTimestamp = moment(new Date(data.timestamp)).format('YYYY-MM-DD HH:mm:ss');
+        const currentTimestamp = moment(new Date(data.timestamp)).tz("Asia/Kolkata").format('YYYY-MM-DD HH:mm:ss');
     
         // Define the query filter object for mongoInsert
         const filter = {
@@ -271,8 +273,8 @@ async function handleOtherLogs(data, result, getFlagData) {
     await mongoInsert({ mqttStatusDetails }, { deviceId: data.device_id }, 'MQTTDevice', 'update');
 
     data._id = uuidv4();
-    data.modified_time = moment().format('YYYY-MM-DD HH:mm:ss');
-    data.timestamp = moment(new Date(data.timestamp)).format('YYYY-MM-DD HH:mm:ss');
+    data.modified_time = moment().tz("Asia/Kolkata").format('YYYY-MM-DD HH:mm:ss');
+    data.timestamp = moment(new Date(data.timestamp)).tz("Asia/Kolkata").format('YYYY-MM-DD HH:mm:ss');
 
     await mongoInsert(data, {}, 'MQTTLogger', 'create');
 
