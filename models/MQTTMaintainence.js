@@ -137,6 +137,45 @@ const submitMaintainenceRequest = async (tData, userInfo = {}) => {
     }
 };
 
+// Submit maintenance request
+const cancelMaintenanceRequest = async (tData, userInfo = {}) => {
+    const paramCheck = await checkParams(tData, { id: "required|string" });
+    if (paramCheck) return paramCheck;
+
+    const permissionCheck = checkPermissions(userInfo);
+    if (permissionCheck) return permissionCheck;
+
+    const request = await getMaintainenceData(deviceMongoCollection, { _id: tData.id });
+    if (request) {
+        if (["Pending", "Rejected", "Auto_Rejected"].includes(request.status)) {
+            return { statusCode: 404, success: false, msg: "MAINTAINENCE FORM ALREADY SUBMITTED. KINDLY CREATE NEW REQUEST." };
+        }
+    }
+
+    const updateObj = {
+        $set: {
+            _id: tData.id,
+            status: "Cancelled",
+            isEditable: false,
+            modified_time: moment().format("YYYY-MM-DD HH:mm:ss"),
+        },
+    };
+
+    try {
+        const result = await Util.mongo.updateOne(deviceMongoCollection, { _id: tData.id }, updateObj);
+        if (result) {
+            await Util.addAuditLogs(MODULE_NAME, userInfo, "Cancelled", `${userInfo.userName} has Cancelled Device Maintenance Request.`, "success", JSON.stringify(result));
+            return { statusCode: 200, success: true, msg: "MQTTMaintainence Cancel Success", status: result };
+        } else {
+            await Util.addAuditLogs(MODULE_NAME, userInfo, "Cancelled", `${userInfo.userName} has Cancelled Device Maintenance Request.`, "failure", JSON.stringify(result));
+            return { statusCode: 404, success: false, msg: "MQTTMaintainence Cancel Error", status: [] };
+        }
+    } catch (error) {
+        await Util.addAuditLogs(MODULE_NAME, userInfo, "Cancelled", `${userInfo.userName} has Cancelled Device Maintenance Request.`, "error", error);
+        return { statusCode: 500, success: false, msg: "MQTTMaintainence Config Error", status: [], err: error };
+    }
+};
+
 // Create maintenance request
 const createMaintainenceRequest = async (tData, userInfo = {}) => {
     const paramCheck = await checkParams(tData, {
@@ -304,5 +343,6 @@ module.exports = {
     submitMaintainenceRequest,
     createMaintainenceRequest,
     getMaintainenceRequest,
-    updateMaintainenceRequest
+    updateMaintainenceRequest,
+    cancelMaintenanceRequest
 };

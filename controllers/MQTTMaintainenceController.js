@@ -26,13 +26,19 @@ const MQTTMaintainenceController = () => {
         const result = await MQTTMaintainence.submitMaintainenceRequest(req.body, req.user);
         return res.status(result.statusCode).json(result);
     };
+    const cancelMaintenanceRequest = async (req, res) => {
+        console.log('cancelMaintenanceRequest logs ', req.body, req.user);
+        const result = await MQTTMaintainence.cancelMaintenanceRequest(req.body, req.user);
+        return res.status(result.statusCode).json(result);
+    };
     
     return {
         getMaintainenceRequest,
         createMaintainenceRequest,
         downloadMaintainenceRequest,
         submitMaintainenceRequest,
-        updateMaintainenceRequest
+        updateMaintainenceRequest,
+        cancelMaintenanceRequest
     };
 }
 
