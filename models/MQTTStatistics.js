@@ -405,7 +405,7 @@ const getDashboardDetails = async (tData, userInfo = {}) => {
             { $match: maintainenceFilter },
             {
                 $match: {
-                    status: { $in: ["Pending", "Approved", "Rejected", "Auto_Rejected"] }
+                    status: { $in: ["Pending", "Approved", "Rejected", "Auto_Rejected", "Cancelled"] }
                 }
             },
             {
