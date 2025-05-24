@@ -1,6 +1,6 @@
 const BullQueue = require('bull');
 const { MongoClient } = require('mongodb');
-const moment = require('moment');
+const moment = require('moment-timezone');
 const { sendEmail } = require('../common/mqttMail');
 const connection = require('../config/connection');
 
@@ -59,7 +59,7 @@ class BullQueueService {
                 DeviceId: device.deviceId, 
                 Action: message, 
                 MacId: device.mqttMacId, 
-                TimeofActivity: moment().format("YYYY-MM-DD HH:mm:ss")
+                TimeofActivity: moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss")
             }, getFlagData, getFlagData.ccUsers, getFlagData.bccUsers);
 
             // Log audit entry for local MongoDB
