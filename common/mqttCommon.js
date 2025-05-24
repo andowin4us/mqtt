@@ -3,7 +3,6 @@ const mqtt = require('mqtt');
 const connection = require('../config/connection');
 const { v4: uuidv4 } = require('uuid');
 const moment = require('moment');
-const momentTZ = require('moment-timezone');
 const dotenv = require('dotenv');
 const BullQueueService = require('../common/BullQueueService');
 dotenv.config({ path: process.env.ENV_PATH || '.env' });
@@ -169,7 +168,10 @@ async function handleOtherLogs(data, result, getFlagData) {
     }
 
     if (data.log_type === 'DOOR' && data.log_desc === 'OPENED') {
-        const checkMaintainence = await mongoInsert(data, { devices: { $all: [data.device_id] }, status: 'Approved', endTime: { $gte: moment().format('YYYY-MM-DD HH:mm:ss') } }, 'MQTTMaintainence', 'find');
+        const checkMaintainence = await mongoInsert(data, { devices: { $all: [data.device_id] }, status: 'Approved', 
+            startTime: { $lte: moment().format('YYYY-MM-DD HH:mm:ss') },
+            endTime: { $gte: moment().format('YYYY-MM-DD HH:mm:ss') }
+        }, 'MQTTMaintainence', 'find');
 
         if (!checkMaintainence) {
              let logTypeUpdate = {
